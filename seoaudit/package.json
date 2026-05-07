@@ -12,6 +12,7 @@
     "packages/*"
   ],
   "devDependencies": {
+    "tsx": "^4.21.0",
     "turbo": "^2",
     "typescript": "^5"
   }

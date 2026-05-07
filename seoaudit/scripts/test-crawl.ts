@@ -1,16 +1,47 @@
-// Quick smoke-test: crawl a single URL and print the SEO analysis result
-const targetUrl = process.argv[2];
+import { writeFileSync, mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { crawlSite } from '../apps/crawler/src/index.js';
 
-if (!targetUrl) {
-  console.error('Usage: tsx scripts/test-crawl.ts <url>');
-  process.exit(1);
+async function main() {
+  const args = process.argv.slice(2);
+  const renderJs = args.includes('--render');
+  const positional = args.filter((a) => !a.startsWith('--'));
+  const siteUrl = positional[0];
+  const maxUrls = positional[1] ? Number(positional[1]) : undefined;
+
+  if (!siteUrl) {
+    console.error('Usage: tsx scripts/test-crawl.ts <site-url> [maxUrls] [--render]');
+    process.exit(1);
+  }
+
+  console.log(
+    `Crawling ${siteUrl} (max=${maxUrls ?? 'all'}, renderJs=${renderJs})...\n`
+  );
+
+  const result = await crawlSite(siteUrl, {
+    maxUrls,
+    concurrency: 5,
+    renderJs,
+    onProgress: (processed, total) => {
+      process.stdout.write(`\rProcesando ${processed} / ${total} URLs`);
+    },
+  });
+
+  console.log('\n\nDone.');
+  console.log(`Sitemap: ${result.sitemapUrl}`);
+  console.log(`Pages crawled: ${result.pages.length}`);
+
+  const outDir = resolve('data/exports');
+  mkdirSync(outDir, { recursive: true });
+
+  const fileName = `crawl-${new URL(siteUrl).hostname}-${Date.now()}.json`;
+  const outPath = resolve(outDir, fileName);
+  writeFileSync(outPath, JSON.stringify(result, null, 2), 'utf-8');
+
+  console.log(`Saved to: ${outPath}`);
 }
 
-console.log(`Crawling: ${targetUrl}`);
-
-// TODO: import and call the crawler once apps/crawler is wired up
-// import { crawlPage } from '../apps/crawler/src/crawler/index.js';
-// const result = await crawlPage(targetUrl);
-// console.log(JSON.stringify(result, null, 2));
-
-console.log('Crawler not wired up yet — implement apps/crawler/src/crawler first.');
+main().catch((err) => {
+  console.error('\nError:', err.message);
+  process.exit(1);
+});
