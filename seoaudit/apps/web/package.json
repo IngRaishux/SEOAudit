@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@seo-optimizer/types": "*",
+    "@tailwindcss/vite": "^4.3.0",
     "next": "16.2.5",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -21,7 +22,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.5",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.2.4",
     "typescript": "^5"
   }
 }

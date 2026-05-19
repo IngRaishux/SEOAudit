@@ -12,6 +12,7 @@ export interface PageSeo {
   robots: string | null;
   h1: string[];
   h2: string[];
+  p: string[];
   wordCount: number;
   loadTimeMs: number;
   error?: string;
@@ -37,6 +38,7 @@ export function parseSeoFromHtml(
     robots: attr($('meta[name="robots"]'), 'content'),
     h1: headings($, 'h1'),
     h2: headings($, 'h2'),
+    p: $('p').text().trim().split(/\n+/),
     wordCount: $('body').text().trim().split(/\s+/).filter(Boolean).length,
     loadTimeMs,
   };
@@ -55,6 +57,7 @@ export function emptyPageSeo(url: string, loadTimeMs: number, error: string): Pa
     robots: null,
     h1: [],
     h2: [],
+    p:[],
     wordCount: 0,
     loadTimeMs,
     error,
