@@ -1,4 +1,4 @@
-import { parseSeoFromHtml, emptyPageSeo, type PageSeo } from './parse.js';
+import { parseSeoFromHtml, emptyPageSeo, type PageSeo } from './parse';
 
 export type { PageSeo };
 

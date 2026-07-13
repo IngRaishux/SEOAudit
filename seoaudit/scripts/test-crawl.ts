@@ -1,6 +1,6 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { crawlSite } from '../apps/crawler/src/index.js';
+import { crawlSite } from '../apps/crawler/src/index';
 
 async function main() {
   const args = process.argv.slice(2);

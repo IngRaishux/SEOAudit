@@ -1,9 +1,9 @@
 import pLimit from 'p-limit';
-import { discoverSitemap } from './sitemap/discover.js';
-import { parseSitemap } from './sitemap/parse.js';
-import { extractPageSeo } from './crawler/extract.js';
-import { extractPageSeoRendered, launchBrowser } from './crawler/render.js';
-import type { PageSeo } from './crawler/parse.js';
+import { discoverSitemap } from './sitemap/discover';
+import { parseSitemap } from './sitemap/parse';
+import { extractPageSeo } from './crawler/extract';
+import { extractPageSeoRendered, launchBrowser } from './crawler/render';
+import type { PageSeo } from './crawler/parse';
 
 export interface CrawlOptions {
   concurrency?: number;

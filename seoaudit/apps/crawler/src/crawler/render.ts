@@ -1,5 +1,5 @@
 import { chromium, type Browser } from 'playwright';
-import { parseSeoFromHtml, emptyPageSeo, type PageSeo } from './parse.js';
+import { parseSeoFromHtml, emptyPageSeo, type PageSeo } from './parse';
 
 export async function launchBrowser(): Promise<Browser> {
   return chromium.launch({ headless: true });
