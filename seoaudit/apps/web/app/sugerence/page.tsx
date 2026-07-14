@@ -1,22 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-const mockPage = {
-  url: "https://aluminium-astro-hoteldanzadelsol.vercel.app/habitaciones",
-  statusCode: 200,
-  title: "Habitaciones",
-  description: "",
-  canonical: "https://aluminium-astro-hoteldanzadelsol.vercel.app/habitaciones",
-  ogTitle: "Habitaciones",
-  ogDescription: "",
-  ogImage: "",
-  robots: "index, follow",
-  h1: ["Nuestras habitaciones"],
-  h2: ["Suite Premium", "Habitación Doble"],
-  wordCount: 320,
-  loadTimeMs: 980,
-};
+import { useSearchParams } from "next/navigation";
+import { useCrawl } from "@/lib/CrawlContext";
 
 const mockSuggested = {
   title: "Habitaciones de Lujo en Hotel Danza del Sol | Reserva Online",
@@ -31,7 +17,28 @@ const mockSuggested = {
 };
 
 export default function SugerenciaPage() {
+  const searchParams = useSearchParams();
+  const targetUrl = searchParams.get("url");
+  const { getPageByUrl } = useCrawl();
+
+  const mockPage = (targetUrl && getPageByUrl(targetUrl)) || null;
+
   const [form, setForm] = useState(mockSuggested);
+
+  if (!targetUrl) {
+    return (
+      <div className="p-8 text-zinc-700">Falta el parámetro <code>url</code>.</div>
+    );
+  }
+
+  if (!mockPage) {
+    return (
+      <div className="p-8 text-zinc-700">
+        No se encontró información para <span className="font-mono">{targetUrl}</span>.
+        Vuelve al listado del sitio para regenerar.
+      </div>
+    );
+  }
 
   function update<K extends keyof typeof form>(key: K, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));

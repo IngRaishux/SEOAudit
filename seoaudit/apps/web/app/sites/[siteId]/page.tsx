@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { jobStore } from "@/lib/jobStore";
 import { notFound } from "next/navigation";
+import { HydrateCrawl } from "@/components/HydrateCrawl";
 
 export default async function SiteDetailPage({
   params,
@@ -15,12 +16,12 @@ export default async function SiteDetailPage({
   }
 
   const { siteUrl, sitemapUrl, pages } = job.result;
-  console.log(pages);
   
   const crawledAt = new Date(job.finishedAt ?? job.startedAt).toLocaleString();
 
   return (
     <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
+      <HydrateCrawl data={job.result} />
       <div className="border border-zinc-300 rounded-lg p-4 bg-white">
         <h1 className="text-2xl font-bold mb-2">{siteUrl}</h1>
         <div className="flex gap-6 text-sm text-zinc-600 flex-wrap">
