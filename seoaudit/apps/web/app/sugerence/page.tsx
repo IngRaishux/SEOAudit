@@ -101,6 +101,24 @@ function SugerenciaContent() {
     URL.revokeObjectURL(downloadUrl);
   }
 
+    // Extraer slug incluyendo patrones de idioma como /en/, /es-MX/, etc
+  const urlParts = mockPage.url.split('/').filter(Boolean);
+  let slug = '/home/';
+
+  if (urlParts.length > 0) {
+    // Buscar si hay un segmento que sea un idioma (en, es, es-MX, etc)
+    const languagePattern = /^[a-z]{2}(-[a-zA-Z]{2})?$/;
+    const languageIndex = urlParts.findIndex(part => languagePattern.test(part));
+
+    if (languageIndex !== -1 && languageIndex < urlParts.length - 1) {
+      // Si hay un patrón de idioma y hay más segmentos después, incluir idioma + resto
+      slug = '/' + urlParts.slice(languageIndex).join('/') + '/';
+    } else {
+      // Si no hay patrón de idioma, solo tomar el último segmento
+      slug = '/' + urlParts[urlParts.length - 1] + '/';
+    }
+  }
+
   return (
     <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
       <BackButton />
@@ -130,7 +148,7 @@ function SugerenciaContent() {
           <Field label="Title" value={mockPage.title} />
           <Field label="Description" value={mockPage.description} multiline />
           <Field label="Canonical" value={mockPage.canonical} />
-          <Field label="Slug" value={mockPage.url.split("/").filter(Boolean).pop() || "home"} />
+          <Field label="Slug" value={slug || "home"} />
         </div>
 
         {/* Columna derecha: sugerencia editable */}

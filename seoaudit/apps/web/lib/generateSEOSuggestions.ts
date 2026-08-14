@@ -49,7 +49,24 @@ export async function generateSEOSuggestions(
   }
 
   const genAI = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
-  const slug = pageData.url.split('/').filter(Boolean).pop() || 'home';
+
+  // Extraer slug incluyendo patrones de idioma como /en/, /es-MX/, etc
+  const urlParts = pageData.url.split('/').filter(Boolean);
+  let slug = '/home/';
+
+  if (urlParts.length > 0) {
+    // Buscar si hay un segmento que sea un idioma (en, es, es-MX, etc)
+    const languagePattern = /^[a-z]{2}(-[a-zA-Z]{2})?$/;
+    const languageIndex = urlParts.findIndex(part => languagePattern.test(part));
+
+    if (languageIndex !== -1 && languageIndex < urlParts.length - 1) {
+      // Si hay un patrón de idioma y hay más segmentos después, incluir idioma + resto
+      slug = '/' + urlParts.slice(languageIndex).join('/') + '/';
+    } else {
+      // Si no hay patrón de idioma, solo tomar el último segmento
+      slug = '/' + urlParts[urlParts.length - 1] + '/';
+    }
+  }
 
   const prompt = `Eres un experto en SEO. Analiza esta página y genera sugerencias optimizadas para los meta tags en formato DynamoDB.
 
@@ -111,7 +128,7 @@ Requisitos:
 - Los valores de "S" deben ser strings, los de "SS" deben ser arrays de strings`;
 
   const result = await genAI.models.generateContent({
-    model: 'gemini-3.6-flash',
+    model: 'gemini-3.5-flash',
     contents: prompt,
   });
   const responseText = result.text;
