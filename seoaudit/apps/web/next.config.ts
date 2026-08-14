@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  transpilePackages: ["@seo-optimizer/crawler"],
+  serverExternalPackages: ["playwright", "cheerio"],
 };
 
 export default nextConfig;

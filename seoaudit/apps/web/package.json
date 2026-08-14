@@ -9,7 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
     "@remixicon/react": "^4.9.0",
+    "@seo-optimizer/crawler": "*",
     "@seo-optimizer/types": "*",
     "@tailwindcss/vite": "^4.3.0",
     "clsx": "^2.1.1",
