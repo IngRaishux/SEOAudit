@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCrawl } from "@/lib/CrawlContext";
+import { BackButton } from "@/components/BackButton";
 
 const mockSuggested = {
   title: "Habitaciones de Lujo en Hotel Danza del Sol | Reserva Online",
@@ -73,6 +74,7 @@ export default function SugerenciaPage() {
 
   return (
     <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
+      <BackButton />
       {/* Header */}
       <div className="border border-zinc-300 rounded-lg p-4 bg-white">
         <div className="text-xs uppercase tracking-wide text-zinc-500">
