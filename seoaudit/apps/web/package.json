@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google/genai": "^2.17.1",
+    "@radix-ui/react-dialog": "^1.1.23",
     "@radix-ui/react-slot": "^1.2.4",
     "@remixicon/react": "^4.9.0",
     "@seo-optimizer/crawler": "*",

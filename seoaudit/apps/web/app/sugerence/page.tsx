@@ -1,23 +1,30 @@
-"use client";
+'use client';
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCrawl } from "@/lib/CrawlContext";
 import { BackButton } from "@/components/BackButton";
+import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
+import DialogSugestion from "@/components/DialogSugestion";
+import { Dialog, DialogTrigger } from "@/components/Dialog";
 
 const mockSuggested = {
-  title: "Habitaciones de Lujo en Hotel Danza del Sol | Reserva Online",
-  description:
-    "Descubre nuestras habitaciones premium con vista al mar. Suites y habitaciones dobles con servicio personalizado. Reserva al mejor precio.",
-  canonical: "https://aluminium-astro-hoteldanzadelsol.vercel.app/habitaciones",
-  ogTitle: "Habitaciones Premium — Hotel Danza del Sol",
-  ogDescription:
-    "Confort y elegancia en cada estancia. Conoce nuestras suites con amenidades exclusivas.",
-  ogImage: "https://aluminium-astro-hoteldanzadelsol.vercel.app/og-rooms.jpg",
-  robots: "index, follow",
+  slug: { S: "" },
+  account: { S: "default" },
+  canonicalUrl: { S: "" },
+  description: { S: "" },
+  keywords: { SS: [] as string[] },
+  alternateLanguages: {
+    M: {
+      "en-US": { S: "" },
+      "es-MX": { S: "" },
+      "x-default": { S: "" },
+    },
+  },
+  title: { S: "" },
 };
 
-export default function SugerenciaPage() {
+function SugerenciaContent() {
   const searchParams = useSearchParams();
   const targetUrl = searchParams.get("url");
   const { getPageByUrl } = useCrawl();
@@ -25,6 +32,14 @@ export default function SugerenciaPage() {
   const mockPage = (targetUrl && getPageByUrl(targetUrl)) || null;
 
   const [form, setForm] = useState(mockSuggested);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleSuggestionsGenerated = (accountName: string, suggestions: any) => {
+    setForm(suggestions);
+    setError(null);
+  };
 
   if (!targetUrl) {
     return (
@@ -41,24 +56,38 @@ export default function SugerenciaPage() {
     );
   }
 
-  function update<K extends keyof typeof form>(key: K, value: string) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+  function updateSimpleField(key: string, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      [key]: { S: value },
+    }));
+  }
+
+  function updateKeywords(keywords: string[]) {
+    setForm((prev) => ({
+      ...prev,
+      keywords: { SS: keywords },
+    }));
+  }
+
+  function updateAltLanguage(lang: string, value: string) {
+    setForm((prev) => ({
+      ...prev,
+      alternateLanguages: {
+        M: {
+          ...prev.alternateLanguages.M,
+          [lang]: { S: value },
+        },
+      },
+    }));
   }
 
   function handleExport() {
+    if (!mockPage) return;
+
     const exported = {
-      url: mockPage.url,
-      original: {
-        title: mockPage.title,
-        description: mockPage.description,
-        canonical: mockPage.canonical,
-        ogTitle: mockPage.ogTitle,
-        ogDescription: mockPage.ogDescription,
-        ogImage: mockPage.ogImage,
-        robots: mockPage.robots,
-      },
-      suggested: form,
-      approvedAt: new Date().toISOString(),
+      ...form,
+      account: form.account,
     };
 
     const blob = new Blob([JSON.stringify(exported, null, 2)], {
@@ -67,7 +96,7 @@ export default function SugerenciaPage() {
     const downloadUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = downloadUrl;
-    a.download = `seo-${new URL(mockPage.url).hostname}-${Date.now()}.json`;
+    a.download = `seo-${form.slug.S || new URL(mockPage.url).hostname}-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(downloadUrl);
   }
@@ -75,7 +104,7 @@ export default function SugerenciaPage() {
   return (
     <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
       <BackButton />
-      {/* Header */}
+      {/* Content */}
       <div className="border border-zinc-300 rounded-lg p-4 bg-white">
         <div className="text-xs uppercase tracking-wide text-zinc-500">
           Generando SEO para
@@ -101,10 +130,7 @@ export default function SugerenciaPage() {
           <Field label="Title" value={mockPage.title} />
           <Field label="Description" value={mockPage.description} multiline />
           <Field label="Canonical" value={mockPage.canonical} />
-          <Field label="OG Title" value={mockPage.ogTitle} />
-          <Field label="OG Description" value={mockPage.ogDescription} multiline />
-          <Field label="OG Image" value={mockPage.ogImage} />
-          <Field label="Robots" value={mockPage.robots} />
+          <Field label="Slug" value={mockPage.url.split("/").filter(Boolean).pop() || "home"} />
         </div>
 
         {/* Columna derecha: sugerencia editable */}
@@ -114,55 +140,91 @@ export default function SugerenciaPage() {
           </h2>
 
           <EditableField
+            label="Slug"
+            value={form.slug.S}
+            onChange={(v) => updateSimpleField("slug", v)}
+          />
+          <EditableField
             label="Title"
-            value={form.title}
-            onChange={(v) => update("title", v)}
-            hint={`${form.title.length} chars (ideal 50-60)`}
+            value={form.title.S}
+            onChange={(v) => updateSimpleField("title", v)}
+            hint={`${form.title.S.length} chars (ideal 50-60)`}
           />
           <EditableField
             label="Description"
-            value={form.description}
-            onChange={(v) => update("description", v)}
-            hint={`${form.description.length} chars (ideal 150-160)`}
+            value={form.description.S}
+            onChange={(v) => updateSimpleField("description", v)}
+            hint={`${form.description.S.length} chars (ideal 150-160)`}
             multiline
           />
           <EditableField
-            label="Canonical"
-            value={form.canonical}
-            onChange={(v) => update("canonical", v)}
+            label="Canonical URL"
+            value={form.canonicalUrl.S}
+            onChange={(v) => updateSimpleField("canonicalUrl", v)}
           />
           <EditableField
-            label="OG Title"
-            value={form.ogTitle}
-            onChange={(v) => update("ogTitle", v)}
+            label="Keywords (separados por coma)"
+            value={form.keywords.SS.join(", ")}
+            onChange={(v) => updateKeywords(v.split(",").map((k) => k.trim()).filter(Boolean))}
+            hint={`${form.keywords.SS.length} keywords`}
           />
-          <EditableField
-            label="OG Description"
-            value={form.ogDescription}
-            onChange={(v) => update("ogDescription", v)}
-            multiline
-          />
-          <EditableField
-            label="OG Image"
-            value={form.ogImage}
-            onChange={(v) => update("ogImage", v)}
-          />
-          <EditableField
-            label="Robots"
-            value={form.robots}
-            onChange={(v) => update("robots", v)}
-          />
+          <div className="border border-blue-300 rounded p-3">
+            <h3 className="text-xs font-semibold text-blue-600 mb-2">Lenguajes Alternos</h3>
+            <EditableField
+              label="en-US"
+              value={form.alternateLanguages.M["en-US"].S}
+              onChange={(v) => updateAltLanguage("en-US", v)}
+            />
+            <EditableField
+              label="es-MX"
+              value={form.alternateLanguages.M["es-MX"].S}
+              onChange={(v) => updateAltLanguage("es-MX", v)}
+            />
+            <EditableField
+              label="x-default"
+              value={form.alternateLanguages.M["x-default"].S}
+              onChange={(v) => updateAltLanguage("x-default", v)}
+            />
+          </div>
         </div>
       </div>
 
+      {/* Errores */}
+      {error && (
+        <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
+          Error: {error}
+        </div>
+      )}
+
       {/* Acciones */}
       <div className="flex justify-end gap-3 mt-4">
-        <button className="px-4 py-2 rounded-md border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100">
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <button
+              disabled={loading}
+              className="px-4 py-2 rounded-md border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            >
+              {loading ? 'Generando...' : 'Generar Sugerencias'}
+            </button>
+          </DialogTrigger>
+          <DialogSugestion
+            setIsOpen={setIsOpen}
+            onSuggestionsGenerated={handleSuggestionsGenerated}
+            pageData={{
+              url: mockPage.url,
+              title: mockPage.title,
+              description: mockPage.description,
+              wordCount: mockPage.wordCount,
+            }}
+          />
+        </Dialog>
+        {/* <button className="px-4 py-2 rounded-md border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100">
           Descartar y regenerar
-        </button>
+        </button> */}
         <button
           onClick={handleExport}
-          className="px-6 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700"
+          className="px-6 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading}
         >
           Exportar JSON
         </button>
@@ -229,5 +291,19 @@ function EditableField({
         />
       )}
     </div>
+  );
+}
+
+export default function SugerenciaPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
+          <div className="p-8 text-zinc-700">Cargando...</div>
+        </div>
+      }
+    >
+      <SugerenciaContent />
+    </Suspense>
   );
 }
