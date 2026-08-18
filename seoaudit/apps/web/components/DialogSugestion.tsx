@@ -15,6 +15,7 @@ import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
 type DialogSugestionProps = {
   setIsOpen: Dispatch<SetStateAction<boolean>>;
   onSuggestionsGenerated: (accountName: string, suggestions: any) => void;
+  setIsLoading: Dispatch<SetStateAction<boolean>>;
   pageData: {
     url: string;
     title: string | null;
@@ -23,9 +24,8 @@ type DialogSugestionProps = {
   };
 };
 
-const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData }: DialogSugestionProps) => {
+const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoading }: DialogSugestionProps) => {
   const [accountName, setAccountName] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerateAndSave = async () => {
@@ -33,8 +33,8 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData }: Dialog
       setError("Por favor ingresa el nombre de la cuenta");
       return;
     }
-
-    setLoading(true);
+    setIsOpen(false)
+    setIsLoading(true);
     setError(null);
 
     try {
@@ -52,8 +52,9 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData }: Dialog
       const message = err instanceof Error ? err.message : 'Error generating suggestions';
       setError(message);
       console.error('Error generating SEO suggestions:', err);
+      setIsOpen(true)
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -78,7 +79,6 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData }: Dialog
             onChange={(e) => setAccountName(e.target.value)}
             placeholder="Ej: Mi Tienda Online"
             className="px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={loading}
           />
         </div>
 
@@ -92,22 +92,20 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData }: Dialog
       <DialogFooter className="mt-6">
         <DialogClose asChild>
           <Button
-            className="mt-2 w-full sm:mt-0 sm:w-fit"
-            variant="secondary"
-            disabled={loading}
+            className="mt-2 w-full sm:mt-0 sm:w-fitn"
+            variant="destructive"
           >
             Cancelar
           </Button>
         </DialogClose>
         <Button
-          className="px-4 py-2 rounded-md bg-amber-50 text-amber-700 border border-amber-300 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="px-4 py-2 rounded-md    hover:primary-content disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           onClick={handleGenerateAndSave}
-          disabled={loading}
         >
-          {loading ? "Generando..." : "Generar Automáticamente"}
+         Generar Automáticamente
         </Button>
       </DialogFooter>
-    </DialogContent>
+    </DialogContent> 
   );
 };
 

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
@@ -36,22 +36,29 @@ function SugerenciaContent() {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSuggestionsGenerated = (accountName: string, suggestions: any) => {
+
+  const handleSuggestionsGenerated = (
+    accountName: string,
+    suggestions: any,
+  ) => {
     setForm(suggestions);
     setError(null);
   };
 
   if (!targetUrl) {
     return (
-      <div className="p-8 text-zinc-700">Falta el parámetro <code>url</code>.</div>
+      <div className="p-8 text-zinc-700">
+        Falta el parámetro <code>url</code>.
+      </div>
     );
   }
 
   if (!mockPage) {
     return (
       <div className="p-8 text-zinc-700">
-        No se encontró información para <span className="font-mono">{targetUrl}</span>.
-        Vuelve al listado del sitio para regenerar.
+        No se encontró información para{" "}
+        <span className="font-mono">{targetUrl}</span>. Vuelve al listado del
+        sitio para regenerar.
       </div>
     );
   }
@@ -101,26 +108,37 @@ function SugerenciaContent() {
     URL.revokeObjectURL(downloadUrl);
   }
 
-    // Extraer slug incluyendo patrones de idioma como /en/, /es-MX/, etc
-  const urlParts = mockPage.url.split('/').filter(Boolean);
-  let slug = '/home/';
+  // Extraer slug incluyendo patrones de idioma como /en/, /es-MX/, etc
+  const urlParts = mockPage.url.split("/").filter(Boolean);
+  let slug = "/home/";
 
   if (urlParts.length > 0) {
     // Buscar si hay un segmento que sea un idioma (en, es, es-MX, etc)
     const languagePattern = /^[a-z]{2}(-[a-zA-Z]{2})?$/;
-    const languageIndex = urlParts.findIndex(part => languagePattern.test(part));
+    const languageIndex = urlParts.findIndex((part) =>
+      languagePattern.test(part),
+    );
 
     if (languageIndex !== -1 && languageIndex < urlParts.length - 1) {
       // Si hay un patrón de idioma y hay más segmentos después, incluir idioma + resto
-      slug = '/' + urlParts.slice(languageIndex).join('/') + '/';
+      slug = "/" + urlParts.slice(languageIndex).join("/") + "/";
     } else {
       // Si no hay patrón de idioma, solo tomar el último segmento
-      slug = '/' + urlParts[urlParts.length - 1] + '/';
+      slug = "/" + urlParts[urlParts.length - 1] + "/";
     }
   }
 
   return (
     <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
+      {/* Overlay de loading */}
+    {loading && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 dark:bg-zinc-900">
+          <span className="loading loading-spinner loading-xl text-neutral"></span>
+          <span className="skeleton skeleton-text">Generando sugerencias...</span>
+        </div>
+      </div>
+    )}
       <BackButton />
       {/* Content */}
       <div className="border border-zinc-300 rounded-lg p-4 bg-white">
@@ -183,11 +201,20 @@ function SugerenciaContent() {
           <EditableField
             label="Keywords (separados por coma)"
             value={form.keywords.SS.join(", ")}
-            onChange={(v) => updateKeywords(v.split(",").map((k) => k.trim()).filter(Boolean))}
+            onChange={(v) =>
+              updateKeywords(
+                v
+                  .split(",")
+                  .map((k) => k.trim())
+                  .filter(Boolean),
+              )
+            }
             hint={`${form.keywords.SS.length} keywords`}
           />
           <div className="border border-blue-300 rounded p-3">
-            <h3 className="text-xs font-semibold text-blue-600 mb-2">Lenguajes Alternos</h3>
+            <h3 className="text-xs font-semibold text-blue-600 mb-2">
+              Lenguajes Alternos
+            </h3>
             <EditableField
               label="en-US"
               value={form.alternateLanguages.M["en-US"].S}
@@ -222,12 +249,14 @@ function SugerenciaContent() {
               disabled={loading}
               className="px-4 py-2 rounded-md border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {loading ? 'Generando...' : 'Generar Sugerencias'}
+              {loading ? "Generando..." : "Generar Sugerencias"}
             </button>
           </DialogTrigger>
           <DialogSugestion
             setIsOpen={setIsOpen}
+            setIsLoading={setLoading}
             onSuggestionsGenerated={handleSuggestionsGenerated}
+
             pageData={{
               url: mockPage.url,
               title: mockPage.title,
