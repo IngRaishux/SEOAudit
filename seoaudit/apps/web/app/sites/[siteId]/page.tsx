@@ -180,6 +180,9 @@ export default async function SiteDetailsPage({
                     <th className="px-6 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-white">
                       Headings
                     </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-white">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -222,6 +225,14 @@ export default async function SiteDetailsPage({
                         ) : (
                           '—'
                         )}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <Link
+                          href={`/sugerence?url=${encodeURIComponent(page.url)}&pageId=${page._id}&siteId=${siteId}`}
+                          className="text-amber-600 hover:text-amber-700 font-medium"
+                        >
+                          SEO →
+                        </Link>
                       </td>
                     </tr>
                   ))}

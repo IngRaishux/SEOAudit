@@ -11,6 +11,7 @@ export function RegisterForm() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +32,12 @@ export function RegisterForm() {
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          organizationName: organizationName || undefined,
+        }),
       });
 
       const data = await response.json();
@@ -48,7 +54,8 @@ export function RegisterForm() {
       });
 
       if (signInResult?.ok) {
-        router.push('/dashboard');
+        // If organization was created, go to dashboard, otherwise go to organizations page
+        router.push(data.organizationId ? '/dashboard' : '/organizations');
       } else {
         setError('Sign in failed after registration');
       }
@@ -101,6 +108,20 @@ export function RegisterForm() {
             placeholder="you@example.com"
             disabled={isLoading}
             required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="organizationName" className="block text-sm font-medium text-zinc-700">
+            Organization Name <span className="text-zinc-500 text-xs">(optional)</span>
+          </label>
+          <Input
+            id="organizationName"
+            type="text"
+            value={organizationName}
+            onChange={(e) => setOrganizationName(e.target.value)}
+            placeholder="My Company"
+            disabled={isLoading}
           />
         </div>
 

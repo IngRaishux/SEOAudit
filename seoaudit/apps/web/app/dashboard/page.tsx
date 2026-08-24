@@ -20,57 +20,76 @@ interface ISite {
   updatedAt: Date;
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: {
+  searchParams: Promise<{ org?: string }>;
+}) {
+  const searchParams = await props.searchParams;
+  const selectedOrgId = searchParams.org;
+
   let session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     redirect('/login');
   }
 
-  // If accountId is not in session, resolve it from database using email
-  if (!session.user.accountId) {
-    try {
-      const { db } = await connectToDatabase();
-      const usersCollection = db.collection('users');
-
-      // Find user by email
-      const user = await usersCollection.findOne({ email: session.user.email });
-
-      if (!user) {
-        redirect('/login');
-      }
-
-      await connectMongoose();
-      const membership = await Membership.findOne({ userId: user._id.toString() });
-
-      if (membership) {
-        const org = await Organization.findById(membership.organizationId);
-        session.user.id = user._id.toString();
-        session.user.accountId = membership.organizationId.toString();
-        session.user.organizationName = org?.name || 'Organization';
-        session.user.role = membership.role as any;
-      } else {
-        redirect('/login');
-      }
-    } catch (error) {
-      console.error('Error resolving accountId:', error);
+  // Get user ID
+  if (!session.user.id) {
+    const { db } = await connectToDatabase();
+    const usersCollection = db.collection('users');
+    const user = await usersCollection.findOne({ email: session.user.email });
+    if (!user) {
       redirect('/login');
+    }
+    session.user.id = user._id.toString();
+  }
+
+  await connectMongoose();
+
+  // Get all organizations for this user
+  const memberships = await Membership.find({ userId: session.user.id }).lean();
+
+  if (memberships.length === 0) {
+    // No organizations, redirect to create one
+    redirect('/organizations');
+  }
+
+  // Determine which organization to display
+  let accountId = selectedOrgId;
+
+  if (!accountId) {
+    // No org selected, use the first one
+    accountId = memberships[0].organizationId.toString();
+  } else {
+    // Validate that user is member of selected org
+    const isMember = memberships.some(
+      (m) => m.organizationId.toString() === accountId
+    );
+    if (!isMember) {
+      redirect('/dashboard');
     }
   }
 
-  if (!session.user.accountId) {
-    redirect('/login');
+  // Get organization details
+  const org = await Organization.findById(accountId).lean();
+  if (!org) {
+    redirect('/organizations');
   }
+
+  // Get membership for this org to check role
+  const membership = await Membership.findOne({
+    userId: session.user.id,
+    organizationId: accountId,
+  }).lean();
 
   let sites: ISite[] = [];
   let total = 0;
 
   try {
-    sites = (await siteRepository.listSitesByAccount(session.user.accountId, {
+    sites = (await siteRepository.listSitesByAccount(accountId, {
       limit: 20,
       skip: 0,
     })) as unknown as ISite[];
-    total = await siteRepository.countSitesByAccount(session.user.accountId);
+    total = await siteRepository.countSitesByAccount(accountId);
   } catch (error) {
     console.error('Error fetching sites:', error);
   }
@@ -79,13 +98,26 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <div className="max-w-6xl mx-auto p-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Dashboard</h1>
-          <Link
-            href="/"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
-          >
-            Crawl New Site
-          </Link>
+          <div>
+            <h1 className="text-4xl font-bold">{org.name}</h1>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">
+              {memberships.length} organization{memberships.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Link
+              href="/organizations"
+              className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium"
+            >
+              Switch Org
+            </Link>
+            <Link
+              href="/"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+            >
+              Crawl New Site
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -95,8 +127,8 @@ export default async function DashboardPage() {
           </div>
 
           <div className="p-6 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-2">Organization</p>
-            <p className="text-lg font-semibold">{session.user.organizationName || 'N/A'}</p>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-2">Role</p>
+            <p className="text-lg font-semibold capitalize">{membership?.role || 'Member'}</p>
           </div>
 
           <div className="p-6 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
