@@ -1,20 +1,16 @@
 import NextAuth from 'next-auth';
-import { MongoDBAdapter } from '@auth/mongodb-adapter';
-import Credentials from 'next-auth/providers/credentials';
-import Google from 'next-auth/providers/google';
-import clientPromise from '@/lib/db/mongo';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
 import connectMongoose from '@/lib/db/mongoose';
 import Organization from '@/lib/models/Organization';
 import Membership from '@/lib/models/Membership';
 import { comparePasswords } from '@/lib/password';
-import { authConfig } from './auth.config';
+import { connectToDatabase } from '@/lib/db/mongo';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  ...authConfig,
-  adapter: MongoDBAdapter(clientPromise),
-  session: { strategy: 'jwt' },
+export const authConfig = {
   providers: [
-    Credentials({
+    CredentialsProvider({
+      name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
@@ -25,10 +21,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         try {
-          await connectMongoose();
-
-          const mongoClient = await clientPromise;
-          const db = mongoClient.db(process.env.MONGODB_DB_NAME);
+          const { db } = await connectToDatabase();
           const usersCollection = db.collection('users');
 
           const user = await usersCollection.findOne({
@@ -49,80 +42,93 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           return {
-            id: user._id?.toString() || '',
+            id: user._id.toString(),
             email: user.email,
             name: user.name,
-            image: user.image,
           };
         } catch (error) {
-          console.error('Auth error:', error);
+          console.error('Credentials auth error:', error);
           return null;
         }
       },
     }),
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID!,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+    GoogleProvider({
+      clientId: process.env.AUTH_GOOGLE_ID || '',
+      clientSecret: process.env.AUTH_GOOGLE_SECRET || '',
     }),
   ],
+  session: { strategy: 'jwt' },
+  pages: {
+    signIn: '/login',
+    error: '/login',
+  },
   callbacks: {
-    async jwt({ token, user, trigger }: any) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
       }
 
-      if (trigger === 'signIn' || trigger === 'update' || !(token as any).accountId) {
+      // Resolve organization and membership on first sign-in
+      if (token.id && !token.accountId) {
         try {
           await connectMongoose();
-
-          const membership = await Membership.findOne({
-            userId: token.id || token.sub,
-          }).sort({ createdAt: 1 });
+          const membership = await Membership.findOne({ userId: token.id }).lean();
 
           if (membership) {
-            const org = await Organization.findById(membership.organizationId);
-            (token as any).accountId = membership.organizationId.toString();
-            (token as any).organizationName = org?.name || 'My Organization';
-            (token as any).role = membership.role;
+            const org = await Organization.findById(membership.organizationId).lean();
+            token.accountId = membership.organizationId.toString();
+            token.organizationName = org?.name || 'Organization';
+            token.role = membership.role;
           }
         } catch (error) {
-          console.error('JWT callback error:', error);
+          console.error('JWT callback - error resolving org:', error);
         }
       }
 
       return token;
     },
-    async session({ session, token }: any) {
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id || token.sub || '';
-        session.user.accountId = (token as any).accountId;
-        session.user.organizationName = (token as any).organizationName;
-        session.user.role = (token as any).role;
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+        session.user.accountId = token.accountId as string;
+        session.user.organizationName = token.organizationName as string;
+        session.user.role = token.role as 'owner' | 'admin' | 'member';
       }
       return session;
     },
   },
   events: {
-    async createUser({ user }) {
+    async signIn({ user, account }) {
+      // Only create org on Credentials provider first sign-in (not Google)
+      if (account?.provider !== 'credentials') return;
+
       try {
         await connectMongoose();
+        const existing = await Membership.findOne({ userId: user.id }).lean();
 
-        const org = new Organization({
-          name: `${user.name}'s Organization`,
-          slug: `${user.name?.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-          createdByUserId: user.id,
-        });
-        const savedOrg = await org.save();
+        if (!existing) {
+          const org = new Organization({
+            name: `${user.name || user.email}'s Organization`,
+            slug: `${(user.name || user.email).toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+            createdByUserId: user.id,
+          });
+          const savedOrg = await org.save();
 
-        const membership = new Membership({
-          userId: user.id,
-          organizationId: savedOrg._id,
-          role: 'owner',
-        });
-        await membership.save();
+          const membership = new Membership({
+            userId: user.id,
+            organizationId: savedOrg._id,
+            role: 'owner',
+          });
+          await membership.save();
+        }
       } catch (error) {
-        console.error('Error creating organization and membership:', error);
+        console.error('Error creating organization on sign-in:', error);
       }
     },
   },
-});
+};
+
+export const handler = NextAuth(authConfig);
+export { handler as GET, handler as POST };
