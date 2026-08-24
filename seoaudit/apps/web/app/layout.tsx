@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import { CrawlProvider } from "@/lib/CrawlContext";
 import { SessionProvider } from "@/components/SessionProvider";
+import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "SEO Audit",
@@ -18,6 +19,7 @@ export default function RootLayout({
     <html lang="en" className={`${GeistSans.className} antialiased dark:bg-gray-950`}>
       <body>
         <SessionProvider>
+          <Header />
           <CrawlProvider>{children}</CrawlProvider>
         </SessionProvider>
       </body>

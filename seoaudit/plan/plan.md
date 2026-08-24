@@ -32,17 +32,21 @@ Elegida sobre Lucia (proyecto archivado), Clerk/Auth0 (SaaS hosted, choca con re
   - `Membership` (colección `memberships`): `userId`, `organizationId`, `role: "owner"|"admin"|"member"`, índice único compuesto `{userId, organizationId}`.
 - "Cuenta activa": cada `User` crea una sola `Organization` al registrarse; el callback `jwt` de Auth.js resuelve la primera `Membership` y guarda `accountId` + `organizationName` en el token/sesión.
 
-## Extensión de DynamoDB para multi-tenancy
+## Persistencia en DynamoDB (Fase 1B+)
 
-En `packages/types/src/dynamodb.ts`, agregar `accountId: string` a `DynamoSiteItem`, `DynamoPageItem`, `DynamoSuggestionItem` (sin tocar el `PK`/`SK` primario existente). Agregar a `DynamoSiteItem` un nuevo GSI2:
+**Enfoque**: Enviar los datos del crawleo a tabla(s) existente(s) en DynamoDB de forma configurable e independiente de la lógica de autenticación/multi-tenancy.
 
-| GSI2PK | GSI2SK | Uso |
-|---|---|---|
-| `ACCOUNT#<accountId>` | `SITE#<createdAt ISO8601>` | Listar todos los sites de una cuenta (para el dashboard) |
+**Detalles a definir**:
+- Tabla/tablas de destino (nombre configurable via `.env`)
+- Estructura de items (formato, atributos obligatorios vs opcionales)
+- Cómo asociar crawls a `accountId` (si es requerido para multi-tenancy)
+- Trigger y endpoint (`app/api/crawl/route.ts` → pushes to DynamoDB)
+- Manejo de errores (qué pasa si DynamoDB no está disponible)
 
-Solo `DynamoSiteItem` necesita el GSI2 — Page/Suggestion siempre se acceden vía un `siteId` ya conocido; su `accountId` es para trazabilidad y para validar en el Route Handler que `site.accountId === session.accountId` antes de servir sus datos.
-
-Actualizar `docs/dynamo-schema.md` con: el nuevo atributo `accountId` en las tres tablas de item types, la sección `GSI2`, la fila de access pattern "Listar sites de una cuenta", y una nota explícita de que no hay validación referencial entre Mongo y Dynamo — la consistencia la garantiza la aplicación.
+**Temporalmente**:
+- El crawler sigue funcionando sin persistencia en DynamoDB (job store en memoria es suficiente)
+- Una vez definido el esquema, agregar `lib/db/dynamo.ts` y un `crawlRepository.ts` para la persistencia
+- El `accountId` de la sesión se incluirá en los items si es necesario para consultas multi-tenant
 
 ## Estructura de archivos nuevos en `apps/web` (✅ completados hasta aquí)
 
@@ -66,15 +70,23 @@ components/SessionProvider.tsx                   # ✅ SessionProvider en app/la
 types/next-auth.d.ts                             # ✅ module augmentation para session.user
 ```
 
-### Pendientes para Fase 1B - DynamoDB + Persistencia:
+### Pendientes para Fase 1B+ (orden a definir):
 ```
-lib/db/dynamo.ts                                 # DynamoDBClient singleton (hoy no existe)
-lib/repositories/siteRepository.ts               # createSite, getSiteById, listSitesByAccount (usa GSI2)
-lib/repositories/pageRepository.ts               # batchPutPages, listPagesBySite
-lib/repositories/suggestionRepository.ts         # putSuggestion, getSuggestion
-app/api/sites/route.ts                           # GET — sites del accountId de la sesión
-app/api/suggestions/route.ts                     # POST — persiste una sugerencia generada
-components/SignOutButton.tsx                     # botón de logout
+🔄 DynamoDB persistencia (configurable, detalles TBD)
+   lib/db/dynamo.ts                              # singleton + helper para persistencia
+   lib/repositories/crawlRepository.ts            # persistir crawl results en tabla configurable
+   app/api/crawl/route.ts                        # integrar DynamoDB persistence
+
+📋 Dashboard + multi-tenancy:
+   app/api/sites/route.ts                        # GET — listar sites del accountId de la sesión
+   app/dashboard/page.tsx                        # real — lista sites por account
+
+📋 Google OAuth:
+   LoginForm.tsx                                 # agregar botón funcional para Google OAuth
+
+🔧 UI + Misc:
+   components/SignOutButton.tsx                  # botón de logout
+   app/api/suggestions/route.ts                  # POST — persistencia de sugerencias (si se requiere)
 ```
 
 ## Cambios en archivos existentes
@@ -137,11 +149,10 @@ components/SignOutButton.tsx                     # botón de logout
 
 ### 📋 Próximos pasos para Fase 1B:
 1. Probar Google OAuth (botón ya existe en LoginForm)
-2. Extender DynamoDB schema con `accountId` y GSI2
-3. Crear repositorios de DynamoDB
-4. Implementar persistencia de Sites/Pages/Suggestions
-5. Dashboard real que lista sites por cuenta
-6. Migración del flujo de crawl para persistir resultados
+2. **Definir esquema de DynamoDB** (tablas, atributos, cómo se asocia a accountId)
+3. Implementar persistencia de crawl results en DynamoDB (configurable)
+4. Dashboard real que lista sites/crawls por cuenta
+5. (Opcional) Persistencia de sugerencias SEO en DynamoDB
 
 ## Verificación (Fase 1A - completada)
 
