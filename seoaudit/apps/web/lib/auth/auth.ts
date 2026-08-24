@@ -6,6 +6,9 @@ import Organization from '@/lib/models/Organization';
 import Membership from '@/lib/models/Membership';
 import { comparePasswords } from '@/lib/password';
 import { connectToDatabase } from '@/lib/db/mongo';
+import type { JWT } from 'next-auth/jwt';
+import type { Session, User } from 'next-auth';
+import type { Account } from 'next-auth';
 
 export const authConfig = {
   providers: [
@@ -57,13 +60,21 @@ export const authConfig = {
       clientSecret: process.env.AUTH_GOOGLE_SECRET || '',
     }),
   ],
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt' as const },
   pages: {
     signIn: '/login',
     error: '/login',
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({
+      token,
+      user,
+      account,
+    }: {
+      token: JWT;
+      user?: User | null;
+      account?: Account | null;
+    }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -73,10 +84,10 @@ export const authConfig = {
       if (token.id && !token.accountId) {
         try {
           await connectMongoose();
-          const membership = await Membership.findOne({ userId: token.id }).lean();
+          const membership = await Membership.findOne({ userId: token.id });
 
           if (membership) {
-            const org = await Organization.findById(membership.organizationId).lean();
+            const org = await Organization.findById(membership.organizationId);
             token.accountId = membership.organizationId.toString();
             token.organizationName = org?.name || 'Organization';
             token.role = membership.role;
@@ -88,7 +99,7 @@ export const authConfig = {
 
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
@@ -100,18 +111,25 @@ export const authConfig = {
     },
   },
   events: {
-    async signIn({ user, account }) {
+    async signIn({
+      user,
+      account,
+    }: {
+      user: User;
+      account: Account | null;
+    }) {
       // Only create org on Credentials provider first sign-in (not Google)
       if (account?.provider !== 'credentials') return;
 
       try {
         await connectMongoose();
-        const existing = await Membership.findOne({ userId: user.id }).lean();
+        const existing = await Membership.findOne({ userId: user.id });
 
         if (!existing) {
+          const displayName = user.name || user.email || 'User';
           const org = new Organization({
-            name: `${user.name || user.email}'s Organization`,
-            slug: `${(user.name || user.email).toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
+            name: `${displayName}'s Organization`,
+            slug: `${displayName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
             createdByUserId: user.id,
           });
           const savedOrg = await org.save();

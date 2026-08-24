@@ -2,11 +2,12 @@ import { getServerSession } from 'next-auth/next';
 import { handler } from '@/lib/auth/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import type { Session } from 'next-auth';
 
 export default async function DashboardPage() {
-  const session = await getServerSession(handler);
+  const session = (await getServerSession(handler)) as Session | null;
 
-  if (!session || !session.user) {
+  if (!session?.user?.email) {
     redirect('/login');
   }
 
