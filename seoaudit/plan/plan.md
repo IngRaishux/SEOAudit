@@ -32,21 +32,30 @@ Elegida sobre Lucia (proyecto archivado), Clerk/Auth0 (SaaS hosted, choca con re
   - `Membership` (colección `memberships`): `userId`, `organizationId`, `role: "owner"|"admin"|"member"`, índice único compuesto `{userId, organizationId}`.
 - "Cuenta activa": cada `User` crea una sola `Organization` al registrarse; el callback `jwt` de Auth.js resuelve la primera `Membership` y guarda `accountId` + `organizationName` en el token/sesión.
 
-## Persistencia en DynamoDB (Fase 1B+)
+## Persistencia de Crawleos (Fase 1B)
 
-**Enfoque**: Enviar los datos del crawleo a tabla(s) existente(s) en DynamoDB de forma configurable e independiente de la lógica de autenticación/multi-tenancy.
+**Enfoque Principal**: Los resultados del crawl se guardan en **MongoDB** como fuente de verdad, con multi-tenancy mediante `accountId`.
 
-**Detalles a definir**:
-- Tabla/tablas de destino (nombre configurable via `.env`)
-- Estructura de items (formato, atributos obligatorios vs opcionales)
-- Cómo asociar crawls a `accountId` (si es requerido para multi-tenancy)
-- Trigger y endpoint (`app/api/crawl/route.ts` → pushes to DynamoDB)
-- Manejo de errores (qué pasa si DynamoDB no está disponible)
+**Modelos Mongoose a crear**:
+- `Site` (colección `sites`): URL, accountId, createdAt, updatedAt
+- `Page` (colección `pages`): siteId (ref), URL, title, statusCode, accountId
+- `Suggestion` (colección `suggestions`): pageId (ref), siteId (ref), type, description, accountId
 
-**Temporalmente**:
-- El crawler sigue funcionando sin persistencia en DynamoDB (job store en memoria es suficiente)
-- Una vez definido el esquema, agregar `lib/db/dynamo.ts` y un `crawlRepository.ts` para la persistencia
-- El `accountId` de la sesión se incluirá en los items si es necesario para consultas multi-tenant
+**Índices**:
+- `Site`: compound index `{accountId, createdAt}` para listar por cuenta
+- `Page`: índice en `siteId` para listar pages de un site
+- `Suggestion`: índice en `pageId` para listar sugerencias de una página
+
+**Flujo del crawler**:
+1. Usuario autenticado en `/api/crawl` con sesión
+2. Ejecutar crawl (jobStore en memoria para progreso en vivo)
+3. Al completar: persistir Site + Pages + Suggestions en MongoDB con `accountId` de la sesión
+4. Dashboard lista sites/pages/suggestions por `accountId`
+
+**DynamoDB (Opcional)**:
+- Exportación configurable: si el usuario lo desea, puede enviar datos a DynamoDB como respaldo/análisis
+- No es bloqueante para Fase 1B
+- Se implementaría en Fase 2 con un endpoint separado de exportación
 
 ## Estructura de archivos nuevos en `apps/web` (✅ completados hasta aquí)
 
@@ -70,23 +79,28 @@ components/SessionProvider.tsx                   # ✅ SessionProvider en app/la
 types/next-auth.d.ts                             # ✅ module augmentation para session.user
 ```
 
-### Pendientes para Fase 1B+ (orden a definir):
+### ✅ Completados en Fase 1B (MongoDB + Persistencia):
 ```
-🔄 DynamoDB persistencia (configurable, detalles TBD)
-   lib/db/dynamo.ts                              # singleton + helper para persistencia
-   lib/repositories/crawlRepository.ts            # persistir crawl results en tabla configurable
-   app/api/crawl/route.ts                        # integrar DynamoDB persistence
+✅ Modelos Mongoose:
+   lib/models/Site.ts                            # ✅ Schema: url, accountId, title, crawlStatus, pageCount
+   lib/models/Page.ts                            # ✅ Schema: siteId (ref), url, accountId, statusCode, metaTags
+   lib/models/Suggestion.ts                      # ✅ Schema: pageId (ref), siteId (ref), accountId, type, severity
 
-📋 Dashboard + multi-tenancy:
-   app/api/sites/route.ts                        # GET — listar sites del accountId de la sesión
-   app/dashboard/page.tsx                        # real — lista sites por account
+✅ Persistencia de crawl:
+   lib/repositories/siteRepository.ts            # ✅ CRUD: create, get, listByAccount, update, delete, count
+   lib/repositories/pageRepository.ts            # ✅ CRUD: create, batch, listBySite, update, delete
+   lib/repositories/suggestionRepository.ts      # ✅ CRUD: create, listByPage, listBySite, update, delete
+   app/api/crawl/route.ts                        # ✅ POST: auth + persistencia automática con accountId
+   lib/jobStore.ts                               # ✅ Actualizado: siteId, accountId en cada job
 
-📋 Google OAuth:
-   LoginForm.tsx                                 # agregar botón funcional para Google OAuth
+🚧 Pendientes para Dashboard + Detalles:
+   app/dashboard/page.tsx                        # lista sites por accountId
+   app/api/sites/route.ts                        # GET — listar sites del accountId
+   app/sites/[siteId]/page.tsx                   # ver detalles de un site + pages
+   app/page.tsx                                  # navegar a /sites/[siteId] post-crawl
 
-🔧 UI + Misc:
-   components/SignOutButton.tsx                  # botón de logout
-   app/api/suggestions/route.ts                  # POST — persistencia de sugerencias (si se requiere)
+🚀 DynamoDB (Fase 2 - Opcional):
+   Endpoint de exportación configurable a DynamoDB (cuando se defina el esquema)
 ```
 
 ## Cambios en archivos existentes
@@ -134,25 +148,33 @@ types/next-auth.d.ts                             # ✅ module augmentation para 
 
 ## Estado Actual (2026-08-24)
 
-### ✅ Completado en Fase 1A:
-- Autenticación con email/password funcional (registro + login)
-- User, Organization, Membership creados en MongoDB automáticamente al registrarse
-- Sesión JWT con accountId y organizationName en el token
-- Server Component dashboard protegido con getServerSession(handler)
-- SessionProvider en layout para acceso a sesión en Client Components
-- Google OAuth provider configurado (pendiente botón funcional)
-- next-auth v4.24.0 estable (compatible con Next.js 16.2.5)
+### ✅ Completado en Fase 1A - Autenticación:
+- ✅ Email/password registration + login
+- ✅ Google OAuth (completo y funcional)
+- ✅ User, Organization, Membership en MongoDB
+- ✅ JWT session con accountId y organizationName
+- ✅ Header global con logout en todas las páginas
+- ✅ Dashboard protegido con getServerSession(handler)
+- ✅ SessionProvider para Client Components
 
-### 🔄 En progreso:
-- Prueba de Google OAuth flow
-- Documentación actualizada del plan
+### ✅ Completado en Fase 1B - MongoDB Persistencia:
+- ✅ Modelos Mongoose: Site, Page, Suggestion (con índices)
+- ✅ Repositorios CRUD: siteRepository, pageRepository, suggestionRepository
+- ✅ Integración en `/api/crawl`: Automáticamente persiste resultados con accountId
+- ✅ jobStore actualizado: agrega siteId y accountId a cada job
+- ✅ Endpoint retorna: `{ jobId, siteId }` para navegación post-crawl
 
-### 📋 Próximos pasos para Fase 1B:
-1. Probar Google OAuth (botón ya existe en LoginForm)
-2. **Definir esquema de DynamoDB** (tablas, atributos, cómo se asocia a accountId)
-3. Implementar persistencia de crawl results en DynamoDB (configurable)
-4. Dashboard real que lista sites/crawls por cuenta
-5. (Opcional) Persistencia de sugerencias SEO en DynamoDB
+### ✅ Documentación Completada:
+- ✅ `docs/PROJECT.md` - Arquitectura de datos, rutas de API, modelos, componentes, flujos principales
+- ✅ Plan actualizado con estado actual (este archivo)
+- ✅ `.env.example` - Variables de entorno documentadas
+
+### 🚧 Pendientes para Fase 1B - Dashboard + Detalles:
+1. Dashboard real (`/dashboard`) - listar sites por accountId
+2. Página de detalles (`/sites/[siteId]`) - ver pages + sugerencias
+3. Endpoint GET `/api/sites` - lista sites del usuario
+4. Actualizar home (`/app/page.tsx`) - navegar a `/sites/[siteId]` post-crawl
+5. Componentes UI para mostrar datos de crawl
 
 ## Verificación (Fase 1A - completada)
 
