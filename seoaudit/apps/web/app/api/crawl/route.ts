@@ -6,13 +6,52 @@ import { createJob, jobStore } from "@/lib/jobStore";
 import * as siteRepository from '@/lib/repositories/siteRepository';
 import * as pageRepository from '@/lib/repositories/pageRepository';
 import type { Session } from 'next-auth';
+import connectMongoose from '@/lib/db/mongoose';
+import { connectToDatabase } from '@/lib/db/mongo';
+import Membership from '@/lib/models/Membership';
+import Organization from '@/lib/models/Organization';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  const session = (await getServerSession(handler)) as Session | null;
+  let session = (await getServerSession(handler)) as Session | null;
 
-  if (!session?.user?.accountId) {
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // If accountId is not in session, resolve it from database using email
+  if (!session.user.accountId) {
+    try {
+      const { db } = await connectToDatabase();
+      const usersCollection = db.collection('users');
+
+      // Find user by email
+      const user = await usersCollection.findOne({ email: session.user.email });
+
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      await connectMongoose();
+      const membership = await Membership.findOne({ userId: user._id.toString() });
+
+      if (membership) {
+        const org = await Organization.findById(membership.organizationId);
+        session.user.id = user._id.toString();
+        session.user.accountId = membership.organizationId.toString();
+        session.user.organizationName = org?.name || 'Organization';
+        session.user.role = membership.role as any;
+      } else {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    } catch (error) {
+      console.error('Error resolving accountId:', error);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+  }
+
+  if (!session.user.accountId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,24 +1,26 @@
-import { NextResponse } from "next/server";
-import { jobStore } from "@/lib/jobStore";
+import { NextResponse } from 'next/server';
+import { jobStore } from '@/lib/jobStore';
+
+export const runtime = 'nodejs';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   const { jobId } = await params;
+
   const job = jobStore.get(jobId);
 
   if (!job) {
-    return NextResponse.json({ error: "Job no encontrado" }, { status: 404 });
+    return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
   return NextResponse.json({
-    id: job.id,
-    url: job.url,
+    jobId: job.id,
+    siteId: job.siteId,
     status: job.status,
     processed: job.processed,
     total: job.total,
-    result: job.result,
-    error: job.error,
+    error: job.error || null,
   });
 }

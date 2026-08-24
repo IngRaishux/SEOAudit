@@ -3,40 +3,189 @@ import { handler } from '@/lib/auth/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import type { Session } from 'next-auth';
+import * as siteRepository from '@/lib/repositories/siteRepository';
+import connectMongoose from '@/lib/db/mongoose';
+import { connectToDatabase } from '@/lib/db/mongo';
+import Membership from '@/lib/models/Membership';
+import Organization from '@/lib/models/Organization';
+
+interface ISite {
+  _id: string;
+  url: string;
+  accountId: string;
+  title?: string;
+  pageCount: number;
+  crawlStatus: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export default async function DashboardPage() {
-  const session = (await getServerSession(handler)) as Session | null;
+  let session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     redirect('/login');
   }
 
+  // If accountId is not in session, resolve it from database using email
+  if (!session.user.accountId) {
+    try {
+      const { db } = await connectToDatabase();
+      const usersCollection = db.collection('users');
+
+      // Find user by email
+      const user = await usersCollection.findOne({ email: session.user.email });
+
+      if (!user) {
+        redirect('/login');
+      }
+
+      await connectMongoose();
+      const membership = await Membership.findOne({ userId: user._id.toString() });
+
+      if (membership) {
+        const org = await Organization.findById(membership.organizationId);
+        session.user.id = user._id.toString();
+        session.user.accountId = membership.organizationId.toString();
+        session.user.organizationName = org?.name || 'Organization';
+        session.user.role = membership.role as any;
+      } else {
+        redirect('/login');
+      }
+    } catch (error) {
+      console.error('Error resolving accountId:', error);
+      redirect('/login');
+    }
+  }
+
+  if (!session.user.accountId) {
+    redirect('/login');
+  }
+
+  let sites: ISite[] = [];
+  let total = 0;
+
+  try {
+    sites = (await siteRepository.listSitesByAccount(session.user.accountId, {
+      limit: 20,
+      skip: 0,
+    })) as unknown as ISite[];
+    total = await siteRepository.countSitesByAccount(session.user.accountId);
+  } catch (error) {
+    console.error('Error fetching sites:', error);
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <div className="max-w-4xl mx-auto p-8">
-        <h1 className="text-4xl font-bold mb-8">Dashboard</h1>
+      <div className="max-w-6xl mx-auto p-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">Dashboard</h1>
+          <Link
+            href="/"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+          >
+            Crawl New Site
+          </Link>
+        </div>
 
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="p-6 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <h2 className="text-xl font-semibold mb-2">Your Sites</h2>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-              No sites yet. Start by crawling a website.
-            </p>
-            <Link href="/" className="text-blue-600 hover:text-blue-700 font-medium">
-              Go to crawler →
-            </Link>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-2">Total Sites</p>
+            <p className="text-3xl font-bold">{total}</p>
           </div>
 
           <div className="p-6 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <h2 className="text-xl font-semibold mb-2">Account Info</h2>
-            <ul className="text-sm text-zinc-600 dark:text-zinc-400 space-y-2">
-              <li>Email: {session.user.email}</li>
-              <li>ID: {session.user.id}</li>
-              {session.user.organizationName && (
-                <li>Organization: {session.user.organizationName}</li>
-              )}
-            </ul>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-2">Organization</p>
+            <p className="text-lg font-semibold">{session.user.organizationName || 'N/A'}</p>
           </div>
+
+          <div className="p-6 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm mb-2">Your Email</p>
+            <p className="text-sm truncate">{session.user.email}</p>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <div className="p-6 border-b border-zinc-200 dark:border-zinc-800">
+            <h2 className="text-xl font-semibold">Your Sites</h2>
+          </div>
+
+          {sites.length === 0 ? (
+            <div className="p-8 text-center">
+              <p className="text-zinc-600 dark:text-zinc-400 mb-4">
+                No sites yet. Start by crawling a website.
+              </p>
+              <Link
+                href="/"
+                className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+              >
+                Go to crawler →
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-zinc-200 dark:border-zinc-800">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-white">
+                      URL
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-white">
+                      Pages
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-white">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-white">
+                      Created
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-white">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sites.map((site: any) => (
+                    <tr
+                      key={site._id.toString()}
+                      className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    >
+                      <td className="px-6 py-4 text-sm text-zinc-900 dark:text-white truncate max-w-xs">
+                        {site.url}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
+                        {site.pageCount || 0}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${
+                            site.crawlStatus === 'completed'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : site.crawlStatus === 'failed'
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          }`}
+                        >
+                          {site.crawlStatus || 'pending'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
+                        {new Date(site.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        <Link
+                          href={`/sites/${site._id.toString()}`}
+                          className="text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          View →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
