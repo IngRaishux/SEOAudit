@@ -7,59 +7,72 @@ import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
 import Organization from '@/lib/models/Organization';
 import { OrganizationSettings } from '@/components/OrganizationSettings';
+import { DeleteOrganizationDialog } from '@/components/DeleteOrganizationDialog';
 
-export default async function SettingsPage() {
+export default async function SettingsPage(props: {
+  searchParams: Promise<{ org?: string }>;
+}) {
+  const searchParams = await props.searchParams;
+  const selectedOrgId = searchParams.org;
+
   let session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     redirect('/login');
   }
 
-  // Resolve accountId if missing
-  if (!session.user.accountId) {
-    try {
-      const { db } = await connectToDatabase();
-      const usersCollection = db.collection('users');
-      const user = await usersCollection.findOne({ email: session.user.email });
-
-      if (!user) {
-        redirect('/login');
-      }
-
-      await connectMongoose();
-      const membership = await Membership.findOne({ userId: user._id.toString() });
-
-      if (membership) {
-        const org = await Organization.findById(membership.organizationId);
-        session.user.id = user._id.toString();
-        session.user.accountId = membership.organizationId.toString();
-        session.user.organizationName = org?.name || 'Organization';
-        session.user.role = membership.role as any;
-      } else {
-        redirect('/login');
-      }
-    } catch (error) {
-      console.error('Error resolving accountId:', error);
+  // Get user ID
+  if (!session.user.id) {
+    const { db } = await connectToDatabase();
+    const usersCollection = db.collection('users');
+    const user = await usersCollection.findOne({ email: session.user.email });
+    if (!user) {
       redirect('/login');
     }
+    session.user.id = user._id.toString();
   }
 
-  if (!session.user.accountId) {
-    redirect('/login');
+  await connectMongoose();
+
+  // Get all organizations for this user
+  const memberships = await Membership.find({ userId: session.user.id }).lean();
+
+  if (memberships.length === 0) {
+    redirect('/organizations');
+  }
+
+  // Determine which organization to display
+  let accountId: string;
+
+  if (!selectedOrgId) {
+    // No org selected, use the first one
+    accountId = memberships[0].organizationId.toString();
+  } else {
+    // Validate that user is member of selected org
+    const isMember = memberships.some(
+      (m) => m.organizationId.toString() === selectedOrgId
+    );
+    if (!isMember) {
+      redirect('/settings');
+    }
+    accountId = selectedOrgId;
   }
 
   // Fetch organization details
-  await connectMongoose();
-  const org = await Organization.findById(session.user.accountId).lean();
+  const org = (await Organization.findById(accountId).lean()) as any;
+
+  if (!org) {
+    redirect('/settings');
+  }
 
   // Get user's membership to check role
-  const membership = await Membership.findOne({
+  const membership = (await Membership.findOne({
     userId: session.user.id,
-    organizationId: session.user.accountId,
-  }).lean();
+    organizationId: accountId,
+  }).lean()) as any;
 
-  if (!org || !membership) {
-    redirect('/login');
+  if (!membership || !org) {
+    redirect('/settings');
   }
 
   const isOwner = membership.role === 'owner';
@@ -77,7 +90,7 @@ export default async function SettingsPage() {
           <div className="p-6">
             {isOwner ? (
               <OrganizationSettings
-                organizationId={session.user.accountId}
+                organizationId={accountId}
                 organizationName={org.name}
               />
             ) : (
@@ -111,6 +124,33 @@ export default async function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {isOwner && (
+          <div className="bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900 mt-6">
+            <div className="p-6 border-b border-red-200 dark:border-red-900">
+              <h2 className="text-xl font-semibold text-red-800 dark:text-red-200">
+                ⚠️ Danger Zone
+              </h2>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">
+                    Delete Organization
+                  </h3>
+                  <p className="text-sm text-red-800 dark:text-red-300 mb-4">
+                    Once you delete an organization, there is no going back. Please be certain.
+                  </p>
+                  <DeleteOrganizationDialog
+                    organizationId={accountId}
+                    organizationName={org.name}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

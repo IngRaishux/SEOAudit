@@ -6,9 +6,10 @@ import { SignOutButton } from '@/components/SignOutButton';
 
 interface HeaderProps {
   currentOrganization?: string;
+  currentOrgId?: string;
 }
 
-export function Header({ currentOrganization }: HeaderProps) {
+export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
   const { data: session } = useSession();
 
   return (
@@ -38,7 +39,7 @@ export function Header({ currentOrganization }: HeaderProps) {
                 Organizations
               </Link>
               <Link
-                href="/settings"
+                href={currentOrgId ? `/settings?org=${currentOrgId}` : '/settings'}
                 className="text-sm text-zinc-600 hover:text-zinc-700 font-medium"
               >
                 Settings

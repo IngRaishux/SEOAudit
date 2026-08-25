@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { setSelectedOrganization } from '@/app/actions';
 
 interface Organization {
@@ -19,6 +19,7 @@ export function OrganizationSelector({
   currentOrgId,
 }: OrganizationSelectorProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
   if (organizations.length === 0) {
@@ -30,8 +31,14 @@ export function OrganizationSelector({
   const handleSelectOrganization = async (orgId: string) => {
     await setSelectedOrganization(orgId);
     setIsOpen(false);
-    // Navigate to dashboard with selected org
-    router.push(`/dashboard?org=${orgId}`);
+    // Navigate to current page with selected org parameter
+    let nextPath = '/dashboard';
+    if (pathname === '/settings') {
+      nextPath = '/settings';
+    } else if (pathname.startsWith('/sites/')) {
+      nextPath = pathname;
+    }
+    router.push(`${nextPath}?org=${orgId}`);
   };
 
   return (

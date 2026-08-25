@@ -1,15 +1,15 @@
 import { getServerSession } from 'next-auth/next';
 import { handler } from '@/lib/auth/auth';
+import type { Session } from 'next-auth';
 import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
-import Organization from '@/lib/models/Organization';
 import { Header } from '@/components/Header';
 import { OrganizationSelector } from '@/components/OrganizationSelector';
 import { getSelectedOrganization } from '@/app/actions';
 
 export async function HeaderWithOrganizations() {
-  const session = await getServerSession(handler);
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     return <Header />;
@@ -59,7 +59,7 @@ export async function HeaderWithOrganizations() {
           />
         </div>
       )}
-      <Header currentOrganization={currentOrgName} />
+      <Header currentOrganization={currentOrgName} currentOrgId={currentOrgId} />
     </div>
   );
 }

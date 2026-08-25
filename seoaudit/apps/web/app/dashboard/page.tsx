@@ -54,32 +54,33 @@ export default async function DashboardPage(props: {
   }
 
   // Determine which organization to display
-  let accountId = selectedOrgId;
+  let accountId: string;
 
-  if (!accountId) {
+  if (!selectedOrgId) {
     // No org selected, use the first one
     accountId = memberships[0].organizationId.toString();
   } else {
     // Validate that user is member of selected org
     const isMember = memberships.some(
-      (m) => m.organizationId.toString() === accountId
+      (m) => m.organizationId.toString() === selectedOrgId
     );
     if (!isMember) {
       redirect('/dashboard');
     }
+    accountId = selectedOrgId;
   }
 
   // Get organization details
-  const org = await Organization.findById(accountId).lean();
+  const org = (await Organization.findById(accountId).lean()) as any;
   if (!org) {
     redirect('/organizations');
   }
 
   // Get membership for this org to check role
-  const membership = await Membership.findOne({
+  const membership = (await Membership.findOne({
     userId: session.user.id,
     organizationId: accountId,
-  }).lean();
+  }).lean()) as any;
 
   let sites: ISite[] = [];
   let total = 0;
