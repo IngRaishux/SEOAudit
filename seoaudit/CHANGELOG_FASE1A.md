@@ -85,6 +85,25 @@ Convertir SEOAudit de una herramienta de un solo usuario a un SaaS multi-tenant 
 - ✅ Role-based access (solo owner puede editar nombre de org)
 - ✅ Query parameter org validado contra membresías del usuario
 
+### 7. **Settings Sincronizado & Eliminación de Organizaciones**
+- ✅ Settings ahora acepta query parameter `?org={orgId}` (como dashboard)
+- ✅ Navbar link a Settings incluye parámetro org automáticamente
+- ✅ Sección "Danger Zone" en Settings (solo visible para owners)
+- ✅ Endpoint DELETE `/api/organizations/[orgId]` con cascada de eliminación
+- ✅ Confirmación en dos pasos: advertencia + escribir nombre de org
+- ✅ Protección contra acceso a orgs eliminadas (redirige de forma segura)
+- ✅ Historial limpio: router.replace() previene volver atrás a org eliminada
+
+**Archivos nuevos:**
+- `components/DeleteOrganizationDialog.tsx` - Diálogo de confirmación
+
+**Archivos modificados:**
+- `app/settings/page.tsx` - Query param org + Danger Zone
+- `app/api/organizations/[orgId]/route.ts` - Método DELETE agregado
+- `components/Header.tsx` - Prop currentOrgId
+- `components/HeaderWithOrganizations.tsx` - Pasa currentOrgId
+- `components/OrganizationSelector.tsx` - Navega respetando página actual
+
 ---
 
 ## 🗄️ Base de Datos
@@ -129,10 +148,10 @@ Convertir SEOAudit de una herramienta de un solo usuario a un SaaS multi-tenant 
 
 ## 📊 Estadísticas de Cambios
 
-- **Archivos nuevos**: 11
-- **Archivos modificados**: 8
-- **Endpoints nuevos**: 4
-- **Componentes nuevos**: 5
+- **Archivos nuevos**: 12 (+1: DeleteOrganizationDialog)
+- **Archivos modificados**: 11 (+3: Header, HeaderWithOrganizations, OrganizationSelector)
+- **Endpoints nuevos**: 4 (+1 método DELETE en /api/organizations/[orgId])
+- **Componentes nuevos**: 6 (+1: DeleteOrganizationDialog)
 - **Páginas nuevas**: 2
 
 ---
