@@ -1,49 +1,117 @@
-"use client";
+'use client';
 
-import { useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { useCrawl } from "@/lib/CrawlContext";
-import { BackButton } from "@/components/BackButton";
-import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
-import DialogSugestion from "@/components/DialogSugestion";
-import { Dialog, DialogTrigger } from "@/components/Dialog";
+import { useState, Suspense, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { BackButton } from '@/components/BackButton';
+import DialogSugestion from '@/components/DialogSugestion';
+import { Dialog, DialogTrigger } from '@/components/Dialog';
 
 const mockSuggested = {
-  slug: { S: "" },
-  account: { S: "default" },
-  canonicalUrl: { S: "" },
-  description: { S: "" },
+  slug: { S: '' },
+  account: { S: 'default' },
+  canonicalUrl: { S: '' },
+  description: { S: '' },
   keywords: { SS: [] as string[] },
   alternateLanguages: {
     M: {
-      "en-US": { S: "" },
-      "es-MX": { S: "" },
-      "x-default": { S: "" },
+      'en-US': { S: '' },
+      'es-MX': { S: '' },
+      'x-default': { S: '' },
     },
   },
-  title: { S: "" },
+  title: { S: '' },
 };
+
+interface Page {
+  _id: string;
+  siteId: string;
+  url: string;
+  title?: string;
+  description?: string;
+  statusCode?: number;
+  canonical?: string;
+  headings: string[];
+  metaTags?: Array<{ name: string; content: string }>;
+}
 
 function SugerenciaContent() {
   const searchParams = useSearchParams();
-  const targetUrl = searchParams.get("url");
-  const { getPageByUrl } = useCrawl();
+  const targetUrl = searchParams.get('url');
+  const pageId = searchParams.get('pageId');
+  const siteId = searchParams.get('siteId');
 
-  const mockPage = (targetUrl && getPageByUrl(targetUrl)) || null;
+  const [mockPage, setMockPage] = useState<Page | null>(null);
+  const [loadingPage, setLoadingPage] = useState(true);
+
+  useEffect(() => {
+    if (!pageId) {
+      setLoadingPage(false);
+      return;
+    }
+
+    // Fetch page data from MongoDB
+    const fetchPage = async () => {
+      try {
+        const res = await fetch(`/api/pages/${pageId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setMockPage(data.page);
+        }
+      } catch (error) {
+        console.error('Error fetching page:', error);
+      } finally {
+        setLoadingPage(false);
+      }
+    };
+
+    fetchPage();
+  }, [pageId]);
 
   const [form, setForm] = useState(mockSuggested);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-
-  const handleSuggestionsGenerated = (
-    accountName: string,
-    suggestions: any,
-  ) => {
+  const handleSuggestionsGenerated = async (suggestions: any) => {
     setForm(suggestions);
     setError(null);
+
+    // Persistir sugerencias en MongoDB si tenemos pageId y siteId
+    if (pageId && siteId) {
+      try {
+        const res = await fetch('/api/suggestions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pageId,
+            siteId,
+            type: 'seo',
+            severity: 'medium',
+            content: suggestions,
+          }),
+        });
+
+        if (res.ok) {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 3000); // Mostrar confirmación por 3s
+        } else {
+          const data = await res.json();
+          console.error('Error saving suggestion:', data.error);
+        }
+      } catch (err) {
+        console.error('Error persisting suggestion:', err);
+      }
+    }
   };
+
+  if (loadingPage) {
+    return (
+      <div className="p-8 text-zinc-700">
+        Cargando información de la página...
+      </div>
+    );
+  }
 
   if (!targetUrl) {
     return (
@@ -149,9 +217,7 @@ function SugerenciaContent() {
           {mockPage.url}
         </h1>
         <div className="flex gap-4 text-sm text-zinc-600 mt-2">
-          <span>Status: {mockPage.statusCode}</span>
-          <span>Palabras: {mockPage.wordCount}</span>
-          <span>Load: {mockPage.loadTimeMs}ms</span>
+          <span>Status: {mockPage.statusCode || '—'}</span>
         </div>
       </div>
 
@@ -163,9 +229,9 @@ function SugerenciaContent() {
             Original (del crawl)
           </h2>
 
-          <Field label="Title" value={mockPage.title} />
-          <Field label="Description" value={mockPage.description} multiline />
-          <Field label="Canonical" value={mockPage.canonical} />
+          <Field label="Title" value={mockPage.title || null} />
+          <Field label="Description" value={mockPage.description || null} multiline />
+          <Field label="Canonical" value={mockPage.canonical || null} />
           <Field label="Slug" value={slug || "home"} />
         </div>
 
@@ -234,10 +300,15 @@ function SugerenciaContent() {
         </div>
       </div>
 
-      {/* Errores */}
+      {/* Errores y confirmaciones */}
       {error && (
         <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
           Error: {error}
+        </div>
+      )}
+      {saved && (
+        <div className="p-3 rounded-md bg-green-50 border border-green-200 text-green-700 text-sm">
+          ✓ Sugerencia guardada correctamente
         </div>
       )}
 
@@ -259,9 +330,9 @@ function SugerenciaContent() {
 
             pageData={{
               url: mockPage.url,
-              title: mockPage.title,
-              description: mockPage.description,
-              wordCount: mockPage.wordCount,
+              title: mockPage.title || null,
+              description: mockPage.description || null,
+              wordCount: 0,
             }}
           />
         </Dialog>

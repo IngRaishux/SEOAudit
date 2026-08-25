@@ -10,6 +10,7 @@ export default function Home() {
 
   const [url, setUrl] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
+  const [siteId, setSiteId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState({ processed: 0, total: 0 });
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,7 @@ export default function Home() {
       }
 
       setJobId(data.jobId);
+      setSiteId(data.siteId);
       setStatus("running");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de red");
@@ -54,7 +56,9 @@ export default function Home() {
 
       if (data.status === "completed") {
         clearInterval(interval);
-        router.push(`/sites/${jobId}`);
+        // Use the siteId from the polling response (which has the MongoDB ObjectId)
+        setSiteId(data.siteId);
+        router.push(`/sites/${data.siteId}`);
       } else if (data.status === "failed") {
         clearInterval(interval);
         setError(data.error || "El crawl falló");

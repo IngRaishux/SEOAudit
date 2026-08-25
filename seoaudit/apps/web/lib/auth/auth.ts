@@ -101,11 +101,22 @@ export const authConfig = {
     },
     async session({ session, token }: { session: Session; token: JWT }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.accountId = token.accountId as string;
-        session.user.organizationName = token.organizationName as string;
-        session.user.role = token.role as 'owner' | 'admin' | 'member';
+        const userId = token.id || token.sub;
+        session.user.id = userId as string;
+
+        try {
+          await connectMongoose();
+          const membership = await Membership.findOne({ userId });
+
+          if (membership) {
+            const org = await Organization.findById(membership.organizationId);
+            session.user.accountId = membership.organizationId.toString();
+            session.user.organizationName = org?.name || 'Organization';
+            session.user.role = membership.role as 'owner' | 'admin' | 'member';
+          }
+        } catch (error) {
+          console.error('Session callback error:', error);
+        }
       }
       return session;
     },
@@ -118,7 +129,6 @@ export const authConfig = {
       user: User;
       account: Account | null;
     }) {
-      // Only create org on Credentials provider first sign-in (not Google)
       if (account?.provider !== 'credentials') return;
 
       try {
