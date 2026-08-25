@@ -6,6 +6,9 @@ import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
 import Organization from '@/lib/models/Organization';
+import Site from '@/lib/models/Site';
+import Page from '@/lib/models/Page';
+import Suggestion from '@/lib/models/Suggestion';
 
 export const runtime = 'nodejs';
 
@@ -100,6 +103,66 @@ export async function PUT(
     console.error('Error updating organization:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ orgId: string }> }
+) {
+  const { orgId } = await params;
+  let session = (await getServerSession(handler)) as Session | null;
+
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    await connectMongoose();
+
+    // Get user ID if missing
+    let userId = session.user.id;
+    if (!userId) {
+      const { db } = await connectToDatabase();
+      const usersCollection = db.collection('users');
+      const user = await usersCollection.findOne({ email: session.user.email });
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      userId = user._id.toString();
+    }
+
+    // Check if user is owner of the organization
+    const membership = await Membership.findOne({
+      userId,
+      organizationId: orgId,
+    });
+
+    if (!membership || membership.role !== 'owner') {
+      return NextResponse.json(
+        { error: 'Only organization owner can delete it' },
+        { status: 403 }
+      );
+    }
+
+    // Delete all suggestions, pages, and sites associated with this organization
+    await Suggestion.deleteMany({ accountId: orgId });
+    await Page.deleteMany({ accountId: orgId });
+    await Site.deleteMany({ accountId: orgId });
+
+    // Delete all memberships for this organization
+    await Membership.deleteMany({ organizationId: orgId });
+
+    // Delete the organization itself
+    await Organization.findByIdAndDelete(orgId);
+
+    return NextResponse.json({ message: 'Organization deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting organization:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete organization' },
       { status: 500 }
     );
   }
