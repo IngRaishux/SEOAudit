@@ -24,6 +24,39 @@ Elegida sobre Lucia (proyecto archivado), Clerk/Auth0 (SaaS hosted, choca con re
 - El Credentials provider **no crea usuarios**, solo autentica → registro va por un Route Handler propio (`app/api/register/route.ts`) que hashea password con `bcryptjs` y valida input con `zod`.
 - **MongoDBAdapter removido**: Aunque está disponible, se removió para evitar conflictos con JWT strategy; la autenticación usa solo el Credentials provider y Google OAuth.
 
+## Stack del Crawler Web
+
+**Librería Principal:** `@seo-optimizer/crawler`
+
+**Tecnologías Internas:**
+- **Playwright**: Motor headless para renderizado de JavaScript (navegación real)
+- **Cheerio**: Parser HTML ultra-ligero para extraer datos de la DOM
+- **Node.js Workers**: Concurrencia de hasta 5 requests paralelos
+
+**Capacidades:**
+- ✅ Detecta y crawlea URLs del sitemap.xml
+- ✅ Extrae meta tags (title, description, og:*, robots, canonical)
+- ✅ Recolecta headings (h1, h2) para estructura
+- ✅ Captura HTTP status codes (200, 404, etc)
+- ✅ Resuelve enlaces relativos y absolutos
+- ✅ Callback de progreso en tiempo real
+
+**Integración en SEOAudit:**
+1. Frontend llama `POST /api/crawl` con URL
+2. Route Handler crea un Job (en memoria, en `lib/jobStore.ts`)
+3. `runCrawl()` ejecuta `crawlSite()` en background
+4. Callback `onProgress` actualiza job.processed/total para polling
+5. Al completar: persist en MongoDB vía `persistCrawlResult(job)`
+6. Frontend obtiene `siteId` (ObjectId de MongoDB) en siguiente polling
+
+**Limitaciones:**
+- Máximo ~1000 páginas por crawl (dependiendo de sitemap)
+- No soporta autenticación requerida
+- JavaScript muy dinámico puede no capturarse completamente
+- Respetuoso: máx 5 requests concurrentes, sin reintento automático
+
+Referir a `docs/PROJECT.md` sección "🕷️ Arquitectura del Crawler" para detalles completos.
+
 ## Modelo de datos MongoDB
 
 - **Colecciones gestionadas por el adapter de Auth.js** (driver nativo `mongodb`, no Mongoose): `users`, `accounts` (OAuth linking — no confundir con "cuenta" de negocio), `verificationTokens`. Con JWT strategy no se pobla `sessions`.
@@ -169,23 +202,52 @@ types/next-auth.d.ts                             # ✅ module augmentation para 
 - ✅ Plan actualizado con estado actual (este archivo)
 - ✅ `.env.example` - Variables de entorno documentadas
 
+### ✅ Completado en Fase 1A - Multi-Org Management (última sesión):
+- ✅ Settings sincronizado con organización seleccionada (`?org={orgId}`)
+- ✅ Navbar navega automáticamente a Settings con parámetro org
+- ✅ Sección "Danger Zone" en Settings para eliminación de organizaciones
+- ✅ Diálogo de confirmación en dos pasos (advertencia + confirmar nombre)
+- ✅ Endpoint DELETE con cascada de eliminación (Sites, Pages, Suggestions, Memberships)
+- ✅ Protección contra acceso a organizaciones eliminadas
+- ✅ Historial limpio (router.replace previene volver a org eliminada)
+- ✅ Todos los errores de TypeScript resueltos
+
 ### 🚧 Pendientes para Fase 1B - Dashboard + Detalles:
-1. Dashboard real (`/dashboard`) - listar sites por accountId
-2. Página de detalles (`/sites/[siteId]`) - ver pages + sugerencias
-3. Endpoint GET `/api/sites` - lista sites del usuario
-4. Actualizar home (`/app/page.tsx`) - navegar a `/sites/[siteId]` post-crawl
-5. Componentes UI para mostrar datos de crawl
+1. Google OAuth: testing end-to-end (proveedor ya configurado)
+2. Invitar miembros a organización con roles
+3. Rate limiting por organización según plan
+4. Mejorar dashboard: filtros, búsqueda, sorting, exportación
+5. Hardening: rotar GOOGLE_API_KEY, CORS, CSRF
 
 ## Verificación (Fase 1A - completada)
 
-✅ Flujo manual de registro/login:
-- Registrarse por email/password → ✅ se crea User + Organization + Membership en Mongo
+✅ Autenticación & Registro:
+- Registrarse por email/password → ✅ crea User + Organization + Membership en Mongo
 - Iniciar sesión con credenciales → ✅ sesión JWT con accountId/organizationName
-- Acceder a `/dashboard` → ✅ sesión disponible, puede ver su información
+- Logout funciona correctamente
+
+✅ Multi-Organización:
+- Un usuario crea múltiples organizaciones → ✅ todas visible en navbar
+- Cambiar entre organizaciones → ✅ dashboard y settings se sincroniza
+- Dashboard muestra sitios de org seleccionada → ✅ filtrado por accountId
+- Settings muestra datos de org seleccionada → ✅ sincronizado con query param
+
+✅ Operaciones CRUD:
+- Crear organización → ✅ POST `/api/organizations`
+- Editar nombre de organización (owner) → ✅ PUT `/api/organizations/[orgId]`
+- Eliminar organización (owner) → ✅ DELETE `/api/organizations/[orgId]` con cascada
+- Crawlear URL → ✅ persiste Sites y Pages con accountId
+- Generar sugerencias SEO → ✅ persiste en MongoDB
+
+✅ Seguridad & Multi-Tenancy:
+- User no puede ver sites de otra org → ✅ 404 si intenta acceso directo
+- Memberships eliminados previenen acceso a org borrada → ✅ redirige a /settings
+- Router.replace previene volver atrás a org eliminada → ✅ historial limpio
+- TypeScript strict mode → ✅ `npm run build` sin errores de tipo
 
 ⏳ Pendiente (Fase 1B):
-- Google OAuth login
-- Craulear una URL como usuario autenticado → confirmar que aparece en `/dashboard` con `accountId`
-- Persistencia de sugerencias SEO
-- Validación multi-tenancy (segunda cuenta no ve sites de la primera)
-- `npm run lint` y `npm run build` deben pasar sin errores
+- Google OAuth: testing end-to-end completo
+- Invitar miembros con roles (Admin/Member/Viewer)
+- Rate limiting por organización
+- Dashboard mejorado: filtros, búsqueda, exportación
+- Tests automatizados

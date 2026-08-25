@@ -170,6 +170,20 @@ Convertir SEOAudit de una herramienta de un solo usuario a un SaaS multi-tenant 
 
 ---
 
+## 📚 Documentación Mejorada
+
+- ✅ Stack Tecnológico expandido en `docs/PROJECT.md` con detalles por componente
+- ✅ Nueva sección "🕷️ Arquitectura del Crawler" con:
+  - Stack interno del crawler (Playwright, Cheerio)
+  - Datos extraídos por página
+  - Flujo técnico detallado
+  - Limitaciones y configuración
+- ✅ Endpoints de crawling documentados (POST y GET)
+- ✅ `plan/plan.md` actualizado con arquitectura del crawler
+- ✅ Changelog actualizado con todos los cambios de esta sesión
+
+---
+
 ## ✅ Verificación
 
 Todos los flows críticos probados manualmente:
@@ -178,6 +192,7 @@ Todos los flows críticos probados manualmente:
 - ✅ Settings: Owner puede editar nombre de org
 - ✅ Navbar: Selector actualiza en tiempo real
 - ✅ Sugerencias: Se persisten y no se pierden al recargar
+- ✅ Eliminación de org: Cascada completa, historial limpio
 
 ---
 

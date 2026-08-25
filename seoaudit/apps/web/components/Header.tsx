@@ -39,6 +39,12 @@ export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
                 Organizations
               </Link>
               <Link
+                href="/organizations"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Dashboard
+              </Link>
+              <Link
                 href={currentOrgId ? `/settings?org=${currentOrgId}` : '/settings'}
                 className="text-sm text-zinc-600 hover:text-zinc-700 font-medium"
               >

@@ -17,15 +17,17 @@ SEOAudit es una aplicación SaaS multi-tenant para auditar y optimizar la estrat
 
 ### Stack Tecnológico
 
-| Layer | Tecnología |
-|-------|-----------|
-| **Frontend** | Next.js 16.2.5 + React + TypeScript |
-| **Autenticación** | NextAuth v4.24.0 (JWT + Credentials + Google OAuth) |
-| **Base de Datos** | MongoDB (Mongoose ODM) |
-| **API** | Next.js Route Handlers |
-| **Crawler** | @seo-optimizer/crawler |
-| **IA** | Google Gemini API |
-| **Styling** | Tailwind CSS v3 |
+| Layer | Tecnología | Detalles |
+|-------|-----------|----------|
+| **Frontend** | Next.js 16.2.5 + React + TypeScript | SSR + Client Components |
+| **Autenticación** | NextAuth v4.24.0 | JWT + Credentials + Google OAuth |
+| **Base de Datos** | MongoDB (Mongoose ODM) | Persistencia de Sites, Pages, Suggestions |
+| **API** | Next.js Route Handlers | POST/GET/PUT/DELETE endpoints |
+| **Crawler** | @seo-optimizer/crawler | Web scraping con Playwright + Cheerio |
+| **IA** | Google Gemini API | Generación de sugerencias SEO |
+| **Styling** | Tailwind CSS v3 | Componentes de UI responsivos |
+| **Validación** | Zod | Schema validation para inputs |
+| **Hash de Contraseñas** | bcryptjs | Almacenamiento seguro de passwords |
 
 ### Arquitectura de Base de Datos
 
@@ -184,6 +186,104 @@ session.user = {
 
 ---
 
+## 🕷️ Arquitectura del Crawler
+
+### Stack del Crawler
+
+**Librería Principal:** `@seo-optimizer/crawler`
+
+**Componentes Internos:**
+- **Playwright**: Motor de navegación headless para renderizado de JavaScript
+- **Cheerio**: Parser HTML ligero para extraer datos de la DOM
+- **URL Parser**: Normalización de URLs y resolución de enlaces relativos
+
+### Funcionalidad del Crawler
+
+```typescript
+const result = await crawlSite(url, {
+  concurrency: 5,                    // 5 requests paralelos máximo
+  onProgress: (processed, total) => {
+    // Callback para actualizar progreso en tiempo real
+    // processed: URLs ya crawleadas
+    // total: URLs encontradas en el sitemap/sitio
+  }
+});
+```
+
+### Datos Extraídos por Página
+
+El crawler extrae automáticamente:
+
+| Dato | Descripción | Uso |
+|------|-------------|-----|
+| `url` | URL de la página | Identificación |
+| `title` | Meta title (máx 70 chars) | SEO on-page |
+| `description` | Meta description | SEO on-page |
+| `statusCode` | HTTP status (200, 404, etc) | Health check |
+| `h1` | Headings H1 (máximo 1) | Estructura |
+| `h2` | Headings H2 | Estructura |
+| `ogTitle` | Open Graph title | Social media |
+| `ogDescription` | Open Graph description | Social media |
+| `ogImage` | Open Graph image URL | Social media |
+| `robots` | Meta robots directive | Indexación |
+| `canonical` | URL canónica | Duplicate prevention |
+
+### Flujo Técnico del Crawling
+
+```
+1. Usuario POST /api/crawl con URL
+   ↓
+2. Crear Job (en memoria) con status "running"
+   - jobId (UUID temporal)
+   - siteId (UUID inicial, actualizado después)
+   - url, accountId (organización)
+   - concurrency: 5
+   ↓
+3. Retornar { jobId, siteId } al frontend
+   (frontend comienza polling GET /api/crawl/[jobId])
+   ↓
+4. En background: runCrawl(jobId)
+   - Llamar crawlSite() con onProgress callback
+   - onProgress actualiza job.processed y job.total en jobStore
+   ↓
+5. Al completar crawl:
+   - job.status = "completed"
+   - job.result contiene todas las páginas
+   ↓
+6. Persistencia en MongoDB: persistCrawlResult(job)
+   - Crear Site con accountId (organización)
+   - Crear Pages asociadas al Site
+   - Actualizar job.siteId con ObjectId de MongoDB
+   ↓
+7. Siguiente polling retorna siteId correcto (ObjectId)
+   ↓
+8. Frontend navega a /sites/[siteId] con datos persistidos
+```
+
+### Configuración & Performance
+
+**Concurrencia:** 5 requests paralelos
+- Balance entre velocidad y carga del servidor
+- No sobrecarga sitios target
+- Respetuoso con robots.txt
+
+**Timeout:** Heredado de Playwright
+- Espera máxima por página
+- Fallback graceful si timeout
+
+**Reintento:** No hay reintento automático
+- URLs que fallan se marcan como fallidas
+- Usuario puede reintentar todo el crawl
+
+### Limitaciones Conocidas
+
+- Solo crawlea hasta 1000 páginas por defecto (configurable en librería)
+- No maneja sites con autenticación requerida
+- JavaScript muy dinámico puede no capturarse completamente
+- Sitios con rate limiting pueden ser parcialmente crawleados
+
+---
+
 ## 🏢 Gestión de Organizaciones
 
 ### Crear Organización
@@ -244,12 +344,14 @@ Redirige a /organizations (con router.replace para limpiar historial)
 
 ---
 
-## 🕷️ Flujo de Crawling
+## 🕷️ Endpoints de Crawling
 
-### 1. Iniciar Crawl
+### POST /api/crawl - Iniciar Crawl
 
-```
-POST /api/crawl
+Inicia un nuevo crawling de un sitio. Requiere autenticación.
+
+**Request:**
+```json
 {
   "url": "https://example.com"
 }
@@ -263,40 +365,26 @@ POST /api/crawl
 }
 ```
 
-### 2. Polling de Progreso
+**Multi-tenancy:** El crawl se asocia automáticamente a `session.user.accountId` (organización)
 
-```
-GET /api/crawl/{jobId}
-```
+### GET /api/crawl/[jobId] - Polling de Progreso
+
+Obtiene el estado y progreso del crawling.
 
 **Response:**
 ```json
 {
   "jobId": "uuid",
-  "siteId": "objectid-mongodb",  // Actualizado cuando completa
+  "siteId": "objectid-mongodb",  // ObjectId cuando completa
   "status": "running|completed|failed",
   "processed": 45,
   "total": 120
 }
 ```
 
-### 3. Persistencia
+**Sin autenticación:** El `jobId` es opaco y temporal, imposible de enumerar
 
-Cuando el crawl completa:
-
-```
-runCrawl()
-  ↓
-Site creado en MongoDB con accountId
-  ↓
-Pages creadas en MongoDB con siteId, accountId
-  ↓
-job.siteId actualizado a ObjectId de MongoDB
-  ↓
-Siguiente polling retorna ObjectId correcto
-  ↓
-Frontend navega a /sites/{siteId}
-```
+**Nota:** Referir a "🕷️ Arquitectura del Crawler" para detalles técnicos de cómo funciona el crawling
 
 ---
 
