@@ -54,8 +54,7 @@ export function RegisterForm() {
       });
 
       if (signInResult?.ok) {
-        // If organization was created, go to dashboard, otherwise go to organizations page
-        router.push(data.organizationId ? '/dashboard' : '/organizations');
+        router.push('/organizations');
       } else {
         setError('Sign in failed after registration');
       }
@@ -70,7 +69,7 @@ export function RegisterForm() {
   async function handleGoogleSignUp() {
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/dashboard' });
+      await signIn('google', { callbackUrl: '/organizations' });
     } catch (err) {
       setError('Google sign-up failed');
       console.error(err);

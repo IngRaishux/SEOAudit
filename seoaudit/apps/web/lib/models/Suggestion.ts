@@ -14,7 +14,7 @@ const suggestionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    accountId: {
+    organizationId: {
       type: String,
       required: true,
       index: true,

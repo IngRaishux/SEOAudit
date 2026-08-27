@@ -4,7 +4,7 @@ import Page from '@/lib/models/Page';
 export async function createPage(data: {
   siteId: string;
   url: string;
-  accountId: string;
+  organizationId: string;
   title?: string;
   description?: string;
   statusCode?: number;

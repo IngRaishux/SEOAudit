@@ -121,41 +121,7 @@ export const authConfig = {
       return session;
     },
   },
-  events: {
-    async signIn({
-      user,
-      account,
-    }: {
-      user: User;
-      account: Account | null;
-    }) {
-      if (account?.provider !== 'credentials') return;
-
-      try {
-        await connectMongoose();
-        const existing = await Membership.findOne({ userId: user.id });
-
-        if (!existing) {
-          const displayName = user.name || user.email || 'User';
-          const org = new Organization({
-            name: `${displayName}'s Organization`,
-            slug: `${displayName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-            createdByUserId: user.id,
-          });
-          const savedOrg = await org.save();
-
-          const membership = new Membership({
-            userId: user.id,
-            organizationId: savedOrg._id,
-            role: 'owner',
-          });
-          await membership.save();
-        }
-      } catch (error) {
-        console.error('Error creating organization on sign-in:', error);
-      }
-    },
-  },
+  events: {},
 };
 
 export const handler = NextAuth(authConfig);

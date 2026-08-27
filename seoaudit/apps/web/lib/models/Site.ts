@@ -7,7 +7,7 @@ const siteSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    accountId: {
+    organizationId: {
       type: String,
       required: true,
       index: true,
@@ -28,7 +28,7 @@ const siteSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Compound index for listing sites by account
-siteSchema.index({ accountId: 1, createdAt: -1 });
+// Compound index for listing sites by organization
+siteSchema.index({ organizationId: 1, createdAt: -1 });
 
 export default mongoose.models.Site || mongoose.model('Site', siteSchema);

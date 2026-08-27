@@ -4,7 +4,7 @@ import Suggestion from '@/lib/models/Suggestion';
 export async function createSuggestion(data: {
   pageId: string;
   siteId: string;
-  accountId: string;
+  organizationId: string;
   type: 'seo' | 'performance' | 'accessibility' | 'best_practice';
   title: string;
   description: string;

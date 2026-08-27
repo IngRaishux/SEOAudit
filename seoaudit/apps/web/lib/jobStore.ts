@@ -6,7 +6,7 @@ export interface Job {
   id: string;
   siteId: string;
   url: string;
-  accountId: string;
+  organizationId: string;
   status: JobStatus;
   processed: number;
   total: number;
@@ -27,14 +27,14 @@ if (process.env.NODE_ENV !== "production") {
   globalForStore.__jobStore = jobStore;
 }
 
-export function createJob(url: string, accountId: string): Job {
+export function createJob(url: string, organizationId: string): Job {
   const id = crypto.randomUUID();
   const siteId = crypto.randomUUID();
   const job: Job = {
     id,
     siteId,
     url,
-    accountId,
+    organizationId,
     status: "queued",
     processed: 0,
     total: 0,

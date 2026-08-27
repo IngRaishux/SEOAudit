@@ -39,8 +39,8 @@ export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) 
         return;
       }
 
-      setName('');
-      router.refresh();
+      const data = await res.json();
+      router.push(`/dashboard?org=${data.organization._id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

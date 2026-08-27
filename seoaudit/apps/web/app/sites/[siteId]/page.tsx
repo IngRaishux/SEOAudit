@@ -13,7 +13,7 @@ import Organization from '@/lib/models/Organization';
 interface ISite {
   _id: string;
   url: string;
-  accountId: string;
+  organizationId: string;
   title?: string;
   pageCount: number;
   crawlStatus: string;
@@ -25,7 +25,7 @@ interface IPage {
   _id: string;
   siteId: string;
   url: string;
-  accountId: string;
+  organizationId: string;
   title?: string;
   statusCode?: number;
   canonical?: string;
@@ -94,7 +94,7 @@ export default async function SiteDetailsPage({
   }
 
   // Validar que el site pertenece al usuario
-  if (site.accountId !== session.user.accountId) {
+  if (site.organizationId !== session.user.accountId) {
     notFound();
   }
 
@@ -107,13 +107,15 @@ export default async function SiteDetailsPage({
   } catch (error) {
     console.error('Error fetching pages:', error);
   }
+  console.log('site ',site);
+  
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <div className="max-w-6xl mx-auto p-8">
         {/* Header */}
         <div className="mb-8">
-          <Link href="/dashboard" className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block">
+          <Link href={`/dashboard?org=${site.organizationId}`} className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block">
             ← Back to Dashboard
           </Link>
           <h1 className="text-4xl font-bold mb-2 break-all">{site.url}</h1>

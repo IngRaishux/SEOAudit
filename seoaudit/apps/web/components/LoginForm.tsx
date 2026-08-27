@@ -29,7 +29,7 @@ export function LoginForm() {
       if (result?.error) {
         setError('Invalid email or password');
       } else if (result?.ok) {
-        router.push('/dashboard');
+        router.push('/organizations');
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
@@ -42,7 +42,7 @@ export function LoginForm() {
   async function handleGoogleSignIn() {
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/dashboard' });
+      await signIn('google', { callbackUrl: '/organizations' });
     } catch (err) {
       setError('Google sign-in failed');
       console.error(err);
