@@ -57,18 +57,18 @@ export default async function DashboardPage(props: {
   let accountId: string;
 
   if (!selectedOrgId) {
-    // No org selected, use the first one
-    accountId = memberships[0].organizationId.toString();
-  } else {
-    // Validate that user is member of selected org
-    const isMember = memberships.some(
-      (m) => m.organizationId.toString() === selectedOrgId
-    );
-    if (!isMember) {
-      redirect('/dashboard');
-    }
-    accountId = selectedOrgId;
+    // No org selected, redirect to organizations
+    redirect('/organizations');
   }
+
+  // Validate that user is member of selected org
+  const isMember = memberships.some(
+    (m) => m.organizationId.toString() === selectedOrgId
+  );
+  if (!isMember) {
+    redirect('/organizations');
+  }
+  accountId = selectedOrgId;
 
   // Get organization details
   const org = (await Organization.findById(accountId).lean()) as any;
@@ -113,7 +113,7 @@ export default async function DashboardPage(props: {
               Switch Org
             </Link>
             <Link
-              href="/"
+              href={`/crawler?org=${selectedOrgId}`}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
             >
               Crawl New Site
@@ -149,7 +149,7 @@ export default async function DashboardPage(props: {
                 No sites yet. Start by crawling a website.
               </p>
               <Link
-                href="/"
+                href={`/crawler?org=${selectedOrgId}`}
                 className="inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
               >
                 Go to crawler →

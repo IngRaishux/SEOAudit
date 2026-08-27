@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:accountid-to-organizationid": "ts-node scripts/migrate-accountid-to-organizationid.ts"
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.3",
