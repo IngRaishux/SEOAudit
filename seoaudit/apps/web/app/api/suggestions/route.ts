@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     const suggestion = await suggestionRepository.createSuggestion({
       pageId,
       siteId,
-      accountId: session.user.accountId,
+      organizationId: session.user.accountId,
       type: type as 'seo' | 'performance' | 'accessibility' | 'best_practice',
       severity: severity as 'critical' | 'high' | 'medium' | 'low',
       title: `Auto-generated ${type} suggestion`,

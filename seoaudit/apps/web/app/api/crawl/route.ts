@@ -112,7 +112,7 @@ async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
     // Crear Site
     const site = await siteRepository.createSite({
       url: job.url,
-      accountId: job.accountId,
+      organizationId: job.organizationId,
       title: job.result.pages[0]?.title || undefined,
       description: job.result.pages[0]?.description || undefined,
     });
@@ -124,7 +124,7 @@ async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
     const pages = job.result.pages.map((page) => ({
       siteId: site._id.toString(),
       url: page.url,
-      accountId: job.accountId,
+      organizationId: job.organizationId,
       title: page.title || undefined,
       description: page.description || undefined,
       statusCode: page.statusCode,

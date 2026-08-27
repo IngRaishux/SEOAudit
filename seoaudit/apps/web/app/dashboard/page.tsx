@@ -12,7 +12,7 @@ import Organization from '@/lib/models/Organization';
 interface ISite {
   _id: string;
   url: string;
-  accountId: string;
+  organizationId: string;
   title?: string;
   pageCount: number;
   crawlStatus: string;

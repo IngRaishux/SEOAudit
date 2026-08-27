@@ -148,9 +148,9 @@ export async function DELETE(
     }
 
     // Delete all suggestions, pages, and sites associated with this organization
-    await Suggestion.deleteMany({ accountId: orgId });
-    await Page.deleteMany({ accountId: orgId });
-    await Site.deleteMany({ accountId: orgId });
+    await Suggestion.deleteMany({ organizationId: orgId });
+    await Page.deleteMany({ organizationId: orgId });
+    await Site.deleteMany({ organizationId: orgId });
 
     // Delete all memberships for this organization
     await Membership.deleteMany({ organizationId: orgId });

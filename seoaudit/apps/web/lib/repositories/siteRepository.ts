@@ -3,7 +3,7 @@ import Site from '@/lib/models/Site';
 
 export async function createSite(data: {
   url: string;
-  accountId: string;
+  organizationId: string;
   title?: string;
   description?: string;
 }) {
@@ -18,21 +18,21 @@ export async function getSiteById(siteId: string) {
 }
 
 export async function listSitesByAccount(
-  accountId: string,
+  organizationId: string,
   options: { limit?: number; skip?: number } = {}
 ) {
   await connectMongoose();
   const { limit = 10, skip = 0 } = options;
-  return Site.find({ accountId })
+  return Site.find({ organizationId })
     .sort({ createdAt: -1 })
     .limit(limit)
     .skip(skip)
     .lean();
 }
 
-export async function countSitesByAccount(accountId: string) {
+export async function countSitesByAccount(organizationId: string) {
   await connectMongoose();
-  return Site.countDocuments({ accountId });
+  return Site.countDocuments({ organizationId });
 }
 
 export async function updateSite(

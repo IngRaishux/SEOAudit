@@ -13,7 +13,7 @@ const pageSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    accountId: {
+    organizationId: {
       type: String,
       required: true,
       index: true,
