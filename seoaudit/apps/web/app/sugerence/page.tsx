@@ -34,6 +34,14 @@ interface Page {
   metaTags?: Array<{ name: string; content: string }>;
 }
 
+interface Site {
+  _id: string;
+  url: string;
+  organizationId: string;
+  title?: string;
+  pageCount: number;
+}
+
 function SugerenciaContent() {
   const searchParams = useSearchParams();
   const targetUrl = searchParams.get('url');
@@ -41,31 +49,48 @@ function SugerenciaContent() {
   const siteId = searchParams.get('siteId');
 
   const [mockPage, setMockPage] = useState<Page | null>(null);
+  const [mockSite, setMockSite] = useState<Site | null>(null);
+  const [organizationName, setOrganizationName] = useState('default');
   const [loadingPage, setLoadingPage] = useState(true);
 
   useEffect(() => {
-    if (!pageId) {
+    if (!pageId || !siteId) {
       setLoadingPage(false);
       return;
     }
 
-    // Fetch page data from MongoDB
-    const fetchPage = async () => {
+    // Fetch page and site data from MongoDB
+    const fetchData = async () => {
       try {
-        const res = await fetch(`/api/pages/${pageId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setMockPage(data.page);
+        const [pageRes, siteRes] = await Promise.all([
+          fetch(`/api/pages/${pageId}`),
+          fetch(`/api/sites/${siteId}`),
+        ]);
+
+        if (pageRes.ok) {
+          const pageData = await pageRes.json();
+          setMockPage(pageData.page);
+        }
+
+        if (siteRes.ok) {
+          const siteData = await siteRes.json();
+          const site = siteData.site;
+          setMockSite(site);
+
+          // Get organization name from site data
+          if (site.organizationName) {
+            setOrganizationName(site.organizationName);
+          }
         }
       } catch (error) {
-        console.error('Error fetching page:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoadingPage(false);
       }
     };
 
-    fetchPage();
-  }, [pageId]);
+    fetchData();
+  }, [pageId, siteId]);
 
   const [form, setForm] = useState(mockSuggested);
   const [loading, setLoading] = useState(false);
@@ -162,7 +187,7 @@ function SugerenciaContent() {
 
     const exported = {
       ...form,
-      account: form.account,
+      account: { S: organizationName },
     };
 
     const blob = new Blob([JSON.stringify(exported, null, 2)], {
