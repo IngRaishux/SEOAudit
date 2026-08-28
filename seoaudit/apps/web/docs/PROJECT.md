@@ -60,7 +60,7 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
 {
   _id: ObjectId,
   url: string,
-  accountId: string (para multi-tenancy),
+  organizationId: ObjectId (ref: Organization, para multi-tenancy),
   title: string | null,
   description: string | null,
   crawlStatus: 'pending' | 'in_progress' | 'completed' | 'failed',
@@ -69,7 +69,7 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
   createdAt: Date,
   updatedAt: Date
 }
-// Índice: {accountId, createdAt}
+// Índice: {organizationId, createdAt}
 ```
 
 #### **pages** (Mongoose)
@@ -78,21 +78,17 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
   _id: ObjectId,
   siteId: ObjectId (ref: Site),
   url: string,
-  accountId: string,
+  organizationId: ObjectId (ref: Organization),
   title: string | null,
   description: string | null,
   statusCode: number | null,
-  contentLength: number | null,
-  contentType: string | null,
   canonical: string | null,
   headings: [string],
-  links: [{url, text, isExternal}],
   metaTags: [{name, content}],
-  images: [{url, alt}],
   createdAt: Date,
   updatedAt: Date
 }
-// Índice: {siteId}
+// Índice: {siteId}, {organizationId}
 ```
 
 #### **suggestions** (Mongoose)
@@ -101,7 +97,7 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
   _id: ObjectId,
   pageId: ObjectId (ref: Page),
   siteId: ObjectId (ref: Site),
-  accountId: string,
+  organizationId: string,
   type: 'seo' | 'performance' | 'accessibility' | 'best_practice',
   title: string,
   description: string,
@@ -142,11 +138,11 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
 - **Body:** `{ url: string }`
 - **Response:** `{ jobId: string, siteId: string }`
 - **Proceso:**
-  1. Valida que haya sesión con `accountId`
+  1. Valida que haya sesión con `organizationId`
   2. Crea job en memoria con UUID para tracking progreso
   3. Ejecuta crawl en background (sin bloquear)
   4. Retorna jobId para polling y siteId para navegación futura
-  5. Al completar: persiste Site + Pages en MongoDB con `accountId`
+  5. Al completar: persiste Site + Pages en MongoDB con `organizationId`
 
 #### `GET /api/crawl/[jobId]`
 - **Auth:** No requiere (público, pero idempotente)
@@ -159,11 +155,11 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
 - **Auth:** Requiere sesión
 - **Query:** `?limit=10&skip=0`
 - **Response:** `[{ _id, url, title, pageCount, crawlStatus, createdAt }, ...]`
-- **Descripción:** Lista todos los sites del accountId de la sesión
+- **Descripción:** Lista todos los sites del organizationId de la sesión
 
 #### `GET /api/sites/[siteId]`
 - **Auth:** Server Component usa `getServerSession(handler)`
-- **Validación:** Verifica que `site.accountId === session.user.accountId`
+- **Validación:** Verifica que `site.organizationId === session.user.organizationId`
 - **Response:** Datos del site + páginas asociadas
 
 ### Sugerencias
@@ -188,7 +184,7 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
 interface Site {
   _id: ObjectId;
   url: string;
-  accountId: string; // Para multi-tenancy
+  organizationId: string; // Para multi-tenancy
   title?: string;
   description?: string;
   crawlStatus: 'pending' | 'in_progress' | 'completed' | 'failed';
@@ -202,8 +198,8 @@ interface Site {
 **Métodos disponibles en `siteRepository`:**
 - `createSite(data)` → Site
 - `getSiteById(id)` → Site | null
-- `listSitesByAccount(accountId, {limit, skip})` → Site[]
-- `countSitesByAccount(accountId)` → number
+- `listSitesByAccount(organizationId, {limit, skip})` → Site[]
+- `countSitesByAccount(organizationId)` → number
 - `updateSite(id, data)` → Site
 - `deleteSite(id)` → void
 
@@ -215,7 +211,7 @@ interface Page {
   _id: ObjectId;
   siteId: ObjectId; // Referencia a Site
   url: string;
-  accountId: string;
+  organizationId: string;
   title?: string;
   description?: string;
   statusCode?: number;
@@ -249,7 +245,7 @@ interface Suggestion {
   _id: ObjectId;
   pageId: ObjectId; // Referencia a Page
   siteId: ObjectId; // Referencia a Site
-  accountId: string;
+  organizationId: string;
   type: 'seo' | 'performance' | 'accessibility' | 'best_practice';
   title: string;
   description: string;
@@ -336,7 +332,7 @@ interface Suggestion {
 
 - **Auth:** `getServerSession(handler)` → redirect('/login') si no hay sesión
 - **Contenido:** Bienvenida + información de cuenta (email, ID, organización)
-- **Próximas mejoras:** Lista de sites por accountId
+- **Próximas mejoras:** Lista de sites por organizationId
 
 #### Login
 **Archivo:** `app/login/page.tsx` (Server Component)
@@ -352,19 +348,20 @@ interface Suggestion {
 
 ## Flujos Principales
 
-### Flujo de Registro
+### Flujo de Registro y Primer Login
 
 ```
-1. Usuario llena formulario en /register
+1. Usuario llena formulario en /register (sin crear org)
 2. POST /api/register {name, email, password}
-3. Servidor valida con Zod
-4. Chequea que email no exista
-5. Hashea password con bcryptjs
-6. Inserta User en MongoDB
-7. Retorna {id, email, name}
-8. Cliente: signIn('credentials') automáticamente
-9. NextAuth: JWT callback → resuelve Membership → crea Organization
-10. Redirige a /dashboard
+3. Servidor: valida, hashea password, inserta User en MongoDB
+4. Cliente: signIn('credentials') automáticamente
+5. NextAuth autentica → redirige a /organizations (no hay org aún)
+6. Usuario llena nombre de org (opcional) y clickea "Create Organization"
+7. POST /api/organizations {name}
+8. Servidor: crea Organization + Membership (role: owner)
+9. Cookie se actualiza: selectedOrganization = orgId
+10. Redirige a /dashboard?org={orgId}
+11. Dashboard ve cookie sincronizada vía middleware
 ```
 
 ### Flujo de Login
@@ -373,10 +370,27 @@ interface Suggestion {
 1. Usuario llena formulario en /login
 2. Click "Sign in" o "Continue with Google"
 3. signIn('credentials' | 'google')
-4. NextAuth autentica
-5. JWT callback: resuelve Organization + Membership
-6. Session: { user: { email, accountId, organizationName, role } }
-7. Redirige a /dashboard
+4. NextAuth autentica → redirige a /organizations
+5. /organizations GET: obtiene todas las orgs del usuario
+6. Renderiza lista de orgs + selector
+7. Usuario selecciona org → OrganizationSelector.handleSelectOrganization()
+8. setSelectedOrganization(orgId) → actualiza cookie
+9. router.push('/dashboard?org={orgId}')
+10. router.refresh() → revalida Server Components
+11. Middleware ve ?org={orgId} → sincroniza cookie (redundante pero seguro)
+12. Dashboard renderiza con org seleccionada
+```
+
+### Flujo "Switch Org" (en Dashboard)
+
+```
+1. Usuario en /dashboard?org=org1
+2. Click botón "Switch Org" → SwitchOrgButton.handleSwitchOrg()
+3. clearSelectedOrganization() → borra cookie
+4. router.push('/organizations')
+5. router.refresh() → revalida Header (no muestra org)
+6. Usuario ve lista de orgs
+7. Selecciona org2 → igual que flujo Login desde step 7
 ```
 
 ### Flujo de Crawl
@@ -390,7 +404,7 @@ interface Suggestion {
 6. Retorna {jobId, siteId} al cliente
 7. Cliente: polling GET /api/crawl/[jobId] cada segundo
 8. Al completar (status: 'completed'):
-   - Servidor persiste Site + Pages en MongoDB con accountId
+   - Servidor persiste Site + Pages en MongoDB con organizationId
    - Cliente redirige a /sites/[siteId]
 9. Usuario ve detalles del crawl con lista de páginas
 ```
@@ -399,9 +413,9 @@ interface Suggestion {
 
 ```
 - Cada User pertenece a una Organization (automático al registrarse)
-- Cada Site tiene accountId = Organization._id
-- Cada Page tiene accountId = Organization._id
-- Las queries siempre filtran por accountId de la sesión
+- Cada Site tiene organizationId = Organization._id
+- Cada Page tiene organizationId = Organization._id
+- Las queries siempre filtran por organizationId de la sesión
 - Middleware protege rutas /dashboard, /sites/*, /api/*
 - Server Components usan getServerSession() para verificar propiedad
 ```
@@ -448,7 +462,7 @@ db.organizations.createIndex({ slug: 1 }, { unique: true });
 db.memberships.createIndex({ userId: 1, organizationId: 1 }, { unique: true });
 
 // sites
-db.sites.createIndex({ accountId: 1, createdAt: -1 });
+db.sites.createIndex({ organizationId: 1, createdAt: -1 });
 
 // pages
 db.pages.createIndex({ siteId: 1 });
@@ -468,8 +482,8 @@ db.suggestions.createIndex({ siteId: 1 });
    - Sesión: JWT con HMAC-SHA256
 
 2. **Multi-tenancy:**
-   - Todos los queries filtran por `accountId`
-   - Server Components validan `site.accountId === session.user.accountId`
+   - Todos los queries filtran por `organizationId`
+   - Server Components validan `site.organizationId === session.user.organizationId`
    - Middleware protege rutas sensibles
 
 3. **Variables sensibles:**
@@ -481,7 +495,7 @@ db.suggestions.createIndex({ siteId: 1 });
 
 ## Proximos Pasos (Fase 1B+)
 
-1. ✅ Dashboard real - listar sites por accountId
+1. ✅ Dashboard real - listar sites por organizationId
 2. ✅ Página de detalles - ver pages + sugerencias
 3. ✅ Endpoint GET /api/sites
 4. ✅ Actualizar home - navegar a /sites/[siteId]

@@ -10,6 +10,11 @@ export async function setSelectedOrganization(orgId: string) {
   });
 }
 
+export async function clearSelectedOrganization() {
+  const cookieStore = await cookies();
+  cookieStore.delete('selectedOrganization');
+}
+
 export async function getSelectedOrganization(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get('selectedOrganization')?.value || null;

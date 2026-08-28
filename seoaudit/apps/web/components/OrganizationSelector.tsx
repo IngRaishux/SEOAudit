@@ -29,16 +29,30 @@ export function OrganizationSelector({
   const currentOrg = organizations.find((o) => o.id === currentOrgId);
 
   const handleSelectOrganization = async (orgId: string) => {
+    console.log('[OrganizationSelector] Selecting org:', orgId);
+
+    // Update cookie first
     await setSelectedOrganization(orgId);
+    console.log('[OrganizationSelector] Cookie updated');
+
     setIsOpen(false);
-    // Navigate to current page with selected org parameter
+
+    // Determine next path based on current location
     let nextPath = '/dashboard';
     if (pathname === '/settings') {
       nextPath = '/settings';
     } else if (pathname.startsWith('/sites/')) {
       nextPath = pathname;
     }
+
+    console.log('[OrganizationSelector] Navigating to:', `${nextPath}?org=${orgId}`);
+
+    // Navigate with org parameter
     router.push(`${nextPath}?org=${orgId}`);
+
+    // Revalidate server components to pick up the updated cookie
+    // This is critical for HeaderLayout to show the new organization
+    router.refresh();
   };
 
   return (

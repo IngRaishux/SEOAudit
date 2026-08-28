@@ -8,6 +8,8 @@ import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
 import Organization from '@/lib/models/Organization';
+import { getSelectedOrganization } from '@/app/actions';
+import { SwitchOrgButton } from '@/components/SwitchOrgButton';
 
 interface ISite {
   _id: string;
@@ -54,21 +56,35 @@ export default async function DashboardPage(props: {
   }
 
   // Determine which organization to display
+  // Priority: URL param > cookie > redirect
   let accountId: string;
 
-  if (!selectedOrgId) {
-    // No org selected, redirect to organizations
+  // 1. Try URL parameter first (explicit choice)
+  let resolvedOrgId = selectedOrgId;
+
+  // 2. If not in URL, try cookie (remembered choice)
+  if (!resolvedOrgId) {
+    const cookieOrgId = await getSelectedOrganization();
+    if (cookieOrgId && memberships.some((m) => m.organizationId.toString() === cookieOrgId)) {
+      // Cookie is valid, redirect to dashboard with this org
+      redirect(`/dashboard?org=${cookieOrgId}`);
+    }
+  }
+
+  // 3. If still no valid org, redirect to selection
+  if (!resolvedOrgId) {
     redirect('/organizations');
   }
 
   // Validate that user is member of selected org
   const isMember = memberships.some(
-    (m) => m.organizationId.toString() === selectedOrgId
+    (m) => m.organizationId.toString() === resolvedOrgId
   );
   if (!isMember) {
     redirect('/organizations');
   }
-  accountId = selectedOrgId;
+
+  accountId = resolvedOrgId;
 
   // Get organization details
   const org = (await Organization.findById(accountId).lean()) as any;
@@ -106,12 +122,7 @@ export default async function DashboardPage(props: {
             </p>
           </div>
           <div className="flex gap-2">
-            <Link
-              href="/organizations"
-              className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium"
-            >
-              Switch Org
-            </Link>
+            <SwitchOrgButton />
             <Link
               href={`/crawler?org=${selectedOrgId}`}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
