@@ -46,42 +46,18 @@ export default async function SiteDetailsPage({
     redirect('/login');
   }
 
-  // If accountId is not in session, resolve it from database using email
-  if (!session.user.accountId) {
-    try {
-      const { db } = await connectToDatabase();
-      const usersCollection = db.collection('users');
-
-      // Find user by email
-      const user = await usersCollection.findOne({ email: session.user.email });
-
-      if (!user) {
-        redirect('/login');
-      }
-
-      await connectMongoose();
-      const membership = await Membership.findOne({ userId: user._id.toString() });
-
-      if (membership) {
-        const org = await Organization.findById(membership.organizationId);
-        session.user.id = user._id.toString();
-        session.user.accountId = membership.organizationId.toString();
-        session.user.organizationName = org?.name || 'Organization';
-        session.user.role = membership.role as any;
-      } else {
-        redirect('/login');
-      }
-    } catch (error) {
-      console.error('Error resolving accountId:', error);
+  // Resolve user ID from session or email
+  if (!session.user.id) {
+    const { db } = await connectToDatabase();
+    const usersCollection = db.collection('users');
+    const user = await usersCollection.findOne({ email: session.user.email });
+    if (!user) {
       redirect('/login');
     }
+    session.user.id = user._id.toString();
   }
 
-  if (!session.user.accountId) {
-    redirect('/login');
-  }
-
-  // Obtener sitio
+  // Get site first to determine organization
   let site: ISite | null = null;
   try {
     site = (await siteRepository.getSiteById(siteId)) as unknown as ISite;
@@ -93,8 +69,14 @@ export default async function SiteDetailsPage({
     notFound();
   }
 
-  // Validar que el site pertenece al usuario
-  if (site.organizationId !== session.user.accountId) {
+  // Validate that user is member of the site's organization
+  await connectMongoose();
+  const membership = await Membership.findOne({
+    userId: session.user.id,
+    organizationId: site.organizationId,
+  });
+
+  if (!membership) {
     notFound();
   }
 
@@ -107,8 +89,6 @@ export default async function SiteDetailsPage({
   } catch (error) {
     console.error('Error fetching pages:', error);
   }
-  console.log('site ',site);
-  
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
