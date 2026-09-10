@@ -194,6 +194,29 @@ Todos los flows críticos probados manualmente:
 - ✅ Sugerencias: Se persisten y no se pierden al recargar
 - ✅ Eliminación de org: Cascada completa, historial limpio
 
+### 8. **Settings Restructurados - Separación de Responsabilidades**
+- ✅ `/settings` - SOLO User Settings (preferencias globales)
+  - Tema (light/dark/system)
+  - Notificaciones por email
+  - Reporte semanal
+- ✅ `/organization-settings/[orgId]` - Organization Settings
+  - Accesible desde dashboard con botón Settings
+  - Maneja solo la organización seleccionada
+  - Solo owners pueden editar
+  - Incluye danger zone para eliminar org
+- ✅ `/api/organizations/[orgId]/info` - Endpoint para obtener datos
+  - Resuelve userId desde email si no está en sesión
+  - Valida membresía del usuario
+  - Devuelve datos de org y memberships
+- ✅ Remover duplicados:
+  - `/settings/organization` → movido a `/organization-settings`
+  - `/settings/sites` → futura implementación
+  - `/settings/layout.tsx` → no necesario
+
+**Flujo de Settings:**
+1. User Settings: `/settings` (preferencias globales)
+2. Org Settings: Dashboard → botón Settings → `/organization-settings/[orgId]`
+
 ---
 
 ## 🚀 Próximos Pasos (Fase 1B)
