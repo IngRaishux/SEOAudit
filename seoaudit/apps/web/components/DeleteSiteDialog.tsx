@@ -58,7 +58,7 @@ export function DeleteSiteDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <button className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium">
+        <button className="px-2 lg:px-4 py-1 lg:py-2 bg-red-600 text-white rounded hover:bg-red-700 text-xs lg:text-sm font-medium whitespace-nowrap">
           {t('sites.delete')}
         </button>
       </DialogTrigger>
@@ -70,17 +70,17 @@ export function DeleteSiteDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 mb-4">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            {t('deleteSiteDialog.willDelete')} <strong>{siteUrl}</strong>
+        <div className="space-y-3 mb-4">
+          <p className="text-xs lg:text-sm text-zinc-600 dark:text-zinc-400 break-words">
+            {t('deleteSiteDialog.willDelete')} <strong className="break-all">{siteUrl}</strong>
           </p>
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded p-3">
-            <p className="text-sm text-red-800 dark:text-red-200">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded p-2 lg:p-3">
+            <p className="text-xs lg:text-sm text-red-800 dark:text-red-200">
               {t('deleteSiteDialog.warning')}
             </p>
           </div>
           {error && (
-            <div className="text-sm text-red-600 dark:text-red-400">
+            <div className="text-xs lg:text-sm text-red-600 dark:text-red-400 break-words">
               {error}
             </div>
           )}
@@ -88,14 +88,14 @@ export function DeleteSiteDialog({
 
         <DialogFooter>
           <DialogClose asChild>
-            <button className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium">
+            <button className="px-3 lg:px-4 py-1.5 lg:py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-xs lg:text-sm font-medium">
               {t('common.cancel')}
             </button>
           </DialogClose>
           <button
             onClick={handleDelete}
             disabled={isLoading}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+            className="px-3 lg:px-4 py-1.5 lg:py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs lg:text-sm font-medium"
           >
             {isLoading ? t('deleteSiteDialog.deleting') : t('deleteSiteDialog.deleteButton')}
           </button>
