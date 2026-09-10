@@ -493,6 +493,102 @@ db.suggestions.createIndex({ siteId: 1 });
 
 ---
 
+## Settings Architecture (Fase 1A - Actualizado)
+
+### Estructura de Settings
+
+El sistema de settings está dividido en dos módulos claros:
+
+#### 1. User Settings (`/settings`)
+**Propósito:** Preferencias globales del usuario que aplican a toda la aplicación
+
+```
+GET /api/user/settings
+POST /api/user/settings
+```
+
+**Datos almacenados:**
+```typescript
+interface UserSettings {
+  _id: ObjectId;
+  userId: string;
+  theme: 'light' | 'dark' | 'system';
+  language: string;
+  emailNotifications: boolean;
+  weeklyReport: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+**Acceso:**
+- Directo desde `/settings`
+- No requiere contexto de organización
+- Aplica a todas las orgs del usuario
+
+#### 2. Organization Settings (`/organization-settings/[orgId]`)
+**Propósito:** Configuración específica de cada organización
+
+```
+GET /api/organizations/[orgId]/info
+PUT /api/organizations/[orgId] (editar nombre)
+DELETE /api/organizations/[orgId] (eliminar org)
+```
+
+**Datos devueltos:**
+```typescript
+interface OrganizationInfoResponse {
+  organization: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  membership: {
+    _id: string;
+    organizationId: string;
+    role: 'owner' | 'admin' | 'member';
+  };
+  memberships: Array<{
+    _id: string;
+    organizationId: string;
+    role: string;
+  }>;
+}
+```
+
+**Acceso:**
+- Desde Dashboard: botón "Settings" → `/organization-settings/[orgId]`
+- Valida membresía en endpoint `/api/organizations/[orgId]/info`
+- Solo owners pueden editar/eliminar
+- Admin/Member ven solo lectura
+
+### Flujo de Navigation a Settings
+
+```
+Usuario autenticado
+├── Click profile → Settings
+│   └── /settings (User Preferences)
+│
+└── Dashboard (org seleccionada)
+    └── Click "Settings" button
+        └── /organization-settings/[orgId]
+            └── Org-specific configuration
+```
+
+### Modelos de Settings
+
+#### UserSettings (Mongoose)
+**Archivo:** `lib/models/UserSettings.ts`
+
+Almacena preferencias globales del usuario. Un documento por usuario con índice único en `userId`.
+
+#### SiteSettings (Mongoose) - Fase 1B
+**Archivo:** `lib/models/SiteSettings.ts`
+
+Almacenará configuración de crawl por sitio (frecuencia, patrones de exclusión, etc.). Aún no integrado.
+
+---
+
 ## Proximos Pasos (Fase 1B+)
 
 1. ✅ Dashboard real - listar sites por organizationId

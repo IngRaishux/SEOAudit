@@ -10,6 +10,7 @@ import Membership from '@/lib/models/Membership';
 import Organization from '@/lib/models/Organization';
 import { getSelectedOrganization } from '@/app/actions';
 import { SwitchOrgButton } from '@/components/SwitchOrgButton';
+import { DeleteSiteDialog } from '@/components/DeleteSiteDialog';
 
 interface ISite {
   _id: string;
@@ -101,6 +102,7 @@ export default async function DashboardPage(props: {
   let sites: ISite[] = [];
   let total = 0;
 
+  const isOwner = membership?.role ==='owner'
   try {
     sites = (await siteRepository.listSitesByAccount(accountId, {
       limit: 20,
@@ -109,7 +111,8 @@ export default async function DashboardPage(props: {
     total = await siteRepository.countSitesByAccount(accountId);
   } catch (error) {
     console.error('Error fetching sites:', error);
-  }
+  }  
+  
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
@@ -118,7 +121,7 @@ export default async function DashboardPage(props: {
           <div>
             <h1 className="text-4xl font-bold">{org.name}</h1>
             <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">
-              {memberships.length} organization{memberships.length !== 1 ? 's' : ''}
+              {sites.length} site{sites.length !== 1 ? 's' : ''}
             </p>
           </div>
           <div className="flex gap-2">
@@ -192,6 +195,13 @@ export default async function DashboardPage(props: {
                     <th className="px-6 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-white">
                       Action
                     </th>
+                    {
+                      isOwner &&  <th className="px-6 py-3 text-left text-sm font-semibold text-zinc-900 dark:text-white">
+                      Delete
+                    </th>
+                    }
+                   
+
                   </tr>
                 </thead>
                 <tbody>
@@ -230,6 +240,16 @@ export default async function DashboardPage(props: {
                           View →
                         </Link>
                       </td>
+                      {
+                        isOwner && <td className="px-6 py-4 text-sm">
+                        <DeleteSiteDialog
+                          siteId={site._id.toString()}
+                          siteUrl={site.url.toString()}
+                          orgId={accountId}
+                        />
+                      </td>
+                      }
+            
                     </tr>
                   ))}
                 </tbody>
