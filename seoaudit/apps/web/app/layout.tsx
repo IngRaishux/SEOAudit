@@ -3,7 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import { CrawlProvider } from "@/lib/CrawlContext";
 import { SessionProvider } from "@/components/SessionProvider";
-import { HeaderWithOrganizations } from "@/components/HeaderWithOrganizations";
+import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "SEO Audit",
@@ -16,10 +16,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${GeistSans.className} antialiased dark:bg-gray-950`}>
+    <html lang="en" data-theme="cupcake" className={`${GeistSans.className} antialiased`}>
       <body>
         <SessionProvider>
-          <HeaderWithOrganizations />
+          <Header />
           <CrawlProvider>{children}</CrawlProvider>
         </SessionProvider>
       </body>

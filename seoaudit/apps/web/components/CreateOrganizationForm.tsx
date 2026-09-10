@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 interface CreateOrganizationFormProps {
   userId: string;
@@ -11,6 +12,9 @@ interface CreateOrganizationFormProps {
 
 export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) {
   const router = useRouter();
+  const lang = useCurrentLanguage();
+  const { t } = useI18n(lang);
+
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +24,7 @@ export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) 
     setError(null);
 
     if (!name.trim()) {
-      setError('Organization name is required');
+      setError(t('validation.required'));
       return;
     }
 
@@ -35,14 +39,14 @@ export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) 
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || 'Failed to create organization');
+        setError(data.error || t('errors.serverError'));
         return;
       }
 
       const data = await res.json();
       router.push(`/dashboard?org=${data.organization._id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('errors.serverError'));
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +59,7 @@ export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) 
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Organization name"
+          placeholder={t('common.organization')}
           disabled={isLoading}
           className="flex-1"
         />
@@ -64,7 +68,7 @@ export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) 
           disabled={isLoading || !name.trim()}
           className="bg-blue-600 text-white hover:bg-blue-700"
         >
-          {isLoading ? 'Creating...' : 'Create'}
+          {isLoading ? t('common.loading') : t('common.save')}
         </Button>
       </div>
 

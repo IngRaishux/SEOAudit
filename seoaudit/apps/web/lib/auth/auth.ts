@@ -80,20 +80,28 @@ export const authConfig = {
         token.email = user.email;
       }
 
-      // Resolve organization and membership on first sign-in
+      // Resolve organizations on first sign-in
       if (token.id && !token.accountId) {
         try {
           await connectMongoose();
-          const membership = await Membership.findOne({ userId: token.id });
+          const memberships = await Membership.find({ userId: token.id });
 
-          if (membership) {
-            const org = await Organization.findById(membership.organizationId);
-            token.accountId = membership.organizationId.toString();
-            token.organizationName = org?.name || 'Organization';
-            token.role = membership.role;
+          if (memberships.length > 0) {
+            const organizations = await Promise.all(
+              memberships.map(async (m) => {
+                const org = await Organization.findById(m.organizationId);
+                return {
+                  id: m.organizationId.toString(),
+                  name: org?.name || 'Organization',
+                };
+              })
+            );
+
+            token.accountId = memberships[0].organizationId.toString();
+            token.organizations = organizations;
           }
         } catch (error) {
-          console.error('JWT callback - error resolving org:', error);
+          console.error('JWT callback - error resolving orgs:', error);
         }
       }
 
@@ -106,13 +114,21 @@ export const authConfig = {
 
         try {
           await connectMongoose();
-          const membership = await Membership.findOne({ userId });
+          const memberships = await Membership.find({ userId });
 
-          if (membership) {
-            const org = await Organization.findById(membership.organizationId);
-            session.user.accountId = membership.organizationId.toString();
-            session.user.organizationName = org?.name || 'Organization';
-            session.user.role = membership.role as 'owner' | 'admin' | 'member';
+          if (memberships.length > 0) {
+            const organizations = await Promise.all(
+              memberships.map(async (m) => {
+                const org = await Organization.findById(m.organizationId);
+                return {
+                  id: m.organizationId.toString(),
+                  name: org?.name || 'Organization',
+                };
+              })
+            );
+
+            session.user.accountId = memberships[0].organizationId.toString();
+            session.user.organizations = organizations;
           }
         } catch (error) {
           console.error('Session callback error:', error);

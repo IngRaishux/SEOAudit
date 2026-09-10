@@ -30,7 +30,7 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerateAndSave = async () => {
-    if (!session?.user?.organizationName) {
+    if (!session?.user?.organizations || session.user.organizations.length === 0) {
       setError("No se pudo obtener la información de tu organización");
       return;
     }
@@ -45,7 +45,7 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
         title: pageData.title,
         description: pageData.description,
         wordCount: pageData.wordCount,
-        accountName: session.user.organizationName,
+        accountName: session.user.organizations[0].name,
       });
 
       onSuggestionsGenerated(suggestions);
@@ -65,7 +65,7 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
       <DialogHeader>
         <DialogTitle>Generar Sugerencias SEO</DialogTitle>
         <DialogDescription className="mt-1 text-sm leading-6">
-          Se generarán sugerencias SEO optimizadas para <span className="font-semibold">{session?.user?.organizationName}</span>.
+          Se generarán sugerencias SEO optimizadas para <span className="font-semibold">{session?.user?.organizations?.[0]?.name}</span>.
         </DialogDescription>
       </DialogHeader>
 

@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { SignOutButton } from '@/components/SignOutButton';
+import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 interface HeaderProps {
   currentOrganization?: string;
@@ -11,64 +12,73 @@ interface HeaderProps {
 
 export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
   const { data: session } = useSession();
+  const lang = useCurrentLanguage();
+  const { t } = useI18n(lang);
 
   return (
-    <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-      <div className="flex justify-between items-center px-8 py-4">
-        <Link href="/" className="text-xl font-bold text-zinc-900 dark:text-white">
-          SEO Audit
-        </Link>
+    <header className="navbar bg-base-100 border-b border-base-300 sticky top-0 z-40">
+      <div className="flex-1">
+        {session ? (
+          <Link href="/organizations" className="btn btn-ghost text-lg lg:text-xl font-bold text-base-content">
+            🔍 SEO Audit
+          </Link>
+        ) : (
+          <Link href="/" className="btn btn-ghost text-lg lg:text-xl font-bold text-base-content">
+            🔍 SEO Audit
+          </Link>
+        )}
+      </div>
 
-        <div className="flex items-center gap-6">
-          {session ? (
-            <>
-              <div className="flex flex-col items-end">
-                <p className="text-sm font-medium text-zinc-900 dark:text-white">
-                  {session.user?.name || session.user?.email}
+      <div className="flex-none gap-2">
+        {session ? (
+          <>
+            {/* User Info - Hidden on mobile */}
+            <div className="hidden md:flex flex-col items-end px-4">
+              <p className="text-xs lg:text-sm font-medium text-base-content truncate max-w-24 lg:max-w-none">
+                {session.user?.name || session.user?.email}
+              </p>
+              {currentOrganization && (
+                <p className="text-xs text-base-content/70 truncate max-w-24 lg:max-w-none">
+                  {currentOrganization}
                 </p>
-                {currentOrganization && (
-                  <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                    {currentOrganization}
-                  </p>
-                )}
-              </div>
+              )}
+            </div>
+
+            {/* Links - Hidden on small screens */}
+            <div className="hidden sm:flex gap-2">
               <Link
                 href="/organizations"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="btn btn-ghost btn-sm text-xs lg:text-sm"
               >
-                Organizations
-              </Link>
-              <Link
-                href="/organizations"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Dashboard
+                {t('common.organizations')}
               </Link>
               <Link
                 href={currentOrgId ? `/settings?org=${currentOrgId}` : '/settings'}
-                className="text-sm text-zinc-600 hover:text-zinc-700 font-medium"
+                className="btn btn-ghost btn-sm text-xs lg:text-sm"
               >
-                Settings
+                {t('common.settings')}
               </Link>
-              <SignOutButton />
-            </>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                className="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Sign up
-              </Link>
-            </>
-          )}
-        </div>
+            </div>
+
+            {/* Sign Out */}
+            <SignOutButton />
+          </>
+        ) : (
+          <>
+            <Link
+              href="/login"
+              className="btn btn-ghost btn-sm text-xs lg:text-sm"
+            >
+              {t('auth.login')}
+            </Link>
+            <Link
+              href="/register"
+              className="btn btn-primary btn-sm text-xs lg:text-sm"
+            >
+              {t('auth.signUp')}
+            </Link>
+          </>
+        )}
       </div>
     </header>
   );

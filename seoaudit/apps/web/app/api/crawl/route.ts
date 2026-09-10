@@ -37,11 +37,8 @@ export async function POST(request: Request) {
       const membership = await Membership.findOne({ userId: user._id.toString() });
 
       if (membership) {
-        const org = await Organization.findById(membership.organizationId);
         session.user.id = user._id.toString();
         session.user.accountId = membership.organizationId.toString();
-        session.user.organizationName = org?.name || 'Organization';
-        session.user.role = membership.role as any;
       } else {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }

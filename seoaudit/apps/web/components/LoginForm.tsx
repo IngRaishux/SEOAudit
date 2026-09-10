@@ -6,9 +6,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 export function LoginForm() {
   const router = useRouter();
+  const lang = useCurrentLanguage();
+  const { t } = useI18n(lang);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -27,12 +31,12 @@ export function LoginForm() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
+        setError(t('auth.invalidCredentials'));
       } else if (result?.ok) {
         router.push('/organizations');
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError(t('errors.serverError'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -44,7 +48,7 @@ export function LoginForm() {
     try {
       await signIn('google', { callbackUrl: '/organizations' });
     } catch (err) {
-      setError('Google sign-in failed');
+      setError(t('errors.serverError'));
       console.error(err);
       setIsLoading(false);
     }
@@ -55,7 +59,7 @@ export function LoginForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
-            Email
+            {t('auth.email')}
           </label>
           <Input
             id="email"
@@ -70,7 +74,7 @@ export function LoginForm() {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
-            Password
+            {t('auth.password')}
           </label>
           <Input
             id="password"
@@ -94,7 +98,7 @@ export function LoginForm() {
           disabled={isLoading}
           className="w-full"
         >
-          {isLoading ? 'Signing in...' : 'Sign in'}
+          {isLoading ? t('common.loading') : t('auth.signIn')}
         </Button>
       </form>
 
@@ -105,14 +109,14 @@ export function LoginForm() {
           disabled={isLoading}
           className="w-full bg-white border border-zinc-300 text-zinc-900 hover:bg-zinc-50"
         >
-          {isLoading ? 'Signing in...' : 'Continue with Google'}
+          {isLoading ? t('common.loading') : t('auth.continueWithGoogle')}
         </Button>
       </div>
 
       <p className="mt-6 text-center text-sm text-zinc-600">
-        Don&apos;t have an account?{' '}
+        {t('auth.dontHaveAccount')}{' '}
         <Link href="/register" className="font-semibold text-blue-600 hover:text-blue-700">
-          Sign up
+          {t('auth.registerHere')}
         </Link>
       </p>
     </div>
