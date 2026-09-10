@@ -4,7 +4,12 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { SignOutButton } from '@/components/SignOutButton';
 
-export function Header() {
+interface HeaderProps {
+  currentOrganization?: string;
+  currentOrgId?: string;
+}
+
+export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
   const { data: session } = useSession();
 
   return (
@@ -21,17 +26,29 @@ export function Header() {
                 <p className="text-sm font-medium text-zinc-900 dark:text-white">
                   {session.user?.name || session.user?.email}
                 </p>
-                {session.user?.organizationName && (
+                {currentOrganization && (
                   <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                    {session.user.organizationName}
+                    {currentOrganization}
                   </p>
                 )}
               </div>
               <Link
-                href="/dashboard"
+                href="/organizations"
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Organizations
+              </Link>
+              <Link
+                href="/organizations"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
                 Dashboard
+              </Link>
+              <Link
+                href={currentOrgId ? `/settings?org=${currentOrgId}` : '/settings'}
+                className="text-sm text-zinc-600 hover:text-zinc-700 font-medium"
+              >
+                Settings
               </Link>
               <SignOutButton />
             </>

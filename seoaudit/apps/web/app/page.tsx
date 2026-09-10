@@ -1,104 +1,79 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/Button";
-import { Input } from "@/components/Input";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Button } from '@/components/Button';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
 export default function Home() {
-  const router = useRouter();
-
-  const [url, setUrl] = useState("");
-  const [jobId, setJobId] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
-  const [progress, setProgress] = useState({ processed: 0, total: 0 });
-  const [error, setError] = useState<string | null>(null);
-
-  async function sendInfo(url: string) {
-    setError(null);
-
-    if (!url) {
-      setError("Ingresa una URL");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/crawl", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Error iniciando el crawl");
-        return;
-      }
-
-      setJobId(data.jobId);
-      setStatus("running");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error de red");
-    }
-  }
-
-  useEffect(() => {
-    if (!jobId || status === "completed" || status === "failed") return;
-
-    const interval = setInterval(async () => {
-      const res = await fetch(`/api/crawl/${jobId}`);
-      const data = await res.json();
-
-      setStatus(data.status);
-      setProgress({ processed: data.processed, total: data.total });
-
-      if (data.status === "completed") {
-        clearInterval(interval);
-        router.push(`/sites/${jobId}`);
-      } else if (data.status === "failed") {
-        clearInterval(interval);
-        setError(data.error || "El crawl falló");
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [jobId, status, router]);
-
-  const isRunning = status === "running" || status === "queued";
+  const { data: session } = useSession();
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center bg-zinc-50 font-sans border border-amber-700 dark:bg-black">
-      <div className="py-10">
-        <h1 className="text-2xl font-bold">Ingresa una url</h1>
-      </div>
-
-      <main className="w-full max-w-xl h-auto p-1.5 flex flex-row justify-center gap-8 items-center rounded-lg border border-b-blue-600">
-        <Input
-          className="flex bg-mist-200 grow-2 justify-center"
-          placeholder="Ingresa una url"
-          onChange={(e) => setUrl(e.target.value)}
-          value={url}
-          disabled={isRunning}
-        />
-        <Button
-          className="px-9"
-          variant="primary"
-          onClick={() => sendInfo(url)}
-          disabled={isRunning}
-        >
-          {isRunning ? "Procesando..." : "Buscar"}
-        </Button>
-      </main>
-
-      {isRunning && (
-        <div className="mt-6 text-sm text-zinc-600">
-          {progress.total > 0
-            ? `Procesando ${progress.processed} / ${progress.total} URLs`
-            : "Buscando sitemap..."}
+    <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-black dark:to-zinc-900">
+      {/* Hero Section */}
+      <div className="max-w-4xl mx-auto px-4 py-24">
+        <div className="text-center mb-12">
+          <h2 className="text-5xl font-bold mb-4 text-zinc-900 dark:text-white">
+            Website SEO Analysis Made Simple
+          </h2>
+          <p className="text-xl text-zinc-600 dark:text-zinc-400 mb-8">
+            Crawl your website, identify SEO issues, and get actionable suggestions to improve your ranking.
+          </p>
+          {session ? (
+            <div className="flex gap-4 justify-center">
+              <Link href="/crawler">
+                <Button className="px-8 py-3 bg-blue-600 text-white hover:bg-blue-700 text-lg">
+                  Start Crawling
+                </Button>
+              </Link>
+              <Link href="/dashboard">
+                <Button className="px-8 py-3 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700 text-lg">
+                  View Dashboard
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex gap-4 justify-center">
+              <Link href="/register">
+                <Button className="px-8 py-3 bg-blue-600 text-white hover:bg-blue-700 text-lg">
+                  Get Started Free
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button className="px-8 py-3 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-300 dark:hover:bg-zinc-700 text-lg">
+                  Sign In
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
-      )}
 
-      {error && <div className="mt-6 text-sm text-red-600">{error}</div>}
+        {/* Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <div className="text-3xl mb-3">🔍</div>
+            <h3 className="text-lg font-semibold mb-2">Deep Site Analysis</h3>
+            <p className="text-zinc-600 dark:text-zinc-400">
+              Automatically crawl your entire website and analyze every page for SEO issues.
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <div className="text-3xl mb-3">💡</div>
+            <h3 className="text-lg font-semibold mb-2">Smart Suggestions</h3>
+            <p className="text-zinc-600 dark:text-zinc-400">
+              Get AI-powered recommendations to fix issues and improve your SEO performance.
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
+            <div className="text-3xl mb-3">📊</div>
+            <h3 className="text-lg font-semibold mb-2">Multi-Organization</h3>
+            <p className="text-zinc-600 dark:text-zinc-400">
+              Manage multiple websites and organizations in a single dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -10,11 +10,12 @@ import {
 } from "@/components/Dialog";
 import { Button } from "@/components/Button";
 import { Dispatch, SetStateAction, useState } from "react";
+import { useSession } from "next-auth/react";
 import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
 
 type DialogSugestionProps = {
   setIsOpen: Dispatch<SetStateAction<boolean>>;
-  onSuggestionsGenerated: (accountName: string, suggestions: any) => void;
+  onSuggestionsGenerated: (suggestions: any) => void;
   setIsLoading: Dispatch<SetStateAction<boolean>>;
   pageData: {
     url: string;
@@ -25,15 +26,16 @@ type DialogSugestionProps = {
 };
 
 const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoading }: DialogSugestionProps) => {
-  const [accountName, setAccountName] = useState("");
+  const { data: session } = useSession();
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerateAndSave = async () => {
-    if (!accountName.trim()) {
-      setError("Por favor ingresa el nombre de la cuenta");
+    if (!session?.user?.organizationName) {
+      setError("No se pudo obtener la información de tu organización");
       return;
     }
-    setIsOpen(false)
+
+    setIsOpen(false);
     setIsLoading(true);
     setError(null);
 
@@ -43,16 +45,16 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
         title: pageData.title,
         description: pageData.description,
         wordCount: pageData.wordCount,
-        accountName: accountName,
+        accountName: session.user.organizationName,
       });
 
-      onSuggestionsGenerated(accountName, suggestions);
+      onSuggestionsGenerated(suggestions);
       setIsOpen(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error generating suggestions';
       setError(message);
       console.error('Error generating SEO suggestions:', err);
-      setIsOpen(true)
+      setIsOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -63,25 +65,11 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
       <DialogHeader>
         <DialogTitle>Generar Sugerencias SEO</DialogTitle>
         <DialogDescription className="mt-1 text-sm leading-6">
-          Ingresa el nombre de tu cuenta para generar las sugerencias SEO optimizadas.
+          Se generarán sugerencias SEO optimizadas para <span className="font-semibold">{session?.user?.organizationName}</span>.
         </DialogDescription>
       </DialogHeader>
 
       <div className="flex flex-col gap-4 py-4">
-        <div className="flex flex-col gap-2">
-          <label htmlFor="account-name" className="text-sm font-semibold text-zinc-700">
-            Nombre de la Cuenta
-          </label>
-          <input
-            id="account-name"
-            type="text"
-            value={accountName}
-            onChange={(e) => setAccountName(e.target.value)}
-            placeholder="Ej: Mi Tienda Online"
-            className="px-3 py-2 border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
         {error && (
           <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
             {error}
@@ -92,20 +80,20 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
       <DialogFooter className="mt-6">
         <DialogClose asChild>
           <Button
-            className="mt-2 w-full sm:mt-0 sm:w-fitn"
+            className="mt-2 w-full sm:mt-0 sm:w-fit"
             variant="destructive"
           >
             Cancelar
           </Button>
         </DialogClose>
         <Button
-          className="px-4 py-2 rounded-md    hover:primary-content disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="px-4 py-2 rounded-md hover:primary-content disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           onClick={handleGenerateAndSave}
         >
-         Generar Automáticamente
+          Generar Automáticamente
         </Button>
       </DialogFooter>
-    </DialogContent> 
+    </DialogContent>
   );
 };
 

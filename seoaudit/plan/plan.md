@@ -24,6 +24,39 @@ Elegida sobre Lucia (proyecto archivado), Clerk/Auth0 (SaaS hosted, choca con re
 - El Credentials provider **no crea usuarios**, solo autentica → registro va por un Route Handler propio (`app/api/register/route.ts`) que hashea password con `bcryptjs` y valida input con `zod`.
 - **MongoDBAdapter removido**: Aunque está disponible, se removió para evitar conflictos con JWT strategy; la autenticación usa solo el Credentials provider y Google OAuth.
 
+## Stack del Crawler Web
+
+**Librería Principal:** `@seo-optimizer/crawler`
+
+**Tecnologías Internas:**
+- **Playwright**: Motor headless para renderizado de JavaScript (navegación real)
+- **Cheerio**: Parser HTML ultra-ligero para extraer datos de la DOM
+- **Node.js Workers**: Concurrencia de hasta 5 requests paralelos
+
+**Capacidades:**
+- ✅ Detecta y crawlea URLs del sitemap.xml
+- ✅ Extrae meta tags (title, description, og:*, robots, canonical)
+- ✅ Recolecta headings (h1, h2) para estructura
+- ✅ Captura HTTP status codes (200, 404, etc)
+- ✅ Resuelve enlaces relativos y absolutos
+- ✅ Callback de progreso en tiempo real
+
+**Integración en SEOAudit:**
+1. Frontend llama `POST /api/crawl` con URL
+2. Route Handler crea un Job (en memoria, en `lib/jobStore.ts`)
+3. `runCrawl()` ejecuta `crawlSite()` en background
+4. Callback `onProgress` actualiza job.processed/total para polling
+5. Al completar: persist en MongoDB vía `persistCrawlResult(job)`
+6. Frontend obtiene `siteId` (ObjectId de MongoDB) en siguiente polling
+
+**Limitaciones:**
+- Máximo ~1000 páginas por crawl (dependiendo de sitemap)
+- No soporta autenticación requerida
+- JavaScript muy dinámico puede no capturarse completamente
+- Respetuoso: máx 5 requests concurrentes, sin reintento automático
+
+Referir a `docs/PROJECT.md` sección "🕷️ Arquitectura del Crawler" para detalles completos.
+
 ## Modelo de datos MongoDB
 
 - **Colecciones gestionadas por el adapter de Auth.js** (driver nativo `mongodb`, no Mongoose): `users`, `accounts` (OAuth linking — no confundir con "cuenta" de negocio), `verificationTokens`. Con JWT strategy no se pobla `sessions`.
@@ -32,21 +65,30 @@ Elegida sobre Lucia (proyecto archivado), Clerk/Auth0 (SaaS hosted, choca con re
   - `Membership` (colección `memberships`): `userId`, `organizationId`, `role: "owner"|"admin"|"member"`, índice único compuesto `{userId, organizationId}`.
 - "Cuenta activa": cada `User` crea una sola `Organization` al registrarse; el callback `jwt` de Auth.js resuelve la primera `Membership` y guarda `accountId` + `organizationName` en el token/sesión.
 
-## Persistencia en DynamoDB (Fase 1B+)
+## Persistencia de Crawleos (Fase 1B)
 
-**Enfoque**: Enviar los datos del crawleo a tabla(s) existente(s) en DynamoDB de forma configurable e independiente de la lógica de autenticación/multi-tenancy.
+**Enfoque Principal**: Los resultados del crawl se guardan en **MongoDB** como fuente de verdad, con multi-tenancy mediante `accountId`.
 
-**Detalles a definir**:
-- Tabla/tablas de destino (nombre configurable via `.env`)
-- Estructura de items (formato, atributos obligatorios vs opcionales)
-- Cómo asociar crawls a `accountId` (si es requerido para multi-tenancy)
-- Trigger y endpoint (`app/api/crawl/route.ts` → pushes to DynamoDB)
-- Manejo de errores (qué pasa si DynamoDB no está disponible)
+**Modelos Mongoose a crear**:
+- `Site` (colección `sites`): URL, accountId, createdAt, updatedAt
+- `Page` (colección `pages`): siteId (ref), URL, title, statusCode, accountId
+- `Suggestion` (colección `suggestions`): pageId (ref), siteId (ref), type, description, accountId
 
-**Temporalmente**:
-- El crawler sigue funcionando sin persistencia en DynamoDB (job store en memoria es suficiente)
-- Una vez definido el esquema, agregar `lib/db/dynamo.ts` y un `crawlRepository.ts` para la persistencia
-- El `accountId` de la sesión se incluirá en los items si es necesario para consultas multi-tenant
+**Índices**:
+- `Site`: compound index `{accountId, createdAt}` para listar por cuenta
+- `Page`: índice en `siteId` para listar pages de un site
+- `Suggestion`: índice en `pageId` para listar sugerencias de una página
+
+**Flujo del crawler**:
+1. Usuario autenticado en `/api/crawl` con sesión
+2. Ejecutar crawl (jobStore en memoria para progreso en vivo)
+3. Al completar: persistir Site + Pages + Suggestions en MongoDB con `accountId` de la sesión
+4. Dashboard lista sites/pages/suggestions por `accountId`
+
+**DynamoDB (Opcional)**:
+- Exportación configurable: si el usuario lo desea, puede enviar datos a DynamoDB como respaldo/análisis
+- No es bloqueante para Fase 1B
+- Se implementaría en Fase 2 con un endpoint separado de exportación
 
 ## Estructura de archivos nuevos en `apps/web` (✅ completados hasta aquí)
 
@@ -70,23 +112,28 @@ components/SessionProvider.tsx                   # ✅ SessionProvider en app/la
 types/next-auth.d.ts                             # ✅ module augmentation para session.user
 ```
 
-### Pendientes para Fase 1B+ (orden a definir):
+### ✅ Completados en Fase 1B (MongoDB + Persistencia):
 ```
-🔄 DynamoDB persistencia (configurable, detalles TBD)
-   lib/db/dynamo.ts                              # singleton + helper para persistencia
-   lib/repositories/crawlRepository.ts            # persistir crawl results en tabla configurable
-   app/api/crawl/route.ts                        # integrar DynamoDB persistence
+✅ Modelos Mongoose:
+   lib/models/Site.ts                            # ✅ Schema: url, accountId, title, crawlStatus, pageCount
+   lib/models/Page.ts                            # ✅ Schema: siteId (ref), url, accountId, statusCode, metaTags
+   lib/models/Suggestion.ts                      # ✅ Schema: pageId (ref), siteId (ref), accountId, type, severity
 
-📋 Dashboard + multi-tenancy:
-   app/api/sites/route.ts                        # GET — listar sites del accountId de la sesión
-   app/dashboard/page.tsx                        # real — lista sites por account
+✅ Persistencia de crawl:
+   lib/repositories/siteRepository.ts            # ✅ CRUD: create, get, listByAccount, update, delete, count
+   lib/repositories/pageRepository.ts            # ✅ CRUD: create, batch, listBySite, update, delete
+   lib/repositories/suggestionRepository.ts      # ✅ CRUD: create, listByPage, listBySite, update, delete
+   app/api/crawl/route.ts                        # ✅ POST: auth + persistencia automática con accountId
+   lib/jobStore.ts                               # ✅ Actualizado: siteId, accountId en cada job
 
-📋 Google OAuth:
-   LoginForm.tsx                                 # agregar botón funcional para Google OAuth
+🚧 Pendientes para Dashboard + Detalles:
+   app/dashboard/page.tsx                        # lista sites por accountId
+   app/api/sites/route.ts                        # GET — listar sites del accountId
+   app/sites/[siteId]/page.tsx                   # ver detalles de un site + pages
+   app/page.tsx                                  # navegar a /sites/[siteId] post-crawl
 
-🔧 UI + Misc:
-   components/SignOutButton.tsx                  # botón de logout
-   app/api/suggestions/route.ts                  # POST — persistencia de sugerencias (si se requiere)
+🚀 DynamoDB (Fase 2 - Opcional):
+   Endpoint de exportación configurable a DynamoDB (cuando se defina el esquema)
 ```
 
 ## Cambios en archivos existentes
@@ -134,36 +181,73 @@ types/next-auth.d.ts                             # ✅ module augmentation para 
 
 ## Estado Actual (2026-08-24)
 
-### ✅ Completado en Fase 1A:
-- Autenticación con email/password funcional (registro + login)
-- User, Organization, Membership creados en MongoDB automáticamente al registrarse
-- Sesión JWT con accountId y organizationName en el token
-- Server Component dashboard protegido con getServerSession(handler)
-- SessionProvider en layout para acceso a sesión en Client Components
-- Google OAuth provider configurado (pendiente botón funcional)
-- next-auth v4.24.0 estable (compatible con Next.js 16.2.5)
+### ✅ Completado en Fase 1A - Autenticación:
+- ✅ Email/password registration + login
+- ✅ Google OAuth (completo y funcional)
+- ✅ User, Organization, Membership en MongoDB
+- ✅ JWT session con accountId y organizationName
+- ✅ Header global con logout en todas las páginas
+- ✅ Dashboard protegido con getServerSession(handler)
+- ✅ SessionProvider para Client Components
 
-### 🔄 En progreso:
-- Prueba de Google OAuth flow
-- Documentación actualizada del plan
+### ✅ Completado en Fase 1B - MongoDB Persistencia:
+- ✅ Modelos Mongoose: Site, Page, Suggestion (con índices)
+- ✅ Repositorios CRUD: siteRepository, pageRepository, suggestionRepository
+- ✅ Integración en `/api/crawl`: Automáticamente persiste resultados con accountId
+- ✅ jobStore actualizado: agrega siteId y accountId a cada job
+- ✅ Endpoint retorna: `{ jobId, siteId }` para navegación post-crawl
 
-### 📋 Próximos pasos para Fase 1B:
-1. Probar Google OAuth (botón ya existe en LoginForm)
-2. **Definir esquema de DynamoDB** (tablas, atributos, cómo se asocia a accountId)
-3. Implementar persistencia de crawl results en DynamoDB (configurable)
-4. Dashboard real que lista sites/crawls por cuenta
-5. (Opcional) Persistencia de sugerencias SEO en DynamoDB
+### ✅ Documentación Completada:
+- ✅ `docs/PROJECT.md` - Arquitectura de datos, rutas de API, modelos, componentes, flujos principales
+- ✅ Plan actualizado con estado actual (este archivo)
+- ✅ `.env.example` - Variables de entorno documentadas
+
+### ✅ Completado en Fase 1A - Multi-Org Management (última sesión):
+- ✅ Settings sincronizado con organización seleccionada (`?org={orgId}`)
+- ✅ Navbar navega automáticamente a Settings con parámetro org
+- ✅ Sección "Danger Zone" en Settings para eliminación de organizaciones
+- ✅ Diálogo de confirmación en dos pasos (advertencia + confirmar nombre)
+- ✅ Endpoint DELETE con cascada de eliminación (Sites, Pages, Suggestions, Memberships)
+- ✅ Protección contra acceso a organizaciones eliminadas
+- ✅ Historial limpio (router.replace previene volver a org eliminada)
+- ✅ Todos los errores de TypeScript resueltos
+
+### 🚧 Pendientes para Fase 1B - Dashboard + Detalles:
+1. Google OAuth: testing end-to-end (proveedor ya configurado)
+2. Invitar miembros a organización con roles
+3. Rate limiting por organización según plan
+4. Mejorar dashboard: filtros, búsqueda, sorting, exportación
+5. Hardening: rotar GOOGLE_API_KEY, CORS, CSRF
 
 ## Verificación (Fase 1A - completada)
 
-✅ Flujo manual de registro/login:
-- Registrarse por email/password → ✅ se crea User + Organization + Membership en Mongo
+✅ Autenticación & Registro:
+- Registrarse por email/password → ✅ crea User + Organization + Membership en Mongo
 - Iniciar sesión con credenciales → ✅ sesión JWT con accountId/organizationName
-- Acceder a `/dashboard` → ✅ sesión disponible, puede ver su información
+- Logout funciona correctamente
+
+✅ Multi-Organización:
+- Un usuario crea múltiples organizaciones → ✅ todas visible en navbar
+- Cambiar entre organizaciones → ✅ dashboard y settings se sincroniza
+- Dashboard muestra sitios de org seleccionada → ✅ filtrado por accountId
+- Settings muestra datos de org seleccionada → ✅ sincronizado con query param
+
+✅ Operaciones CRUD:
+- Crear organización → ✅ POST `/api/organizations`
+- Editar nombre de organización (owner) → ✅ PUT `/api/organizations/[orgId]`
+- Eliminar organización (owner) → ✅ DELETE `/api/organizations/[orgId]` con cascada
+- Crawlear URL → ✅ persiste Sites y Pages con accountId
+- Generar sugerencias SEO → ✅ persiste en MongoDB
+
+✅ Seguridad & Multi-Tenancy:
+- User no puede ver sites de otra org → ✅ 404 si intenta acceso directo
+- Memberships eliminados previenen acceso a org borrada → ✅ redirige a /settings
+- Router.replace previene volver atrás a org eliminada → ✅ historial limpio
+- TypeScript strict mode → ✅ `npm run build` sin errores de tipo
 
 ⏳ Pendiente (Fase 1B):
-- Google OAuth login
-- Craulear una URL como usuario autenticado → confirmar que aparece en `/dashboard` con `accountId`
-- Persistencia de sugerencias SEO
-- Validación multi-tenancy (segunda cuenta no ve sites de la primera)
-- `npm run lint` y `npm run build` deben pasar sin errores
+- Google OAuth: testing end-to-end completo
+- Invitar miembros con roles (Admin/Member/Viewer)
+- Rate limiting por organización
+- Dashboard mejorado: filtros, búsqueda, exportación
+- Tests automatizados
