@@ -3,6 +3,5 @@
   "buildCommand": "cd seoaudit/apps/web && npm install && npm run build",
   "installCommand": "cd seoaudit/apps/web && npm install",
   "framework": "nextjs",
-  "outputDirectory": "seoaudit/apps/web/.next",
-  "nodeVersion": "18.x"
+  "outputDirectory": "seoaudit/apps/web/.next"
 }
