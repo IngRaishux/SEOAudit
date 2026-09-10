@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { handler } from '@/lib/auth/auth';
+import type { Session } from 'next-auth';
 import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
@@ -14,7 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  const session = await getServerSession(handler);
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -24,7 +25,7 @@ export async function GET(
     await connectMongoose();
 
     // Get site to find organization
-    const site = await Site.findById(siteId).lean();
+    const site = (await Site.findById(siteId).lean()) as any;
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
@@ -40,7 +41,7 @@ export async function GET(
     }
 
     // Get or create site settings
-    let settings = await SiteSettings.findOne({ siteId }).lean();
+    let settings = (await SiteSettings.findOne({ siteId }).lean()) as any;
 
     if (!settings) {
       settings = {
@@ -70,7 +71,7 @@ export async function POST(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  const session = await getServerSession(handler);
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -90,7 +91,7 @@ export async function POST(
     await connectMongoose();
 
     // Get site to find organization
-    const site = await Site.findById(siteId);
+    const site = (await Site.findById(siteId)) as any;
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }

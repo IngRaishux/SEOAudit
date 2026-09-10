@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { handler } from '@/lib/auth/auth';
+import type { Session } from 'next-auth';
 import connectMongoose from '@/lib/db/mongoose';
 import UserSettings from '@/lib/models/UserSettings';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
-  const session = await getServerSession(handler);
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   try {
     await connectMongoose();
 
-    let settings = await UserSettings.findOne({ userId: session.user.id }).lean();
+    let settings = (await UserSettings.findOne({ userId: session.user.id }).lean()) as any;
 
     if (!settings) {
       settings = {
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(handler);
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

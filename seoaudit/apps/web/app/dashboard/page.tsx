@@ -124,6 +124,12 @@ export default async function DashboardPage(props: {
           <div className="flex gap-2">
             <SwitchOrgButton />
             <Link
+              href={`/settings/organization?org=${selectedOrgId}`}
+              className="px-4 py-2 bg-zinc-600 text-white rounded hover:bg-zinc-700 text-sm font-medium"
+            >
+              Settings
+            </Link>
+            <Link
               href={`/crawler?org=${selectedOrgId}`}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
             >

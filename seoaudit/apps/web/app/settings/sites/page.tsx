@@ -83,8 +83,8 @@ export default async function SitesSettingsPage(props: {
               }}
               className="px-3 py-2 rounded border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white w-full"
             >
-              {memberships.map((m) => (
-                <option key={m._id} value={(m.organizationId as any).toString()}>
+              {memberships.map((m: any) => (
+                <option key={m._id?.toString()} value={(m.organizationId as any).toString()}>
                   {(m.organizationId as any).toString()}
                 </option>
               ))}

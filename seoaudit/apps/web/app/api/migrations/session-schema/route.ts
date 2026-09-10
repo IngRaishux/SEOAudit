@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { handler } from '@/lib/auth/auth';
+import type { Session } from 'next-auth';
 import connectMongoose from '@/lib/db/mongoose';
 import Membership from '@/lib/models/Membership';
 import Organization from '@/lib/models/Organization';
@@ -17,7 +18,7 @@ export const runtime = 'nodejs';
  * - Organization data is properly structured
  */
 export async function GET(request: Request) {
-  const session = await getServerSession(handler);
+  const session = (await getServerSession(handler)) as Session | null;
 
   // Only allow admins or during development
   if (!session?.user?.email || process.env.NODE_ENV === 'production') {
@@ -147,7 +148,7 @@ export async function GET(request: Request) {
  * Cleans up invalid memberships (optional admin action)
  */
 export async function POST(request: Request) {
-  const session = await getServerSession(handler);
+  const session = (await getServerSession(handler)) as Session | null;
 
   // Only allow in development or if explicitly enabled
   if (!session?.user?.email || process.env.NODE_ENV === 'production') {
