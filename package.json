@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd seoaudit/apps/web && npm run build",
-    "dev": "cd seoaudit/apps/web && npm run dev",
-    "start": "cd seoaudit/apps/web && npm run start",
-    "lint": "cd seoaudit/apps/web && npm run lint"
+    "build": "cd seoaudit && npm run build",
+    "dev": "cd seoaudit && npm run dev",
+    "start": "cd seoaudit && npm run start"
   },
   "devDependencies": {
     "next": "16.2.5"
