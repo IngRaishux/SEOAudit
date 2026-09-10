@@ -14,8 +14,9 @@ export function SignOutButton() {
 
   return (
     <Button
+      variant="destructive"
+      size="sm"
       onClick={handleSignOut}
-      className="bg-red-600 hover:bg-red-700 text-white"
     >
       {t('header.logout')}
     </Button>

@@ -7,6 +7,7 @@ import DialogSugestion from '@/components/DialogSugestion';
 import { Dialog, DialogTrigger } from '@/components/Dialog';
 import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
 import { useSession } from 'next-auth/react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 
 
 const mockSuggested = {
@@ -143,7 +144,8 @@ function SugerenciaContent() {
 
   if (loadingPage) {
     return (
-      <div className="p-8 text-zinc-700">
+      <div className="p-8 text-base-content/70">
+        <span className="loading loading-spinner loading-md text-primary mr-2"></span>
         Cargando información de la página...
       </div>
     );
@@ -151,18 +153,20 @@ function SugerenciaContent() {
 
   if (!targetUrl) {
     return (
-      <div className="p-8 text-zinc-700">
-        Falta el parámetro <code>url</code>.
+      <div className="alert alert-warning p-8">
+        <span>Falta el parámetro <code>url</code>.</span>
       </div>
     );
   }
 
   if (!mockPage) {
     return (
-      <div className="p-8 text-zinc-700">
-        No se encontró información para{" "}
-        <span className="font-mono">{targetUrl}</span>. Vuelve al listado del
-        sitio para regenerar.
+      <div className="alert alert-error p-8">
+        <span>
+          No se encontró información para{" "}
+          <span className="font-mono">{targetUrl}</span>. Vuelve al listado del
+          sitio para regenerar.
+        </span>
       </div>
     );
   }
@@ -309,162 +313,175 @@ function SugerenciaContent() {
   };
 
   return (
-    <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
-      {/* Overlay de loading */}
-    {loading && (
-      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 dark:bg-zinc-900">
-          <span className="loading loading-spinner loading-xl text-neutral"></span>
-          <span className="skeleton skeleton-text">Generando sugerencias...</span>
-        </div>
-      </div>
-    )}
-      <BackButton />
-      {/* Content */}
-      <div className="border border-zinc-300 rounded-lg p-4 bg-white">
-        <div className="text-xs uppercase tracking-wide text-zinc-500">
-          Generando SEO para
-        </div>
-        <h1 className="text-xl font-bold mt-1 font-mono break-all">
-          {mockPage.url}
-        </h1>
-        <div className="flex gap-4 text-sm text-zinc-600 mt-2">
-          <span>Status: {mockPage.statusCode || '—'}</span>
-        </div>
-      </div>
-
-      {/* Comparativa: original vs editable */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Columna izquierda: valor original */}
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">
-            Original (del crawl)
-          </h2>
-
-          <Field label="Title" value={mockPage.title || null} />
-          <Field label="Description" value={mockPage.description || null} multiline />
-          <Field label="Canonical" value={mockPage.canonical || null} />
-          <Field label="Slug" value={slug || "home"} />
-        </div>
-
-        {/* Columna derecha: sugerencia editable */}
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-blue-600">
-            Sugerencia (editable)
-          </h2>
-
-          <EditableField
-            label="Slug"
-            value={form.slug.S}
-            onChange={(v) => updateSimpleField("slug", v)}
-          />
-          <EditableField
-            label="Title"
-            value={form.title.S}
-            onChange={(v) => updateSimpleField("title", v)}
-            hint={`${form.title.S.length} chars (ideal 50-60)`}
-          />
-          <EditableField
-            label="Description"
-            value={form.description.S}
-            onChange={(v) => updateSimpleField("description", v)}
-            hint={`${form.description.S.length} chars (ideal 150-160)`}
-            multiline
-          />
-          <EditableField
-            label="Canonical URL"
-            value={form.canonicalUrl.S}
-            onChange={(v) => updateSimpleField("canonicalUrl", v)}
-          />
-          <EditableField
-            label="Keywords (separados por coma)"
-            value={form.keywords.SS.join(", ")}
-            onChange={(v) =>
-              updateKeywords(
-                v
-                  .split(",")
-                  .map((k) => k.trim())
-                  .filter(Boolean),
-              )
-            }
-            hint={`${form.keywords.SS.length} keywords`}
-          />
-          <div className="border border-blue-300 rounded p-3">
-            <h3 className="text-xs font-semibold text-blue-600 mb-2">
-              Lenguajes Alternos
-            </h3>
-            <EditableField
-              label="en-US"
-              value={form.alternateLanguages.M["en-US"].S}
-              onChange={(v) => updateAltLanguage("en-US", v)}
-            />
-            <EditableField
-              label="es-MX"
-              value={form.alternateLanguages.M["es-MX"].S}
-              onChange={(v) => updateAltLanguage("es-MX", v)}
-            />
-            <EditableField
-              label="x-default"
-              value={form.alternateLanguages.M["x-default"].S}
-              onChange={(v) => updateAltLanguage("x-default", v)}
-            />
+    <div className="min-h-screen bg-base-100">
+      {/* Loading Modal */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-base-100 rounded-lg p-8 flex flex-col items-center gap-4">
+            <span className="loading loading-spinner loading-xl text-primary"></span>
+            <span className="text-base-content">Generando sugerencias...</span>
           </div>
         </div>
-      </div>
-
-      {/* Errores y confirmaciones */}
-      {error && (
-        <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
-          Error: {error}
-        </div>
       )}
-      {saved && (
-        <div className="p-3 rounded-md bg-green-50 border border-green-200 text-green-700 text-sm">
-          ✓ Sugerencia guardada correctamente
+      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
+        <BackButton />
+
+        {/* Header Card */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-xs uppercase tracking-wide text-base-content/70 mb-2">
+              Generando SEO para
+            </div>
+            <h1 className="text-xl font-bold font-mono break-all text-base-content mb-4">
+              {mockPage.url}
+            </h1>
+            <div className="flex gap-4 text-sm text-base-content/70">
+              <span>Status: <span className="badge badge-primary">{mockPage.statusCode || '—'}</span></span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Comparison Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Original Data Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Original (del crawl)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Field label="Title" value={mockPage.title || null} />
+              <Field label="Description" value={mockPage.description || null} multiline />
+              <Field label="Canonical" value={mockPage.canonical || null} />
+              <Field label="Slug" value={slug || "home"} />
+            </CardContent>
+          </Card>
+
+          {/* Editable Suggestions Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base text-primary">Sugerencia (editable)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <EditableField
+                label="Slug"
+                value={form.slug.S}
+                onChange={(v) => updateSimpleField("slug", v)}
+              />
+              <EditableField
+                label="Title"
+                value={form.title.S}
+                onChange={(v) => updateSimpleField("title", v)}
+                hint={`${form.title.S.length} chars (ideal 50-60)`}
+              />
+              <EditableField
+                label="Description"
+                value={form.description.S}
+                onChange={(v) => updateSimpleField("description", v)}
+                hint={`${form.description.S.length} chars (ideal 150-160)`}
+                multiline
+              />
+              <EditableField
+                label="Canonical URL"
+                value={form.canonicalUrl.S}
+                onChange={(v) => updateSimpleField("canonicalUrl", v)}
+              />
+              <EditableField
+                label="Keywords (separados por coma)"
+                value={form.keywords.SS.join(", ")}
+                onChange={(v) =>
+                  updateKeywords(
+                    v
+                      .split(",")
+                      .map((k) => k.trim())
+                      .filter(Boolean),
+                  )
+                }
+                hint={`${form.keywords.SS.length} keywords`}
+              />
+
+              {/* Alternative Languages Card */}
+              <Card className="border-primary/50">
+                <CardHeader>
+                  <CardTitle className="text-sm">Lenguajes Alternos</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <EditableField
+                    label="en-US"
+                    value={form.alternateLanguages.M["en-US"].S}
+                    onChange={(v) => updateAltLanguage("en-US", v)}
+                  />
+                  <EditableField
+                    label="es-MX"
+                    value={form.alternateLanguages.M["es-MX"].S}
+                    onChange={(v) => updateAltLanguage("es-MX", v)}
+                  />
+                  <EditableField
+                    label="x-default"
+                    value={form.alternateLanguages.M["x-default"].S}
+                    onChange={(v) => updateAltLanguage("x-default", v)}
+                  />
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
         </div>
-      )}
 
-      {/* Acciones */}
-      <div className="flex justify-end gap-3 mt-4">
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <button
-              disabled={loading}
-              className="px-4 py-2 rounded-md border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              {loading ? "Generando..." : "Generar Sugerencias"}
-            </button>
-          </DialogTrigger>
-          <DialogSugestion
-            setIsOpen={setIsOpen}
-            setIsLoading={setLoading}
-            onSuggestionsGenerated={handleSuggestionsGenerated}
+        {/* Alerts */}
+        {error && (
+          <div className="alert alert-error text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2m0 0l2-2m-2 2l-2 2" />
+            </svg>
+            <span>Error: {error}</span>
+          </div>
+        )}
+        {saved && (
+          <div className="alert alert-success text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>✓ Sugerencia guardada correctamente</span>
+          </div>
+        )}
 
-            pageData={{
-              url: mockPage.url,
-              title: mockPage.title || null,
-              description: mockPage.description || null,
-              wordCount: 0,
-            }}
-          />
-        </Dialog>
-        {/* <button className="px-4 py-2 rounded-md border border-zinc-300 bg-white text-zinc-700 hover:bg-zinc-100">
-          Descartar y regenerar
-        </button> */}
-        <button
-          onClick={handleExport}
-          className="px-6 py-2 rounded-md bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={loading}
-        >
-          Exportar JSON
-        </button>
-        <button
-          onClick={handleGenerateAndExport}
-          className='px-6 py-2 rounded-md bg-green-600 text-white font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed'
-          disabled={loading}
-        >
-          Generar y Exportar JSON
-        </button>
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-end">
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <button
+                disabled={loading}
+                className="btn btn-warning btn-sm"
+              >
+                {loading ? "Generando..." : "Generar Sugerencias"}
+              </button>
+            </DialogTrigger>
+            <DialogSugestion
+              setIsOpen={setIsOpen}
+              setIsLoading={setLoading}
+              onSuggestionsGenerated={handleSuggestionsGenerated}
+              pageData={{
+                url: mockPage.url,
+                title: mockPage.title || null,
+                description: mockPage.description || null,
+                wordCount: 0,
+              }}
+            />
+          </Dialog>
+          <button
+            onClick={handleExport}
+            className="btn btn-primary btn-sm"
+            disabled={loading}
+          >
+            Exportar JSON
+          </button>
+          <button
+            onClick={handleGenerateAndExport}
+            className="btn btn-success btn-sm"
+            disabled={loading}
+          >
+            Generar y Exportar JSON
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -481,11 +498,13 @@ function Field({
 }) {
   const empty = !value;
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-zinc-600">{label}</label>
+    <div className="flex flex-col gap-2">
+      <label className="text-xs font-semibold text-base-content">{label}</label>
       <div
-        className={`p-2 rounded border bg-zinc-50 text-sm ${
-          empty ? "text-red-600 italic border-red-200" : "border-zinc-300"
+        className={`p-3 rounded-lg border text-sm ${
+          empty
+            ? "text-error italic border-error/50 bg-error/5"
+            : "border-base-300 bg-base-100"
         } ${multiline ? "min-h-[64px]" : ""}`}
       >
         {value || "(vacío)"}
@@ -508,23 +527,23 @@ function EditableField({
   multiline?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-2">
       <div className="flex justify-between items-baseline">
-        <label className="text-xs font-semibold text-zinc-600">{label}</label>
-        {hint && <span className="text-xs text-zinc-500">{hint}</span>}
+        <label className="text-xs font-semibold text-base-content">{label}</label>
+        {hint && <span className="text-xs text-base-content/70">{hint}</span>}
       </div>
       {multiline ? (
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="p-2 rounded border border-blue-300 bg-white text-sm min-h-[64px] focus:outline-none focus:border-blue-500"
+          className="textarea textarea-bordered w-full text-sm min-h-[64px]"
         />
       ) : (
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="p-2 rounded border border-blue-300 bg-white text-sm focus:outline-none focus:border-blue-500"
+          className="input input-bordered w-full text-sm"
         />
       )}
     </div>
@@ -535,8 +554,11 @@ export default function SugerenciaPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
-          <div className="p-8 text-zinc-700">Cargando...</div>
+        <div className="min-h-screen bg-base-100 p-8 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <p className="text-base-content/70">Cargando...</p>
+          </div>
         </div>
       }
     >
