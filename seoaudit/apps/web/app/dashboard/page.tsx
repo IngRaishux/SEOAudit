@@ -86,22 +86,22 @@ export default async function DashboardPage(props: {
   accountId = resolvedOrgId;
 
   // Get organization details
-  const org = (await Organization.findById(accountId).lean()) as any;
-  if (!org) {
+  const orgData = (await Organization.findById(accountId).lean()) as any;
+  if (!orgData) {
     redirect('/organizations');
   }
 
   // Get membership for this org to check role
-  const membership = (await Membership.findOne({
+  const membershipData = (await Membership.findOne({
     userId: session.user.id,
     organizationId: accountId,
   }).lean()) as any;
 
-  let sites: ISite[] = [];
+  let sitesData: ISite[] = [];
   let total = 0;
 
   try {
-    sites = (await siteRepository.listSitesByAccount(accountId, {
+    sitesData = (await siteRepository.listSitesByAccount(accountId, {
       limit: 20,
       skip: 0,
     })) as unknown as ISite[];
@@ -109,6 +109,11 @@ export default async function DashboardPage(props: {
   } catch (error) {
     console.error('Error fetching sites:', error);
   }
+
+  // Serialize Mongoose objects to plain JavaScript
+  const org = JSON.parse(JSON.stringify(orgData));
+  const membership = JSON.parse(JSON.stringify(membershipData));
+  const sites = JSON.parse(JSON.stringify(sitesData));
 
   return (
     <DashboardContent

@@ -197,6 +197,37 @@ export const translations = {
       signup: 'Registrarse',
       dashboard: 'Dashboard',
     },
+
+    // Site Details
+    siteDetails: {
+      backToDashboard: '← Volver al Dashboard',
+      totalPages: 'Total de páginas',
+      status: 'Estado',
+      pageTitle: 'Título de página',
+      tabs: {
+        serp: 'Vista previa SERP',
+        pages: 'Páginas',
+        meta: 'Etiquetas meta',
+      },
+      noPagesMessage: 'Sin páginas crawleadas aún.',
+      noMetaTagsMessage: 'Sin etiquetas meta disponibles. Ejecuta un crawl para ver las etiquetas de la página de inicio.',
+      metaTagsFrom: 'Etiquetas meta de la página de inicio',
+    },
+
+    // SERP Preview
+    serpPreview: {
+      title: 'Vista previa SERP',
+      subtitle: 'Visualiza cómo aparecerá tu página en los resultados de búsqueda',
+      desktop: 'Desktop (1200px)',
+      mobile: 'Mobile (400px)',
+      charCount: 'caracteres',
+      optimal: 'Óptimo',
+      tooShort: 'Muy corto',
+      tooLong: 'Muy largo',
+      titleLabel: 'Título',
+      descriptionLabel: 'Descripción',
+      noDatabMessage: 'Sin datos de SERP disponibles. Ejecuta un crawl primero.',
+    },
   },
 
   en: {
@@ -396,6 +427,37 @@ export const translations = {
       login: 'Sign In',
       signup: 'Sign Up',
       dashboard: 'Dashboard',
+    },
+
+    // Site Details
+    siteDetails: {
+      backToDashboard: '← Back to Dashboard',
+      totalPages: 'Total Pages',
+      status: 'Status',
+      pageTitle: 'Page Title',
+      tabs: {
+        serp: 'SERP Preview',
+        pages: 'Pages',
+        meta: 'Meta Tags',
+      },
+      noPagesMessage: 'No pages crawled yet.',
+      noMetaTagsMessage: 'No meta tags available. Run a crawl to see home page meta tags.',
+      metaTagsFrom: 'Meta tags from home page',
+    },
+
+    // SERP Preview
+    serpPreview: {
+      title: 'SERP Preview',
+      subtitle: 'See how your page appears in search results',
+      desktop: 'Desktop (1200px)',
+      mobile: 'Mobile (400px)',
+      charCount: 'characters',
+      optimal: 'Optimal',
+      tooShort: 'Too short',
+      tooLong: 'Too long',
+      titleLabel: 'Title',
+      descriptionLabel: 'Description',
+      noDatabMessage: 'No SERP data available. Run a crawl first.',
     },
   },
 } as const;
