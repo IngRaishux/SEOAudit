@@ -6,9 +6,13 @@ import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
+import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 export function RegisterForm() {
   const router = useRouter();
+  const lang = useCurrentLanguage();
+  const { t } = useI18n(lang);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [organizationName, setOrganizationName] = useState('');
@@ -22,7 +26,12 @@ export function RegisterForm() {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('validation.required'));
+      return;
+    }
+
+    if (password.length < 6) {
+      setError(t('auth.passwordMinLength'));
       return;
     }
 
@@ -43,7 +52,7 @@ export function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Registration failed');
+        setError(data.error || t('errors.serverError'));
         return;
       }
 
@@ -56,10 +65,10 @@ export function RegisterForm() {
       if (signInResult?.ok) {
         router.push('/organizations');
       } else {
-        setError('Sign in failed after registration');
+        setError(t('errors.serverError'));
       }
     } catch (err) {
-      setError('An error occurred. Please try again.');
+      setError(t('errors.serverError'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -71,7 +80,7 @@ export function RegisterForm() {
     try {
       await signIn('google', { callbackUrl: '/organizations' });
     } catch (err) {
-      setError('Google sign-up failed');
+      setError(t('errors.serverError'));
       console.error(err);
       setIsLoading(false);
     }
@@ -82,7 +91,7 @@ export function RegisterForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-zinc-700">
-            Full Name
+            {t('auth.name')}
           </label>
           <Input
             id="name"
@@ -97,7 +106,7 @@ export function RegisterForm() {
 
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
-            Email
+            {t('auth.email')}
           </label>
           <Input
             id="email"
@@ -112,7 +121,8 @@ export function RegisterForm() {
 
         <div>
           <label htmlFor="organizationName" className="block text-sm font-medium text-zinc-700">
-            Organization Name <span className="text-zinc-500 text-xs">(optional)</span>
+            {t('common.organization')}{' '}
+            <span className="text-zinc-500 text-xs">(optional)</span>
           </label>
           <Input
             id="organizationName"
@@ -126,7 +136,7 @@ export function RegisterForm() {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
-            Password
+            {t('auth.password')}
           </label>
           <Input
             id="password"
@@ -141,7 +151,7 @@ export function RegisterForm() {
 
         <div>
           <label htmlFor="confirmPassword" className="block text-sm font-medium text-zinc-700">
-            Confirm Password
+            {t('auth.password')} ({t('common.close')})
           </label>
           <Input
             id="confirmPassword"
@@ -165,7 +175,7 @@ export function RegisterForm() {
           disabled={isLoading}
           className="w-full"
         >
-          {isLoading ? 'Creating account...' : 'Create account'}
+          {isLoading ? t('common.loading') : t('auth.signUp')}
         </Button>
       </form>
 
@@ -176,14 +186,14 @@ export function RegisterForm() {
           disabled={isLoading}
           className="w-full bg-white border border-zinc-300 text-zinc-900 hover:bg-zinc-50"
         >
-          {isLoading ? 'Signing up...' : 'Sign up with Google'}
+          {isLoading ? t('common.loading') : t('auth.continueWithGoogle')}
         </Button>
       </div>
 
       <p className="mt-6 text-center text-sm text-zinc-600">
-        Already have an account?{' '}
+        {t('auth.alreadyHaveAccount')}{' '}
         <Link href="/login" className="font-semibold text-blue-600 hover:text-blue-700">
-          Sign in
+          {t('auth.loginHere')}
         </Link>
       </p>
     </div>

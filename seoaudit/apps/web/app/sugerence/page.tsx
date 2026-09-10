@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { BackButton } from '@/components/BackButton';
 import DialogSugestion from '@/components/DialogSugestion';
 import { Dialog, DialogTrigger } from '@/components/Dialog';
+import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
+import { useSession } from 'next-auth/react';
+
 
 const mockSuggested = {
   slug: { S: '' },
@@ -42,16 +45,25 @@ interface Site {
   pageCount: number;
 }
 
+interface PageData {
+    url: string;
+    title: string | null;
+    description: string | null;
+    wordCount: number;
+  };
+
 function SugerenciaContent() {
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+
   const targetUrl = searchParams.get('url');
   const pageId = searchParams.get('pageId');
   const siteId = searchParams.get('siteId');
 
   const [mockPage, setMockPage] = useState<Page | null>(null);
-  const [mockSite, setMockSite] = useState<Site | null>(null);
   const [organizationName, setOrganizationName] = useState('default');
   const [loadingPage, setLoadingPage] = useState(true);
+
 
   useEffect(() => {
     if (!pageId || !siteId) {
@@ -75,7 +87,6 @@ function SugerenciaContent() {
         if (siteRes.ok) {
           const siteData = await siteRes.json();
           const site = siteData.site;
-          setMockSite(site);
 
           // Get organization name from site data
           if (site.organizationName) {
@@ -220,6 +231,82 @@ function SugerenciaContent() {
       slug = "/" + urlParts[urlParts.length - 1] + "/";
     }
   }
+
+  const handleGenerateAndExport = async () => {
+    if (!mockPage) {
+      setError("No se ha cargado la información de la página");
+      return;
+    }
+
+    if (!session?.user?.organizations || session.user.organizations.length === 0) {
+      setError("No se pudo obtener la información de tu organización");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const pageDataToGenerate: PageData = {
+        url: mockPage.url,
+        title: mockPage.title || null,
+        description: mockPage.description || null,
+        wordCount: 0,
+      };
+
+      const suggestions = await generateSEOSuggestions({
+        url: pageDataToGenerate.url,
+        title: pageDataToGenerate.title,
+        description: pageDataToGenerate.description,
+        wordCount: pageDataToGenerate.wordCount,
+        accountName: session.user.organizations[0].name,
+      });
+
+      // Actualizar el form con las sugerencias
+      setForm(suggestions);
+
+      // Persistir las sugerencias en MongoDB
+      if (pageId && siteId) {
+        await fetch('/api/suggestions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pageId,
+            siteId,
+            type: 'seo',
+            severity: 'medium',
+            content: suggestions,
+          }),
+        });
+      }
+
+      // Exportar el JSON directamente (sin esperar actualización de estado)
+      const exported = {
+        ...suggestions,
+        account: { S: organizationName },
+      };
+
+      const blob = new Blob([JSON.stringify(exported, null, 2)], {
+        type: "application/json",
+      });
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `seo-${suggestions.slug?.S || new URL(mockPage.url).hostname}-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(downloadUrl);
+
+      // Mostrar confirmación
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error generating suggestions';
+      setError(message);
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
@@ -370,6 +457,13 @@ function SugerenciaContent() {
           disabled={loading}
         >
           Exportar JSON
+        </button>
+        <button
+          onClick={handleGenerateAndExport}
+          className='px-6 py-2 rounded-md bg-green-600 text-white font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed'
+          disabled={loading}
+        >
+          Generar y Exportar JSON
         </button>
       </div>
     </div>

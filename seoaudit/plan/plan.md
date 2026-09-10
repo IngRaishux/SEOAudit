@@ -251,3 +251,17 @@ types/next-auth.d.ts                             # ✅ module augmentation para 
 - Rate limiting por organización
 - Dashboard mejorado: filtros, búsqueda, exportación
 - Tests automatizados
+
+---
+
+## Actualización Final (2026-08-28)
+
+**NOTA**: Este documento ha sido actualizado para reflejar la arquitectura actual implementada. Ver `/docs/PROJECT.md` para la documentación técnica completa.
+
+**Cambios Principales en esta Sesión:**
+- ✅ Refactorizado flujo de navegación: Login → /organizations → /dashboard?org={id}
+- ✅ Cookie sincronizada automáticamente por middleware con searchParams
+- ✅ Removido HeaderWithOrganizations (lógica innecesaria, ahora solo Header)
+- ✅ Corregido bug crítico: multi-organización en crawls (organizationId explícito)
+- ✅ Renombrado accountId → organizationId en toda la base de código
+- ✅ Documentación actualizada: ver `/docs/PROJECT.md` para flujos detallados
