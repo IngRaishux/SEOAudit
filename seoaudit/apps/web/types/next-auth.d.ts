@@ -6,8 +6,10 @@ declare module 'next-auth' {
     user: {
       id: string;
       accountId?: string;
-      organizationName?: string;
-      role?: 'owner' | 'admin' | 'member';
+      organizations?: Array<{
+        id: string;
+        name: string;
+      }>;
     } & DefaultSession['user'];
   }
 
@@ -20,7 +22,9 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id?: string;
     accountId?: string;
-    organizationName?: string;
-    role?: 'owner' | 'admin' | 'member';
+    organizations?: Array<{
+      id: string;
+      name: string;
+    }>;
   }
 }

@@ -238,7 +238,7 @@ function SugerenciaContent() {
       return;
     }
 
-    if (!session?.user?.organizationName) {
+    if (!session?.user?.organizations || session.user.organizations.length === 0) {
       setError("No se pudo obtener la información de tu organización");
       return;
     }
@@ -259,7 +259,7 @@ function SugerenciaContent() {
         title: pageDataToGenerate.title,
         description: pageDataToGenerate.description,
         wordCount: pageDataToGenerate.wordCount,
-        accountName: session.user.organizationName,
+        accountName: session.user.organizations[0].name,
       });
 
       // Actualizar el form con las sugerencias
