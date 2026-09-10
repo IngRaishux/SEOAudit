@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "cd seoaudit/apps/web && npm install && npm run build",
-  "installCommand": "cd seoaudit/apps/web && npm install",
+  "buildCommand": "npm run build",
+  "installCommand": "npm install",
   "framework": "nextjs",
   "outputDirectory": "seoaudit/apps/web/.next"
 }
