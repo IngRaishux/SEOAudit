@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { SERPPreview } from './SERPPreview';
+import { Card } from './Card';
 
 interface MetaTag {
   name: string;
@@ -48,16 +49,16 @@ export function SiteDetailsTabs({
   return (
     <div className="space-y-6">
       {/* Tabs Navigation */}
-      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-        <div className="flex flex-wrap border-b border-zinc-200 dark:border-zinc-800">
+      <Card className="p-0">
+        <div className="flex flex-wrap border-b border-base-300">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
               className={`flex-1 md:flex-none px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-base-content/60 hover:text-base-content'
               }`}
             >
               <span className="mr-2">{tab.icon}</span>
@@ -67,7 +68,7 @@ export function SiteDetailsTabs({
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 lg:p-6">
           {/* SERP Preview Tab */}
           {activeTab === 'serp' && (
             <div className="space-y-4">
@@ -96,33 +97,30 @@ export function SiteDetailsTabs({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800">
+                  <table className="table w-full text-sm">
+                    <thead className="bg-base-200">
                       <tr>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('common.url')}
                         </th>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('siteDetails.pageTitle')}
                         </th>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('common.status')}
                         </th>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('pages.headings')}
                         </th>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('sites.actions')}
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {pages.map((page) => (
-                        <tr
-                          key={page._id}
-                          className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                        >
-                          <td className="px-6 py-4 text-blue-600 hover:text-blue-700 truncate max-w-xs">
+                        <tr key={page._id} className="hover">
+                          <td className="text-primary truncate max-w-xs">
                             <a
                               href={page.url}
                               target="_blank"
@@ -203,7 +201,7 @@ export function SiteDetailsTabs({
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
