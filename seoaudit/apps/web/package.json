@@ -38,6 +38,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.16",
+    "daisyui": "^4.12.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.5",
     "postcss": "^8.4.31",
