@@ -170,7 +170,7 @@ export function DashboardContent({
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-zinc-600 dark:text-zinc-400">
-                        {new Date(site.createdAt).toLocaleDateString()}
+                        {new Date(site.createdAt).toISOString().split('T')[0]}
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <Link
