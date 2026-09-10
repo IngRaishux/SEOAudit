@@ -124,7 +124,7 @@ export default async function DashboardPage(props: {
           <div className="flex gap-2">
             <SwitchOrgButton />
             <Link
-              href={`/settings/organization?org=${selectedOrgId}`}
+              href={`/organization-settings/${selectedOrgId}`}
               className="px-4 py-2 bg-zinc-600 text-white rounded hover:bg-zinc-700 text-sm font-medium"
             >
               Settings
