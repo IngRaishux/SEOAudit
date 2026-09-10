@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { setSelectedOrganization } from '@/app/actions';
+import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 interface Organization {
   id: string;
@@ -20,6 +21,9 @@ export function OrganizationSelector({
 }: OrganizationSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const lang = useCurrentLanguage();
+  const { t } = useI18n(lang);
+
   const [isOpen, setIsOpen] = useState(false);
 
   if (organizations.length === 0) {
@@ -29,15 +33,9 @@ export function OrganizationSelector({
   const currentOrg = organizations.find((o) => o.id === currentOrgId);
 
   const handleSelectOrganization = async (orgId: string) => {
-    console.log('[OrganizationSelector] Selecting org:', orgId);
-
-    // Update cookie first
     await setSelectedOrganization(orgId);
-    console.log('[OrganizationSelector] Cookie updated');
-
     setIsOpen(false);
 
-    // Determine next path based on current location
     let nextPath = '/dashboard';
     if (pathname === '/settings') {
       nextPath = '/settings';
@@ -45,13 +43,7 @@ export function OrganizationSelector({
       nextPath = pathname;
     }
 
-    console.log('[OrganizationSelector] Navigating to:', `${nextPath}?org=${orgId}`);
-
-    // Navigate with org parameter
     router.push(`${nextPath}?org=${orgId}`);
-
-    // Revalidate server components to pick up the updated cookie
-    // This is critical for HeaderLayout to show the new organization
     router.refresh();
   };
 
@@ -61,7 +53,7 @@ export function OrganizationSelector({
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-1 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded"
       >
-        <span className="truncate max-w-xs">{currentOrg?.name || 'Select Org'}</span>
+        <span className="truncate max-w-xs">{currentOrg?.name || t('common.organization')}</span>
         <svg
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -99,7 +91,7 @@ export function OrganizationSelector({
               href="/organizations"
               className="block w-full text-left px-3 py-2 rounded text-sm text-blue-600 dark:text-blue-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
-              + New Organization
+              + {t('dashboard.createNewSite')}
             </a>
           </div>
         </div>

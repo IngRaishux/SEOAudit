@@ -12,6 +12,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/Dialog';
+import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 interface DeleteOrganizationDialogProps {
   organizationId: string;
@@ -23,6 +24,9 @@ export function DeleteOrganizationDialog({
   organizationName,
 }: DeleteOrganizationDialogProps) {
   const router = useRouter();
+  const lang = useCurrentLanguage();
+  const { t } = useI18n(lang);
+
   const [isOpen, setIsOpen] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmText, setConfirmText] = useState('');
@@ -44,14 +48,13 @@ export function DeleteOrganizationDialog({
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to delete organization');
+        throw new Error(data.error || t('deleteOrgDialog.deletedError'));
       }
 
       setIsOpen(false);
-      // Replace history to prevent back button from returning to deleted org
       router.replace('/organizations');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setIsLoading(false);
     }
@@ -61,33 +64,32 @@ export function DeleteOrganizationDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <button className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium">
-          Delete Organization
+          {t('organizationSettings.deleteOrganization')}
         </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Organization</DialogTitle>
+          <DialogTitle>{t('deleteOrgDialog.title')}</DialogTitle>
           <DialogDescription>
-            This action cannot be undone. Please be certain.
+            {t('deleteOrgDialog.description')}
           </DialogDescription>
         </DialogHeader>
 
         {!isConfirming ? (
           <div className="space-y-4">
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              This will permanently delete <strong>{organizationName}</strong> and
-              all associated sites and suggestions.
+              {t('deleteOrgDialog.willDeleteAll')} <strong>{organizationName}</strong>
             </p>
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 rounded p-3">
               <p className="text-sm text-red-800 dark:text-red-200">
-                ⚠️ All data will be lost. This cannot be reversed.
+                {t('deleteOrgDialog.warning')}
               </p>
             </div>
           </div>
         ) : (
           <div className="space-y-4 mb-4">
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Type <strong>{organizationName}</strong> to confirm deletion:
+              {t('deleteOrgDialog.typeToConfirm')} <strong>{organizationName}</strong>
             </p>
             <input
               type="text"
@@ -108,7 +110,7 @@ export function DeleteOrganizationDialog({
         <DialogFooter>
           <DialogClose asChild>
             <button className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium">
-              Cancel
+              {t('common.cancel')}
             </button>
           </DialogClose>
           {!isConfirming ? (
@@ -116,7 +118,7 @@ export function DeleteOrganizationDialog({
               onClick={() => setIsConfirming(true)}
               className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium"
             >
-              Continue
+              {t('common.edit')}
             </button>
           ) : (
             <button
@@ -124,7 +126,7 @@ export function DeleteOrganizationDialog({
               disabled={!canDelete || isLoading}
               className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
-              {isLoading ? 'Deleting...' : 'Delete Organization'}
+              {isLoading ? t('deleteOrgDialog.deleting') : t('deleteOrgDialog.deleteButton')}
             </button>
           )}
         </DialogFooter>

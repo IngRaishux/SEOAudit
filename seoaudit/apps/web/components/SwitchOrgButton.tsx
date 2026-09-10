@@ -2,22 +2,16 @@
 
 import { useRouter } from 'next/navigation';
 import { clearSelectedOrganization } from '@/app/actions';
+import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 export function SwitchOrgButton() {
   const router = useRouter();
+  const lang = useCurrentLanguage();
+  const { t } = useI18n(lang);
 
   const handleSwitchOrg = async () => {
-    console.log('[SwitchOrgButton] Clearing organization');
-
-    // Clear the selected organization cookie
     await clearSelectedOrganization();
-
-    console.log('[SwitchOrgButton] Navigating to /organizations');
-
-    // Navigate to organizations page
     router.push('/organizations');
-
-    // Revalidate to show updated header
     router.refresh();
   };
 
@@ -26,7 +20,7 @@ export function SwitchOrgButton() {
       onClick={handleSwitchOrg}
       className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium"
     >
-      Switch Org
+      {t('dashboard.switchOrg')}
     </button>
   );
 }

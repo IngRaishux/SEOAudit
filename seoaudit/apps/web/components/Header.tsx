@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { SignOutButton } from '@/components/SignOutButton';
+import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 interface HeaderProps {
   currentOrganization?: string;
@@ -11,13 +12,21 @@ interface HeaderProps {
 
 export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
   const { data: session } = useSession();
+  const lang = useCurrentLanguage();
+  const { t } = useI18n(lang);
 
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
       <div className="flex justify-between items-center px-8 py-4">
-        <Link href="/" className="text-xl font-bold text-zinc-900 dark:text-white">
-          SEO Audit
-        </Link>
+        {session ? (
+          <Link href="/organizations" className="text-xl font-bold text-zinc-900 dark:text-white">
+            SEO Audit
+          </Link>
+        ) : (
+          <Link href="/" className="text-xl font-bold text-zinc-900 dark:text-white">
+            SEO Audit
+          </Link>
+        )}
 
         <div className="flex items-center gap-6">
           {session ? (
@@ -36,13 +45,13 @@ export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
                 href="/organizations"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                Organizations
+                {t('common.organizations')}
               </Link>
               <Link
                 href={currentOrgId ? `/settings?org=${currentOrgId}` : '/settings'}
                 className="text-sm text-zinc-600 hover:text-zinc-700 font-medium"
               >
-                Settings
+                {t('common.settings')}
               </Link>
               <SignOutButton />
             </>
@@ -52,13 +61,13 @@ export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
                 href="/login"
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                Login
+                {t('auth.login')}
               </Link>
               <Link
                 href="/register"
                 className="text-sm px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                Sign up
+                {t('auth.signUp')}
               </Link>
             </>
           )}
