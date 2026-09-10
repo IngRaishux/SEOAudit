@@ -589,11 +589,230 @@ Almacenará configuración de crawl por sitio (frecuencia, patrones de exclusió
 
 ---
 
+## Internacionalización (i18n) - Fase 1A (Implementado)
+
+### Infraestructura i18n
+
+Sistema de traducción centralizado que soporta español e inglés en toda la aplicación.
+
+#### Archivos principales:
+- **`lib/i18n/ui.ts`** - Diccionario centralizado con 200+ strings traducidos
+- **`lib/i18n/useI18n.ts`** - Hook para componentes cliente + detectación de idioma
+- **`lib/i18n/server.ts`** - Funciones para server components (Fase 1B)
+
+#### Características:
+- Selector de idioma en página `/settings`
+- Persistencia en localStorage
+- Detección automática del idioma del navegador
+- Fallback a español si hay error
+- Refresco de página al cambiar idioma
+
+#### Idiomas soportados:
+- 🇪🇸 **Español** (por defecto)
+- 🇬🇧 **English**
+
+#### Estructura de traducciones:
+```typescript
+{
+  es: { auth: { login: "Iniciar sesión", ... }, ... },
+  en: { auth: { login: "Sign In", ... }, ... }
+}
+```
+
+#### Componentes traducidos:
+- `DeleteSiteDialog.tsx` - Diálogo de confirmación de eliminación
+- `DeleteOrganizationDialog.tsx` - Diálogo de eliminación de organización
+- `Header.tsx` - Encabezado global
+- `LoginForm.tsx` - Formulario de login
+- `RegisterForm.tsx` - Formulario de registro
+- `CreateOrganizationForm.tsx` - Creación de organización
+- `OrganizationSettings.tsx` - Configuración de organización
+- `SignOutButton.tsx` - Botón de cierre de sesión
+- `SwitchOrgButton.tsx` - Botón para cambiar organización
+- `OrganizationSelector.tsx` - Selector de organización
+- `DashboardContent.tsx` - Contenido del dashboard (cliente)
+- `app/settings/page.tsx` - Página de configuración
+
+#### Hook useI18n:
+```typescript
+const lang = useCurrentLanguage(); // Detecta idioma actual
+const { t } = useI18n(lang);
+t('auth.login') // "Iniciar sesión" (ES) o "Sign In" (EN)
+```
+
+---
+
+## Feature: Eliminar Sitios - Fase 1A (Implementado)
+
+### Backend
+
+#### `DELETE /api/sites/[siteId]`
+
+Endpoint para eliminar un sitio y todos sus datos asociados.
+
+**Autenticación:** Requiere sesión válida
+**Autorización:** Solo owner o admin de la organización
+
+**Validaciones:**
+1. Usuario autenticado (401 si no)
+2. Usuario es miembro de la organización (403 si no)
+3. Usuario es owner o admin (403 si no)
+4. Sitio existe (404 si no)
+
+**Proceso de eliminación (cascada):**
+1. `Suggestion.deleteMany({ siteId })` - Elimina todas las sugerencias
+2. `Page.deleteMany({ siteId })` - Elimina todas las páginas
+3. `Site.findByIdAndDelete(siteId)` - Elimina el sitio
+
+**Respuestas:**
+```json
+// Éxito
+{ "message": "Site deleted successfully" } // 200
+
+// Errores
+{ "error": "Unauthorized" } // 401
+{ "error": "Site not found" } // 404
+{ "error": "Unauthorized to delete this site" } // 403
+{ "error": "Only organization owner or admin can delete sites" } // 403
+{ "error": "Failed to delete site" } // 500
+```
+
+### Frontend
+
+#### `DeleteSiteDialog` Component
+
+Dialog reutilizable para confirmar eliminación de sitios.
+
+**Props:**
+- `siteId: string` - ID del sitio a eliminar
+- `siteUrl: string` - URL del sitio (para mostrar en confirmación)
+- `orgId: string` - ID de la organización (para redireccionar después)
+
+**Comportamiento:**
+1. Click en botón → Abre diálogo de confirmación
+2. Usuario ve advertencia: "Se perderán todos los datos"
+3. Click en "Delete Site" → Envía DELETE a `/api/sites/[siteId]`
+4. Si éxito → Cierra diálogo, redirecciona a `/dashboard?org={orgId}`, refresca
+5. Si error → Muestra mensaje de error
+
+**Ubicación:** Columna "Delete" en tabla de sitios del dashboard (solo visible para owners)
+
+#### Dashboard Integration
+
+- Nueva columna "Delete" en tabla de sitios
+- Solo visible para usuarios con rol "owner"
+- Usar componente `DeleteSiteDialog` para cada sitio
+
+---
+
+## Seguridad Mejorada - Fase 1A (Implementado)
+
+### Middleware de Protección de Rutas
+
+**Archivo:** `middleware.ts`
+
+#### Rutas públicas (sin autenticación):
+```
+/, /login, /register, /api/auth/*, /api/register
+```
+
+#### Rutas protegidas (requieren JWT válido):
+```
+/dashboard, /sites/*, /crawler, /organizations, /settings, /organization-settings/*,
+/api/sites/*, /api/crawl/*, /api/organizations/*, /api/user/*, /api/suggestions/*, /api/pages/*
+```
+
+#### Flujo de validación:
+1. Request llega al middleware
+2. Si ruta protegida → Valida token JWT con `getToken()`
+3. Si token válido → Permite acceso
+4. Si sin token → Redirige a `/login`
+5. Si ruta pública → Permite acceso directo
+
+#### Prevención de:
+- Acceso a rutas privadas sin sesión
+- Sessionless navigation al contenido protegido
+- Uso de back button para acceder a contenido protegido
+- Manipulación de URLs para saltar autenticación
+
+---
+
+## Componentes Nuevos - Fase 1A (Implementado)
+
+### `DashboardContent.tsx`
+
+**Tipo:** Client Component
+**Propósito:** Encapsular toda la lógica y traducción del dashboard
+
+**Props:**
+```typescript
+interface DashboardContentProps {
+  org: { name: string; _id: string };
+  membership: { role: 'owner' | 'admin' | 'member' };
+  sites: ISite[];
+  total: number;
+  userEmail: string;
+  selectedOrgId: string;
+  membershipsCount: number;
+}
+```
+
+**Features:**
+- Usa `useI18n()` para traducciones
+- Tabla de sitios con columna "Delete" (solo owners)
+- Integración con `DeleteSiteDialog`
+- Muestra estadísticas: Total Sites, Role, Email
+- Botones: Switch Org, Settings, Crawl New Site
+
+**Ubicación:** Importado y usado en `app/dashboard/page.tsx`
+
+---
+
+## Estructura de Carpetas - Actualizada
+
+```
+apps/web/
+├── lib/i18n/                    # Nueva: Internacionalización
+│   ├── ui.ts                    # Diccionario (200+ strings)
+│   ├── useI18n.ts              # Hook para cliente
+│   └── server.ts               # Funciones para servidor
+├── components/
+│   ├── DashboardContent.tsx     # Nuevo: Dashboard refactorisado
+│   ├── DeleteSiteDialog.tsx     # Mejorado: Traducido
+│   ├── DeleteOrganizationDialog.tsx # Mejorado: Traducido
+│   ├── Header.tsx              # Mejorado: Traducido
+│   ├── LoginForm.tsx           # Mejorado: Traducido
+│   ├── RegisterForm.tsx        # Mejorado: Traducido
+│   ├── CreateOrganizationForm.tsx # Mejorado: Traducido
+│   ├── OrganizationSettings.tsx # Mejorado: Traducido
+│   ├── SignOutButton.tsx       # Mejorado: Traducido
+│   ├── SwitchOrgButton.tsx     # Mejorado: Traducido
+│   ├── OrganizationSelector.tsx # Mejorado: Traducido
+│   └── ...
+├── app/
+│   ├── api/sites/[siteId]/route.ts  # Mejorado: Agregado DELETE
+│   ├── dashboard/page.tsx           # Refactorisado: Usa DashboardContent
+│   ├── settings/page.tsx            # Mejorado: Selector de idioma
+│   └── ...
+├── middleware.ts                # Mejorado: Protección de rutas
+└── docs/
+    ├── PROJECT.md              # Este archivo
+    ├── SETTINGS_ARCHITECTURE.md
+    └── SESSION_SCHEMA_MIGRATION.md
+```
+
+---
+
 ## Proximos Pasos (Fase 1B+)
 
 1. ✅ Dashboard real - listar sites por organizationId
 2. ✅ Página de detalles - ver pages + sugerencias
 3. ✅ Endpoint GET /api/sites
 4. ✅ Actualizar home - navegar a /sites/[siteId]
-5. Exportación opcional a DynamoDB (Fase 2)
-6. Generación de sugerencias con AI (Fase 2)
+5. ✅ Eliminar sitios - DELETE /api/sites/[siteId]
+6. ✅ Middleware de seguridad - Protección de rutas
+7. ✅ Internacionalización completa - i18n ES/EN
+8. Traducir páginas de error (404, 500) - Fase 1B
+9. Agregar más idiomas (FR, PT) - Fase 1B
+10. Generación de sugerencias con AI (Fase 2)
+11. Exportación opcional a DynamoDB (Fase 2)
