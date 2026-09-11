@@ -1,6 +1,2 @@
-import type { NextConfig } from "next";
-import webConfig from "./apps/web/next.config";
-
-const nextConfig: NextConfig = webConfig;
-
-export default nextConfig;
+import webConfig from './apps/web/next.config';
+export default webConfig;
