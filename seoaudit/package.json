@@ -1,0 +1,17 @@
+{
+  "name": "seoaudit",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "cd apps/web && npm run build",
+    "dev": "cd apps/web && npm run dev",
+    "start": "cd apps/web && npm run start"
+  },
+  "devDependencies": {
+    "next": "16.2.5"
+  }
+}
