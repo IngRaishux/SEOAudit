@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "installCommand": "npm install",
   "buildCommand": "npm run build",
+  "installCommand": "npm install --ignore-scripts",
   "framework": "nextjs",
   "outputDirectory": "seoaudit/apps/web/.next"
 }
