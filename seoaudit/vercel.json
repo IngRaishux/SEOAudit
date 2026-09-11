@@ -2,9 +2,5 @@
   "version": 2,
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "outputDirectory": "apps/web/.next",
-  "devCommand": "cd apps/web && npm run dev",
-  "env": {
-    "NEXT_PUBLIC_VERCEL": "1"
-  }
+  "outputDirectory": "apps/web/.next"
 }
