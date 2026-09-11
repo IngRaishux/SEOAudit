@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Permitir rutas públicas
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
+  if (pathname === '/' || PUBLIC_ROUTES.some(route => route !== '/' && pathname.startsWith(route))) {
     // Solo sincronizar cookie con org parameter en rutas permitidas
     const response = NextResponse.next();
     const { searchParams } = new URL(request.url);
