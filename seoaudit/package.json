@@ -9,7 +9,7 @@
   "scripts": {
     "build": "cd apps/web && npm run build",
     "dev": "cd apps/web && npm run dev",
-    "start": "cd apps/web && npm run start"
+    "start": "node_modules/.bin/next start --dir apps/web"
   },
   "devDependencies": {
     "next": "16.2.5"
