@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 import { CrawlProvider } from "@/lib/CrawlContext";
 import { SessionProvider } from "@/components/SessionProvider";
@@ -16,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-theme="cupcake" className={`${GeistSans.className} antialiased`}>
+    <html lang="en" data-theme="cupcake" className="antialiased">
       <body>
         <SessionProvider>
           <Header />

@@ -4,6 +4,8 @@ import { Button } from '@/components/Button';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   const { data: session } = useSession();
 
