@@ -1,4 +1,4 @@
-import { FirecrawlApp } from 'firecrawl';
+import { FirecrawlAppV1 } from 'firecrawl';
 import { NextResponse } from "next/server";
 import { getServerSession } from 'next-auth/next';
 import { handler } from '@/lib/auth/auth';
@@ -104,7 +104,7 @@ async function runCrawl(jobId: string) {
   try {
     console.log('Starting Firecrawl for URL:', job.url);
 
-    const firecrawl = new FirecrawlApp({
+    const firecrawl = new FirecrawlAppV1({
       apiKey: process.env.FIRECRAWL_API_KEY,
     });
 
