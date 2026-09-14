@@ -1,19 +1,17 @@
 {
-  "name": "seo-optimizer",
-  "version": "0.1.0",
+  "name": "seoaudit",
+  "version": "1.0.0",
   "private": true,
-  "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "lint": "turbo run lint"
-  },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
+  "scripts": {
+    "build": "cd apps/web && npm run build",
+    "dev": "cd apps/web && npm run dev",
+    "start": "cd apps/web && npm run start"
+  },
   "devDependencies": {
-    "tsx": "^4.21.0",
-    "turbo": "^2",
-    "typescript": "^5"
+    "next": "16.2.5"
   }
 }

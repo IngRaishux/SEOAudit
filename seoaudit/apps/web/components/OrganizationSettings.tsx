@@ -69,14 +69,40 @@ export function OrganizationSettings({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
-          {error}
+        <div className="alert alert-error text-sm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2m0 0l2-2m-2 2l-2 2"
+            />
+          </svg>
+          <span>{error}</span>
         </div>
       )}
 
       {success && (
-        <div className="p-3 rounded-md bg-green-50 border border-green-200 text-green-700 text-sm">
-          ✓ {t('organizationSettings.updateSuccess')}
+        <div className="alert alert-success text-sm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <span>✓ {t('organizationSettings.updateSuccess')}</span>
         </div>
       )}
 
@@ -89,40 +115,40 @@ export function OrganizationSettings({
             placeholder={t('common.organization')}
             disabled={isSaving}
           />
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
+              variant="primary"
               onClick={handleSave}
-              disabled={isSaving}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              isLoading={isSaving}
             >
               {isSaving ? t('common.loading') : t('common.save')}
             </Button>
             <Button
+              variant="light"
               onClick={() => {
                 setIsEditing(false);
                 setName(organizationName);
                 setError(null);
               }}
               disabled={isSaving}
-              className="bg-zinc-200 text-zinc-900 hover:bg-zinc-300"
             >
               {t('common.cancel')}
             </Button>
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-1">
+            <p className="text-sm text-base-content/70 mb-1">
               {t('organizationSettings.name')}
             </p>
-            <p className="text-lg font-semibold text-zinc-900 dark:text-white">
+            <p className="text-lg font-semibold text-base-content">
               {name}
             </p>
           </div>
           <Button
+            variant="primary"
             onClick={() => setIsEditing(true)}
-            className="bg-blue-600 text-white hover:bg-blue-700"
           >
             {t('common.edit')}
           </Button>

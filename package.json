@@ -1,0 +1,13 @@
+{
+  "name": "seoaudit-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd seoaudit && npm run build",
+    "dev": "cd seoaudit && npm run dev",
+    "start": "cd seoaudit && npm run start"
+  },
+  "devDependencies": {
+    "next": "16.2.5"
+  }
+}

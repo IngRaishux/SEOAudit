@@ -6,10 +6,13 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
 
 **Stack tecnológico:**
 - **Frontend/Backend:** Next.js 16.2.5 (Route Handlers + Server Components)
+- **Estilos:** Tailwind CSS 3 + daisyUI 4.12.10 (componentes pre-diseñados)
+- **Tema:** Personalizado "cupcake" con OKLch color scheme
 - **Base de datos:** MongoDB (usuarios, organización, sitios, sugerencias)
 - **Autenticación:** NextAuth v4.24.0 (Credentials + Google OAuth)
 - **ORM:** Mongoose 8
 - **Validación:** Zod
+- **Internacionalización:** Custom i18n (ES/EN)
 - **Seguridad:** bcryptjs para hashing de contraseñas
 
 ---
@@ -273,6 +276,80 @@ interface Suggestion {
 
 ---
 
+## Tema y Estilos (daisyUI + Tailwind)
+
+### Configuración del Tema
+
+**Archivo:** `tailwind.config.ts`
+
+**Tema predeterminado:** `cupcake` (personalizado)
+
+**Colores disponibles:**
+```
+- Primary: oklch(90% 0.058 230.902) - Azul
+- Secondary: oklch(89% 0.061 343.231) - Rosa
+- Accent: oklch(90% 0.076 70.697) - Amarillo/Dorado
+- Success: oklch(69% 0.17 162.48) - Verde
+- Warning: oklch(79% 0.184 86.047) - Naranja
+- Error: oklch(64% 0.246 16.439) - Rojo
+- Base-100: oklch(97.788% 0.004 56.375) - Fondo claro
+```
+
+**Integración daisyUI:**
+- Plugin configurado en `tailwind.config.ts`
+- Componentes disponibles: `btn`, `input`, `card`, `badge`, `table`, etc.
+- Tema aplicado globalmente en `app/layout.tsx` con `data-theme="cupcake"`
+
+### Componentes UI (daisyUI)
+
+#### Button
+**Archivo:** `components/Button.tsx`
+
+- **Variantes:** `primary`, `secondary`, `light`, `ghost`, `destructive`
+- **Tamaños:** `sm`, `md`, `lg`
+- **Props:**
+  - `variant`: tipo de botón
+  - `size`: tamaño del botón
+  - `isLoading`: muestra estado de carga
+  - `loadingText`: texto durante carga
+- **Usos:** Forms, dialogs, acciones
+
+#### Input
+**Archivo:** `components/Input.tsx`
+
+- **Tipo de input:** text, email, password, search, number, etc.
+- **Variantes:**
+  - `hasError`: estado de error (rojo)
+  - `enableStepper`: para inputs numéricos
+- **Tamaños:** `sm`, `md`, `lg`
+- **Características especiales:**
+  - Password: toggle show/hide
+  - Search: icono de búsqueda
+- **Usos:** Forms, búsqueda, validación
+
+#### Card
+**Archivo:** `components/Card.tsx`
+
+**Componentes:**
+- `Card` - Contenedor principal
+- `CardHeader` - Encabezado con borde inferior
+- `CardTitle` - Título (h2)
+- `CardDescription` - Descripción
+- `CardContent` - Contenido principal
+- `CardFooter` - Pie de página con borde superior
+
+**Variantes:**
+- `default` - Fondo base-100 con borde
+- `outlined` - Solo borde, sin fondo
+- `filled` - Fondo base-200
+
+**Sombras:**
+- `none`, `sm`, `md`, `lg`
+
+**Usos:** Layouts, tarjetas de estadísticas, paneles
+
+---
+
 ## Componentes
 
 ### Autenticación
@@ -343,6 +420,48 @@ interface Suggestion {
 **Archivo:** `app/register/page.tsx` (Server Component)
 
 - **Contenido:** `<RegisterForm />` + link a `/login`
+
+#### Site Details (`/sites/[siteId]`)
+**Archivo:** `app/sites/[siteId]/page.tsx` (Server Component)
+
+**Funcionalidades:**
+- Tarjetas de estadísticas (Total Pages, Status, Page Title) con Cards
+- Tabs navegables (SERP Preview, Pages, Meta Tags)
+- Sistema de permisos basado en roles
+
+**Componentes:**
+- `SiteDetailsTabs` - Gestor de tabs y contenido
+- `SERPPreview` - Visualización de SERP desktop/mobile
+- `DashboardContent` - Componente refactorisado para dashboard
+
+### Componentes SEO
+
+#### SERPPreview
+**Archivo:** `components/SERPPreview.tsx` (Client Component)
+
+- **Funcionalidad:** Visualiza cómo aparecerá la página en resultados de búsqueda
+- **Vistas:**
+  - Desktop (1200px): Límites 60-70 caracteres título, 155-170 descripción
+  - Mobile (400px): Límites 55-60 caracteres título, 120-130 descripción
+- **Indicadores:**
+  - Verde: Óptimo
+  - Amarillo: Podría mejorar
+  - Rojo: Muy corto/largo
+- **Características:** i18n completo (ES/EN)
+- **Props:** `title`, `description`, `url`
+
+#### SiteDetailsTabs
+**Archivo:** `components/SiteDetailsTabs.tsx` (Client Component)
+
+- **Tabs:**
+  - 🔍 SERP Preview - Visualización de SERP
+  - 📄 Pages - Tabla de páginas crawleadas
+  - 🏷️ Meta Tags - Etiquetas meta de página home
+- **Características:**
+  - Navegación interactiva
+  - Tabla responsiva con daisyUI
+  - i18n completo
+- **Props:** `pages`, `siteUrl`, `siteId`, `organizationId`
 
 ---
 

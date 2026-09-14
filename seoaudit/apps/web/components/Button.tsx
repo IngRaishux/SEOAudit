@@ -1,104 +1,29 @@
-// Tremor Button [v1.0.0]
-"use client"
-import React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { RiLoader2Fill } from "@remixicon/react"
-import { tv, type VariantProps } from "tailwind-variants"
+'use client';
 
-import { cx, focusRing } from "@/lib/utils"
+import React from 'react';
+import { Slot } from '@radix-ui/react-slot';
 
-const buttonVariants = tv({
-  base: [
-    // base
-    "relative inline-flex items-center justify-center whitespace-nowrap rounded-md border px-3 py-2 text-center text-sm font-medium shadow-xs transition-all duration-100 ease-in-out",
-    // disabled
-    "disabled:pointer-events-none disabled:shadow-none",
-    // focus
-    focusRing,
-  ],
-  variants: {
-    variant: {
-      primary: [
-        // border
-        "border-transparent",
-        // text color
-        "text-white dark:text-white",
-        // background color
-        "bg-blue-500 dark:bg-blue-500",
-        // hover color
-        "hover:bg-blue-600 dark:hover:bg-blue-600",
-        // disabled
-        "disabled:bg-blue-300 disabled:text-white",
-        "dark:disabled:bg-blue-800 dark:disabled:text-blue-400",
-      ],
-      secondary: [
-        // border
-        "border-gray-300 dark:border-gray-800",
-        // text color
-        "text-gray-900 dark:text-gray-50",
-        // background color
-        "bg-white dark:bg-gray-950",
-        //hover color
-        "hover:bg-gray-50 dark:hover:bg-gray-900/60",
-        // disabled
-        "disabled:text-gray-400",
-        "dark:disabled:text-gray-600",
-      ],
-      light: [
-        // base
-        "shadow-none",
-        // border
-        "border-transparent",
-        // text color
-        "text-gray-900 dark:text-gray-50",
-        // background color
-        "bg-gray-200 dark:bg-gray-900",
-        // hover color
-        "hover:bg-gray-300/70 dark:hover:bg-gray-800/80",
-        // disabled
-        "disabled:bg-gray-100 disabled:text-gray-400",
-        "dark:disabled:bg-gray-800 dark:disabled:text-gray-600",
-      ],
-      ghost: [
-        // base
-        "shadow-none",
-        // border
-        "border-transparent",
-        // text color
-        "text-gray-900 dark:text-gray-50",
-        // hover color
-        "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800/80",
-        // disabled
-        "disabled:text-gray-400",
-        "dark:disabled:text-gray-600",
-      ],
-      destructive: [
-        // text color
-        "text-white",
-        // border
-        "border-transparent",
-        // background color
-        "bg-red-600 dark:bg-red-700",
-        // hover color
-        "hover:bg-red-700 dark:hover:bg-red-600",
-        // disabled
-        "disabled:bg-red-300 disabled:text-white",
-        "dark:disabled:bg-red-950 dark:disabled:text-red-400",
-      ],
-    },
-  },
-  defaultVariants: {
-    variant: "primary",
-  },
-})
-
-interface ButtonProps
-  extends React.ComponentPropsWithoutRef<"button">,
-    VariantProps<typeof buttonVariants> {
-  asChild?: boolean
-  isLoading?: boolean
-  loadingText?: string
+interface ButtonProps extends React.ComponentPropsWithoutRef<'button'> {
+  asChild?: boolean;
+  isLoading?: boolean;
+  loadingText?: string;
+  variant?: 'primary' | 'secondary' | 'light' | 'ghost' | 'destructive';
+  size?: 'sm' | 'md' | 'lg';
 }
+
+const variantMap = {
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  light: 'btn-ghost btn-outline',
+  ghost: 'btn-ghost',
+  destructive: 'btn-error',
+};
+
+const sizeMap = {
+  sm: 'btn-sm',
+  md: 'btn-md',
+  lg: 'btn-lg',
+};
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -106,42 +31,47 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       asChild,
       isLoading = false,
       loadingText,
-      className,
+      className = '',
       disabled,
-      variant,
+      variant = 'primary',
+      size = 'md',
       children,
       ...props
-    }: ButtonProps,
+    },
     forwardedRef,
   ) => {
-    const Component = asChild ? Slot : "button"
+    const Component = asChild ? Slot : 'button';
+
+    const baseClasses = 'btn gap-2';
+    const variantClass = variantMap[variant] || variantMap.primary;
+    const sizeClass = sizeMap[size] || sizeMap.md;
+    const disabledClass = disabled || isLoading ? 'btn-disabled' : '';
+    const loadingClass = isLoading ? 'loading' : '';
+
+    const finalClassName = `${baseClasses} ${variantClass} ${sizeClass} ${disabledClass} ${loadingClass} ${className}`.trim();
+
     return (
       <Component
         ref={forwardedRef}
-        className={cx(buttonVariants({ variant }), className)}
+        className={finalClassName}
         disabled={disabled || isLoading}
-        tremor-id="tremor-raw"
         {...props}
       >
         {isLoading ? (
-          <span className="pointer-events-none flex shrink-0 items-center justify-center gap-1.5">
-            <RiLoader2Fill
-              className="size-4 shrink-0 animate-spin"
-              aria-hidden="true"
-            />
+          <>
             <span className="sr-only">
-              {loadingText ? loadingText : "Loading"}
+              {loadingText ? loadingText : 'Loading'}
             </span>
             {loadingText ? loadingText : children}
-          </span>
+          </>
         ) : (
           children
         )}
       </Component>
-    )
+    );
   },
-)
+);
 
-Button.displayName = "Button"
+Button.displayName = 'Button';
 
-export { Button, buttonVariants, type ButtonProps }
+export { Button, type ButtonProps };

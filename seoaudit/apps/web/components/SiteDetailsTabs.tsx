@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { SERPPreview } from './SERPPreview';
+import { Card, CardContent } from './Card';
 
 interface MetaTag {
   name: string;
@@ -48,16 +49,16 @@ export function SiteDetailsTabs({
   return (
     <div className="space-y-6">
       {/* Tabs Navigation */}
-      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-        <div className="flex flex-wrap border-b border-zinc-200 dark:border-zinc-800">
+      <Card className="p-0">
+        <div className="flex flex-wrap border-b border-base-300">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
               className={`flex-1 md:flex-none px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-base-content/60 hover:text-base-content'
               }`}
             >
               <span className="mr-2">{tab.icon}</span>
@@ -67,7 +68,7 @@ export function SiteDetailsTabs({
         </div>
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-4 lg:p-6">
           {/* SERP Preview Tab */}
           {activeTab === 'serp' && (
             <div className="space-y-4">
@@ -78,10 +79,11 @@ export function SiteDetailsTabs({
                   url={siteUrl}
                 />
               ) : (
-                <div className="p-8 text-center">
-                  <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-                    {t('serpPreview.noDatabMessage')}
-                  </p>
+                <div className="alert alert-info">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>{t('serpPreview.noDatabMessage')}</span>
                 </div>
               )}
             </div>
@@ -91,38 +93,38 @@ export function SiteDetailsTabs({
           {activeTab === 'pages' && (
             <div>
               {pages.length === 0 ? (
-                <div className="p-8 text-center">
-                  <p className="text-zinc-600 dark:text-zinc-400">{t('siteDetails.noPagesMessage')}</p>
+                <div className="alert alert-warning">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4v2m0 0v2m0-6h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{t('siteDetails.noPagesMessage')}</span>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800">
+                  <table className="table w-full text-sm">
+                    <thead className="bg-base-200">
                       <tr>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('common.url')}
                         </th>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('siteDetails.pageTitle')}
                         </th>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('common.status')}
                         </th>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('pages.headings')}
                         </th>
-                        <th className="px-6 py-3 text-left font-semibold text-zinc-900 dark:text-white">
+                        <th className="text-base-content">
                           {t('sites.actions')}
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {pages.map((page) => (
-                        <tr
-                          key={page._id}
-                          className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                        >
-                          <td className="px-6 py-4 text-blue-600 hover:text-blue-700 truncate max-w-xs">
+                        <tr key={page._id} className="hover">
+                          <td className="text-primary truncate max-w-xs">
                             <a
                               href={page.url}
                               target="_blank"
@@ -132,23 +134,23 @@ export function SiteDetailsTabs({
                               {page.url}
                             </a>
                           </td>
-                          <td className="px-6 py-4 text-zinc-900 dark:text-white truncate max-w-xs">
+                          <td className="text-base-content truncate max-w-xs">
                             {page.title || '—'}
                           </td>
-                          <td className="px-6 py-4">
+                          <td>
                             <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
+                              className={`badge ${
                                 page.statusCode === 200
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                                  ? 'badge-success'
                                   : page.statusCode && page.statusCode >= 400
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                                    ? 'badge-error'
+                                    : 'badge-info'
                               }`}
                             >
                               {page.statusCode || '—'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-zinc-600 dark:text-zinc-400">
+                          <td className="text-base-content/70">
                             {page.headings.length > 0 ? (
                               <span title={page.headings.join(', ')}>
                                 {page.headings.length} heading{page.headings.length !== 1 ? 's' : ''}
@@ -157,10 +159,10 @@ export function SiteDetailsTabs({
                               '—'
                             )}
                           </td>
-                          <td className="px-6 py-4">
+                          <td>
                             <Link
                               href={`/sugerence?url=${encodeURIComponent(page.url)}&pageId=${page._id}&siteId=${siteId}`}
-                              className="text-amber-600 hover:text-amber-700 font-medium"
+                              className="link link-primary font-medium"
                             >
                               {t('sites.actions')} →
                             </Link>
@@ -178,32 +180,37 @@ export function SiteDetailsTabs({
           {activeTab === 'meta' && (
             <div>
               {pages.length > 0 && pages[0].metaTags && pages[0].metaTags.length > 0 ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-                    {t('siteDetails.metaTagsFrom')} ({pages[0].url})
+                <div className="space-y-4">
+                  <p className="text-sm text-base-content/70 mb-4">
+                    {t('siteDetails.metaTagsFrom')} <span className="font-mono text-base-content font-medium">{pages[0].url}</span>
                   </p>
                   {pages[0].metaTags.map((tag, idx) => (
-                    <div key={idx} className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-                      <div className="text-sm">
-                        <span className="font-mono font-medium text-zinc-900 dark:text-white">{tag.name}</span>
-                        <span className="text-zinc-600 dark:text-zinc-400 ml-2">
-                          {tag.content}
-                        </span>
-                      </div>
-                    </div>
+                    <Card key={idx} className="border-primary/50">
+                      <CardContent className="pt-6">
+                        <div className="text-sm space-y-2">
+                          <div className="flex items-start gap-2">
+                            <span className="font-mono font-semibold text-primary flex-shrink-0">{tag.name}:</span>
+                            <span className="text-base-content break-words">
+                              {tag.content}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               ) : (
-                <div className="p-8 text-center">
-                  <p className="text-zinc-600 dark:text-zinc-400">
-                    {t('siteDetails.noMetaTagsMessage')}
-                  </p>
+                <div className="alert alert-info">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <span>{t('siteDetails.noMetaTagsMessage')}</span>
                 </div>
               )}
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

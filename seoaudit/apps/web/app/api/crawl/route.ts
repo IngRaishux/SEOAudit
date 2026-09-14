@@ -93,6 +93,20 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+
+  const job = createJob(url, effectiveOrgId);
+
+  runCrawl(job.id);
+
+  return NextResponse.json({ jobId: job.id, siteId: job.siteId });
+  } catch (error) {
+    console.error('Crawl API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { error: 'Internal server error', details: errorMessage },
+      { status: 500 }
+    );
+  }
 }
 
 async function runCrawl(jobId: string) {

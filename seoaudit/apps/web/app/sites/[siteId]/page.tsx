@@ -10,6 +10,7 @@ import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
 import Organization from '@/lib/models/Organization';
 import { SiteDetailsTabs } from '@/components/SiteDetailsTabs';
+import { Card } from '@/components/Card';
 
 interface ISite {
   _id: string;
@@ -112,31 +113,31 @@ export default async function SiteDetailsPage({
 
         {/* Site Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">
-          <div className="p-4 lg:p-6 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <p className="text-xs lg:text-sm text-zinc-600 dark:text-zinc-400 mb-2">Total Pages</p>
+          <Card className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-base-content/70 mb-2">Total Pages</p>
             <p className="text-2xl lg:text-3xl font-bold">{site.pageCount || pages.length}</p>
-          </div>
+          </Card>
 
-          <div className="p-4 lg:p-6 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <p className="text-xs lg:text-sm text-zinc-600 dark:text-zinc-400 mb-2">Status</p>
+          <Card className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm text-base-content/70 mb-2">Status</p>
             <span
-              className={`inline-block px-3 py-1 rounded text-xs lg:text-sm font-medium ${
+              className={`badge ${
                 site.crawlStatus === 'completed'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                  ? 'badge-success'
                   : site.crawlStatus === 'failed'
-                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                    ? 'badge-error'
+                    : 'badge-warning'
               }`}
             >
               {site.crawlStatus || 'pending'}
             </span>
-          </div>
+          </Card>
 
           {site.title && (
-            <div className="p-4 lg:p-6 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 md:col-span-2 lg:col-span-2">
-              <p className="text-xs lg:text-sm text-zinc-600 dark:text-zinc-400 mb-2">Page Title</p>
+            <Card className="p-3 lg:p-4 md:col-span-2 lg:col-span-2">
+              <p className="text-xs lg:text-sm text-base-content/70 mb-2">Page Title</p>
               <p className="text-xs lg:text-sm truncate">{site.title}</p>
-            </div>
+            </Card>
           )}
         </div>
 
