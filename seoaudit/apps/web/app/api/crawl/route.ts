@@ -14,11 +14,12 @@ import Organization from '@/lib/models/Organization';
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  let session = (await getServerSession(handler)) as Session | null;
+  try {
+    let session = (await getServerSession(handler)) as Session | null;
 
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
   // If accountId is not in session, resolve it from database using email
   if (!session.user.accountId) {
@@ -84,6 +85,14 @@ export async function POST(request: Request) {
   runCrawl(job.id);
 
   return NextResponse.json({ jobId: job.id, siteId: job.siteId });
+  } catch (error) {
+    console.error('Crawl API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { error: 'Internal server error', details: errorMessage },
+      { status: 500 }
+    );
+  }
 }
 
 async function runCrawl(jobId: string) {
