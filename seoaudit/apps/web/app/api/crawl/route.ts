@@ -1,4 +1,4 @@
-import { crawlSite } from '@seo-optimizer/crawler';
+import { FirecrawlApp } from 'firecrawl';
 import { NextResponse } from "next/server";
 import { getServerSession } from 'next-auth/next';
 import { handler } from '@/lib/auth/auth';
@@ -14,76 +14,85 @@ import Organization from '@/lib/models/Organization';
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  let session = (await getServerSession(handler)) as Session | null;
+  try {
+    let session = (await getServerSession(handler)) as Session | null;
 
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // If accountId is not in session, resolve it from database using email
-  if (!session.user.accountId) {
-    try {
-      const { db } = await connectToDatabase();
-      const usersCollection = db.collection('users');
-
-      // Find user by email
-      const user = await usersCollection.findOne({ email: session.user.email });
-
-      if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-
-      await connectMongoose();
-      const membership = await Membership.findOne({ userId: user._id.toString() });
-
-      if (membership) {
-        session.user.id = user._id.toString();
-        session.user.accountId = membership.organizationId.toString();
-      } else {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-    } catch (error) {
-      console.error('Error resolving accountId:', error);
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-  }
 
-  if (!session.user.accountId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    // If accountId is not in session, resolve it from database using email
+    if (!session.user.accountId) {
+      try {
+        const { db } = await connectToDatabase();
+        const usersCollection = db.collection('users');
 
-  const { url, organizationId } = await request.json();
+        // Find user by email
+        const user = await usersCollection.findOne({ email: session.user.email });
 
-  if (!url) {
-    return NextResponse.json({ error: "La URL es requerida" }, { status: 400 });
-  }
+        if (!user) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-  // Usar organizationId del request, o fallback a session.user.accountId
-  const effectiveOrgId = organizationId || session.user.accountId;
+        await connectMongoose();
+        const membership = await Membership.findOne({ userId: user._id.toString() });
 
-  if (!effectiveOrgId) {
-    return NextResponse.json({ error: "Organization ID requerido" }, { status: 400 });
-  }
+        if (membership) {
+          session.user.id = user._id.toString();
+          session.user.accountId = membership.organizationId.toString();
+        } else {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+      } catch (error) {
+        console.error('Error resolving accountId:', error);
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
 
-  // Validar que el usuario es miembro de esta organización
-  await connectMongoose();
-  const isValidOrg = await Membership.findOne({
-    userId: session.user.id,
-    organizationId: effectiveOrgId,
-  });
+    if (!session.user.accountId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  if (!isValidOrg) {
+    const { url, organizationId } = await request.json();
+
+    if (!url) {
+      return NextResponse.json({ error: "La URL es requerida" }, { status: 400 });
+    }
+
+    // Usar organizationId del request, o fallback a session.user.accountId
+    const effectiveOrgId = organizationId || session.user.accountId;
+
+    if (!effectiveOrgId) {
+      return NextResponse.json({ error: "Organization ID requerido" }, { status: 400 });
+    }
+
+    // Validar que el usuario es miembro de esta organización
+    await connectMongoose();
+    const isValidOrg = await Membership.findOne({
+      userId: session.user.id,
+      organizationId: effectiveOrgId,
+    });
+
+    if (!isValidOrg) {
+      return NextResponse.json(
+        { error: "No tienes acceso a esta organización" },
+        { status: 403 }
+      );
+    }
+
+    const job = createJob(url, effectiveOrgId);
+
+    runCrawl(job.id);
+
+    return NextResponse.json({ jobId: job.id, siteId: job.siteId });
+  } catch (error) {
+    console.error('Crawl API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "No tienes acceso a esta organización" },
-      { status: 403 }
+      { error: 'Internal server error', details: errorMessage },
+      { status: 500 }
     );
   }
-
-  const job = createJob(url, effectiveOrgId);
-
-  runCrawl(job.id);
-
-  return NextResponse.json({ jobId: job.id, siteId: job.siteId });
 }
 
 async function runCrawl(jobId: string) {
@@ -93,21 +102,44 @@ async function runCrawl(jobId: string) {
   job.status = "running";
 
   try {
-    const result = await crawlSite(job.url, {
-      concurrency: 5,
-      onProgress: (processed, total) => {
-        const j = jobStore.get(jobId);
-        if (j) {
-          j.processed = processed;
-          j.total = total;
-        }
+    console.log('Starting Firecrawl for URL:', job.url);
+
+    const firecrawl = new FirecrawlApp({
+      apiKey: process.env.FIRECRAWL_API_KEY,
+    });
+
+    // Crawl the website using Firecrawl
+    const crawlResponse = await firecrawl.crawlUrl(job.url, {
+      limit: 50,
+      scrapeOptions: {
+        formats: ['markdown', 'html'],
       },
     });
 
+    if (!crawlResponse.success) {
+      throw new Error('Firecrawl crawl failed: ' + crawlResponse.error);
+    }
+
+    // Transform Firecrawl results to match expected format
+    const pages = crawlResponse.data.map((page: any) => ({
+      url: page.url,
+      title: page.title || page.metadata?.title,
+      description: page.metadata?.description,
+      statusCode: 200,
+      h1: extractHeadings(page.markdown, 'h1'),
+      h2: extractHeadings(page.markdown, 'h2'),
+      ogTitle: page.metadata?.ogTitle,
+      ogDescription: page.metadata?.ogDescription,
+      ogImage: page.metadata?.ogImage,
+      robots: page.metadata?.robots,
+      canonical: page.metadata?.canonical,
+    }));
+
+    console.log('Crawl completed, pages found:', pages.length);
     const j = jobStore.get(jobId);
     if (!j) return;
 
-    j.result = result;
+    j.result = { pages };
     j.finishedAt = Date.now();
 
     // Persistir en MongoDB ANTES de marcar como completado
@@ -115,7 +147,9 @@ async function runCrawl(jobId: string) {
 
     // Solo marcar como completado DESPUÉS de que la persistencia esté lista
     j.status = "completed";
+    console.log('Crawl job completed:', jobId);
   } catch (err) {
+    console.error('Crawl error for job', jobId, ':', err);
     const j = jobStore.get(jobId);
     if (j) {
       j.status = "failed";
@@ -123,6 +157,13 @@ async function runCrawl(jobId: string) {
       j.finishedAt = Date.now();
     }
   }
+}
+
+function extractHeadings(markdown: string, level: 'h1' | 'h2'): string[] {
+  if (!markdown) return [];
+  const regex = level === 'h1' ? /^# (.+)$/gm : /^## (.+)$/gm;
+  const matches = markdown.matchAll(regex);
+  return Array.from(matches).map(m => m[1]);
 }
 
 async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
