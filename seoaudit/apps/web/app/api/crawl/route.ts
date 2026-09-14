@@ -1,4 +1,4 @@
-import { FirecrawlAppV1 } from 'firecrawl';
+import { FirecrawlApp } from 'firecrawl';
 import { NextResponse } from "next/server";
 import { getServerSession } from 'next-auth/next';
 import { handler } from '@/lib/auth/auth';
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
 
     runCrawl(job.id);
 
-  return NextResponse.json({ jobId: job.id, siteId: job.siteId });
+    return NextResponse.json({ jobId: job.id, siteId: job.siteId });
   } catch (error) {
     console.error('Crawl API error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -104,7 +104,7 @@ async function runCrawl(jobId: string) {
   try {
     console.log('Starting Firecrawl for URL:', job.url);
 
-    const firecrawl = new FirecrawlAppV1({
+    const firecrawl = new FirecrawlApp({
       apiKey: process.env.FIRECRAWL_API_KEY,
     });
 
@@ -120,56 +120,26 @@ async function runCrawl(jobId: string) {
       throw new Error('Firecrawl crawl failed: ' + crawlResponse.error);
     }
 
-    // Transform Firecrawl results to match expected format, filtering out XML files (sitemaps)
-    const pages = crawlResponse.data
-      .filter((page: any) => {
-        const url = page.metadata?.url || page.url || '';
-        return !url.endsWith('.xml');
-      })
-      .map((page: any) => {
-        const markdown = page.markdown || '';
-        const h1Headings = extractHeadings(markdown, 'h1');
-        const h2Headings = extractHeadings(markdown, 'h2');
-        const paragraphs = markdown
-          .split(/\n\n+/)
-          .filter((p: string) => p.trim().length > 0)
-          .map((p: string) => p.trim());
-        const wordCount = markdown.split(/\s+/).filter(Boolean).length;
-
-        const title = page.metadata?.title || null;
-
-        // Handle both camelCase and kebab-case og tags from Firecrawl
-        const ogTitle = page.metadata?.ogTitle || page.metadata?.['og:title'] || title || null;
-        const ogDescription = page.metadata?.ogDescription || page.metadata?.['og:description'] || page.metadata?.description || null;
-
-        return {
-          url: page.metadata?.url || page.url,
-          statusCode: page.metadata?.statusCode || 200,
-          title,
-          description: page.metadata?.description || ogDescription || null,
-          canonical: page.metadata?.canonical || null,
-          ogTitle,
-          ogDescription,
-          ogImage: page.metadata?.ogImage || page.metadata?.['og:image'] || null,
-          robots: page.metadata?.robots || null,
-          h1: h1Headings,
-          h2: h2Headings,
-          p: paragraphs,
-          wordCount,
-          loadTimeMs: 0,
-        };
-      });
+    // Transform Firecrawl results to match expected format
+    const pages = crawlResponse.data.map((page: any) => ({
+      url: page.url,
+      title: page.title || page.metadata?.title,
+      description: page.metadata?.description,
+      statusCode: 200,
+      h1: extractHeadings(page.markdown, 'h1'),
+      h2: extractHeadings(page.markdown, 'h2'),
+      ogTitle: page.metadata?.ogTitle,
+      ogDescription: page.metadata?.ogDescription,
+      ogImage: page.metadata?.ogImage,
+      robots: page.metadata?.robots,
+      canonical: page.metadata?.canonical,
+    }));
 
     console.log('Crawl completed, pages found:', pages.length);
     const j = jobStore.get(jobId);
     if (!j) return;
 
-    j.result = {
-      siteUrl: job.url,
-      sitemapUrl: '',
-      total: pages.length,
-      pages,
-    };
+    j.result = { pages };
     j.finishedAt = Date.now();
 
     // Persistir en MongoDB ANTES de marcar como completado
