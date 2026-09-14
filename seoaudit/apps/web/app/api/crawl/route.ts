@@ -121,25 +121,42 @@ async function runCrawl(jobId: string) {
     }
 
     // Transform Firecrawl results to match expected format
-    const pages = crawlResponse.data.map((page: any) => ({
-      url: page.url,
-      title: page.title || page.metadata?.title,
-      description: page.metadata?.description,
-      statusCode: 200,
-      h1: extractHeadings(page.markdown, 'h1'),
-      h2: extractHeadings(page.markdown, 'h2'),
-      ogTitle: page.metadata?.ogTitle,
-      ogDescription: page.metadata?.ogDescription,
-      ogImage: page.metadata?.ogImage,
-      robots: page.metadata?.robots,
-      canonical: page.metadata?.canonical,
-    }));
+    const pages = crawlResponse.data.map((page: any) => {
+      const markdown = page.markdown || '';
+      const paragraphs = markdown
+        .split(/\n\n+/)
+        .filter((p: string) => p.trim().length > 0)
+        .map((p: string) => p.trim());
+      const wordCount = markdown.split(/\s+/).filter(Boolean).length;
+
+      return {
+        url: page.url,
+        statusCode: 200,
+        title: page.title || page.metadata?.title || null,
+        description: page.metadata?.description || null,
+        canonical: page.metadata?.canonical || null,
+        ogTitle: page.metadata?.ogTitle || null,
+        ogDescription: page.metadata?.ogDescription || null,
+        ogImage: page.metadata?.ogImage || null,
+        robots: page.metadata?.robots || null,
+        h1: extractHeadings(markdown, 'h1'),
+        h2: extractHeadings(markdown, 'h2'),
+        p: paragraphs,
+        wordCount,
+        loadTimeMs: 0,
+      };
+    });
 
     console.log('Crawl completed, pages found:', pages.length);
     const j = jobStore.get(jobId);
     if (!j) return;
 
-    j.result = { pages };
+    j.result = {
+      siteUrl: job.url,
+      sitemapUrl: '',
+      total: pages.length,
+      pages,
+    };
     j.finishedAt = Date.now();
 
     // Persistir en MongoDB ANTES de marcar como completado
