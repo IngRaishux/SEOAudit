@@ -84,7 +84,7 @@ export async function POST(request: Request) {
 
     runCrawl(job.id);
 
-    return NextResponse.json({ jobId: job.id, siteId: job.siteId });
+  return NextResponse.json({ jobId: job.id, siteId: job.siteId });
   } catch (error) {
     console.error('Crawl API error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
