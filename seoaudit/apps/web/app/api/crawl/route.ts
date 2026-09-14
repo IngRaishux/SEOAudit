@@ -120,6 +120,8 @@ async function runCrawl(jobId: string) {
       throw new Error('Firecrawl crawl failed: ' + crawlResponse.error);
     }
 
+    console.log('Firecrawl response data sample:', JSON.stringify(crawlResponse.data[0], null, 2));
+
     // Transform Firecrawl results to match expected format
     const pages = crawlResponse.data.map((page: any) => {
       const markdown = page.markdown || '';
