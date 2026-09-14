@@ -72,12 +72,20 @@ export function SiteDetailsTabs({
           {/* SERP Preview Tab */}
           {activeTab === 'serp' && (
             <div className="space-y-4">
-              {pages.length > 0 && pages[0].title ? (
-                <SERPPreview
-                  title={pages[0].title || 'Sin título'}
-                  description={pages[0].description || 'Sin descripción'}
-                  url={siteUrl}
-                />
+              {pages.length > 0 && pages[0].metaTags && pages[0].metaTags.length > 0 ? (
+                <>
+                  {(() => {
+                    const ogTitle = pages[0].metaTags?.find((tag: MetaTag) => tag.name === 'og:title')?.content || pages[0].title || 'Sin título';
+                    const ogDescription = pages[0].metaTags?.find((tag: MetaTag) => tag.name === 'og:description')?.content || pages[0].description || 'Sin descripción';
+                    return (
+                      <SERPPreview
+                        title={ogTitle}
+                        description={ogDescription}
+                        url={siteUrl}
+                      />
+                    );
+                  })()}
+                </>
               ) : (
                 <div className="alert alert-info">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
