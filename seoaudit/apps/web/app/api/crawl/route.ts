@@ -129,15 +129,18 @@ async function runCrawl(jobId: string) {
         .map((p: string) => p.trim());
       const wordCount = markdown.split(/\s+/).filter(Boolean).length;
 
+      console.log('Page metadata keys:', Object.keys(page.metadata || {}));
+      console.log('Page metadata:', JSON.stringify(page.metadata, null, 2));
+
       return {
         url: page.metadata?.url || page.url,
         statusCode: page.metadata?.statusCode || 200,
         title: page.metadata?.title || null,
         description: page.metadata?.description || null,
         canonical: page.metadata?.canonical || null,
-        ogTitle: page.metadata?.ogTitle || null,
-        ogDescription: page.metadata?.ogDescription || null,
-        ogImage: page.metadata?.ogImage || null,
+        ogTitle: page.metadata?.ogTitle || page.metadata?.['og:title'] || null,
+        ogDescription: page.metadata?.ogDescription || page.metadata?.['og:description'] || null,
+        ogImage: page.metadata?.ogImage || page.metadata?.['og:image'] || null,
         robots: page.metadata?.robots || null,
         h1: extractHeadings(markdown, 'h1'),
         h2: extractHeadings(markdown, 'h2'),
