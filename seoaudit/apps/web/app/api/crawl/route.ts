@@ -120,8 +120,6 @@ async function runCrawl(jobId: string) {
       throw new Error('Firecrawl crawl failed: ' + crawlResponse.error);
     }
 
-    console.log('Firecrawl response data sample:', JSON.stringify(crawlResponse.data[0], null, 2));
-
     // Transform Firecrawl results to match expected format
     const pages = crawlResponse.data.map((page: any) => {
       const markdown = page.markdown || '';
@@ -132,9 +130,9 @@ async function runCrawl(jobId: string) {
       const wordCount = markdown.split(/\s+/).filter(Boolean).length;
 
       return {
-        url: page.url,
-        statusCode: 200,
-        title: page.title || page.metadata?.title || null,
+        url: page.metadata?.url || page.url,
+        statusCode: page.metadata?.statusCode || 200,
+        title: page.metadata?.title || null,
         description: page.metadata?.description || null,
         canonical: page.metadata?.canonical || null,
         ogTitle: page.metadata?.ogTitle || null,
