@@ -75,8 +75,8 @@ export function SiteDetailsTabs({
               {pages.length > 0 && pages[0].metaTags && pages[0].metaTags.length > 0 ? (
                 <>
                   {(() => {
-                    const ogTitle = pages[0].metaTags?.find((tag: MetaTag) => tag.name === 'og:title')?.content || pages[0].title || 'Sin título';
-                    const ogDescription = pages[0].metaTags?.find((tag: MetaTag) => tag.name === 'og:description')?.content || pages[0].description || 'Sin descripción';
+                    const ogTitle = pages[0].metaTags?.find((tag: MetaTag) => tag.name === 'og:title' || 'ogTitle')?.content || pages[0].title || 'Sin título';
+                    const ogDescription = pages[0].metaTags?.find((tag: MetaTag) => tag.name === 'og:description' || 'ogDescription')?.content || pages[0].description || 'Sin descripción';
                     return (
                       <SERPPreview
                         title={ogTitle}

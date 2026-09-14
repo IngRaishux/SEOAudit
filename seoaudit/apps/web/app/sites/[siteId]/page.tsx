@@ -96,6 +96,8 @@ export default async function SiteDetailsPage({
   // Serialize pages data for client component
   const serializedPages = JSON.parse(JSON.stringify(pages));
 
+  console.log('paginas serializadas', serializedPages);
+  
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <div className="max-w-6xl mx-auto p-4 lg:p-8">
