@@ -123,27 +123,32 @@ async function runCrawl(jobId: string) {
     // Transform Firecrawl results to match expected format
     const pages = crawlResponse.data.map((page: any) => {
       const markdown = page.markdown || '';
+      const h1Headings = extractHeadings(markdown, 'h1');
+      const h2Headings = extractHeadings(markdown, 'h2');
       const paragraphs = markdown
         .split(/\n\n+/)
         .filter((p: string) => p.trim().length > 0)
         .map((p: string) => p.trim());
       const wordCount = markdown.split(/\s+/).filter(Boolean).length;
 
-      console.log('Page metadata keys:', Object.keys(page.metadata || {}));
-      console.log('Page metadata:', JSON.stringify(page.metadata, null, 2));
+      const title = page.metadata?.title  || null;
+
+      // Handle both camelCase and kebab-case og tags from Firecrawl
+      const ogTitle = page.metadata?.ogTitle || page.metadata?.['og:title'] || title || null;
+      const ogDescription = page.metadata?.ogDescription || page.metadata?.['og:description'] || page.metadata?.description || null;
 
       return {
         url: page.metadata?.url || page.url,
         statusCode: page.metadata?.statusCode || 200,
-        title: page.metadata?.title || null,
-        description: page.metadata?.description || null,
+        title,
+        description: page.metadata?.description || ogDescription || null,
         canonical: page.metadata?.canonical || null,
-        ogTitle: page.metadata?.ogTitle || page.metadata?.['og:title'] || null,
-        ogDescription: page.metadata?.ogDescription || page.metadata?.['og:description'] || null,
+        ogTitle,
+        ogDescription,
         ogImage: page.metadata?.ogImage || page.metadata?.['og:image'] || null,
         robots: page.metadata?.robots || null,
-        h1: extractHeadings(markdown, 'h1'),
-        h2: extractHeadings(markdown, 'h2'),
+        h1: h1Headings,
+        h2: h2Headings,
         p: paragraphs,
         wordCount,
         loadTimeMs: 0,
