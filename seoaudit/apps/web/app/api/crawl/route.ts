@@ -120,40 +120,45 @@ async function runCrawl(jobId: string) {
       throw new Error('Firecrawl crawl failed: ' + crawlResponse.error);
     }
 
-    // Transform Firecrawl results to match expected format
-    const pages = crawlResponse.data.map((page: any) => {
-      const markdown = page.markdown || '';
-      const h1Headings = extractHeadings(markdown, 'h1');
-      const h2Headings = extractHeadings(markdown, 'h2');
-      const paragraphs = markdown
-        .split(/\n\n+/)
-        .filter((p: string) => p.trim().length > 0)
-        .map((p: string) => p.trim());
-      const wordCount = markdown.split(/\s+/).filter(Boolean).length;
+    // Transform Firecrawl results to match expected format, filtering out XML files (sitemaps)
+    const pages = crawlResponse.data
+      .filter((page: any) => {
+        const url = page.metadata?.url || page.url || '';
+        return !url.endsWith('.xml');
+      })
+      .map((page: any) => {
+        const markdown = page.markdown || '';
+        const h1Headings = extractHeadings(markdown, 'h1');
+        const h2Headings = extractHeadings(markdown, 'h2');
+        const paragraphs = markdown
+          .split(/\n\n+/)
+          .filter((p: string) => p.trim().length > 0)
+          .map((p: string) => p.trim());
+        const wordCount = markdown.split(/\s+/).filter(Boolean).length;
 
-      const title = page.metadata?.title  || null;
+        const title = page.metadata?.title || null;
 
-      // Handle both camelCase and kebab-case og tags from Firecrawl
-      const ogTitle = page.metadata?.ogTitle || page.metadata?.['og:title'] || title || null;
-      const ogDescription = page.metadata?.ogDescription || page.metadata?.['og:description'] || page.metadata?.description || null;
+        // Handle both camelCase and kebab-case og tags from Firecrawl
+        const ogTitle = page.metadata?.ogTitle || page.metadata?.['og:title'] || title || null;
+        const ogDescription = page.metadata?.ogDescription || page.metadata?.['og:description'] || page.metadata?.description || null;
 
-      return {
-        url: page.metadata?.url || page.url,
-        statusCode: page.metadata?.statusCode || 200,
-        title,
-        description: page.metadata?.description || ogDescription || null,
-        canonical: page.metadata?.canonical || null,
-        ogTitle,
-        ogDescription,
-        ogImage: page.metadata?.ogImage || page.metadata?.['og:image'] || null,
-        robots: page.metadata?.robots || null,
-        h1: h1Headings,
-        h2: h2Headings,
-        p: paragraphs,
-        wordCount,
-        loadTimeMs: 0,
-      };
-    });
+        return {
+          url: page.metadata?.url || page.url,
+          statusCode: page.metadata?.statusCode || 200,
+          title,
+          description: page.metadata?.description || ogDescription || null,
+          canonical: page.metadata?.canonical || null,
+          ogTitle,
+          ogDescription,
+          ogImage: page.metadata?.ogImage || page.metadata?.['og:image'] || null,
+          robots: page.metadata?.robots || null,
+          h1: h1Headings,
+          h2: h2Headings,
+          p: paragraphs,
+          wordCount,
+          loadTimeMs: 0,
+        };
+      });
 
     console.log('Crawl completed, pages found:', pages.length);
     const j = jobStore.get(jobId);
@@ -196,11 +201,20 @@ async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
 
   try {
     // Crear Site
+    const firstPage = job.result.pages[0];
+    const siteMetaTags = [
+      ...(firstPage?.ogTitle ? [{ name: 'og:title', content: firstPage.ogTitle }] : []),
+      ...(firstPage?.ogDescription ? [{ name: 'og:description', content: firstPage.ogDescription }] : []),
+      ...(firstPage?.ogImage ? [{ name: 'og:image', content: firstPage.ogImage }] : []),
+      ...(firstPage?.robots ? [{ name: 'robots', content: firstPage.robots }] : []),
+    ];
+
     const site = await siteRepository.createSite({
       url: job.url,
       organizationId: job.organizationId,
-      title: job.result.pages[0]?.title || undefined,
-      description: job.result.pages[0]?.description || undefined,
+      title: firstPage?.title || undefined,
+      description: firstPage?.description || undefined,
+      metaTags: siteMetaTags,
     });
 
     // Actualizar job con el siteId de MongoDB

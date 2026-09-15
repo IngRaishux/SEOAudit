@@ -46,7 +46,7 @@ export function LoginForm() {
   async function handleGoogleSignIn() {
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/organizations' });
+      await signIn('google', { callbackUrl: '/organizations', redirect: true });
     } catch (err) {
       setError(t('errors.serverError'));
       console.error(err);
