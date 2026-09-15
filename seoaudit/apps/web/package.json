@@ -21,6 +21,7 @@
     "@seo-optimizer/types": "*",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
+    "firecrawl": "^4.39.0",
     "geist": "^1.7.0",
     "mongodb": "^6",
     "mongoose": "^8",

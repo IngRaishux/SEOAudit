@@ -66,6 +66,48 @@ export const authConfig = {
     error: '/login',
   },
   callbacks: {
+    async signIn({ user, account }: { user?: User | null; account?: Account | null }) {
+      // Create user in MongoDB if they don't exist (for OAuth providers)
+      if (user && account?.provider === 'google') {
+        try {
+          const { db } = await connectToDatabase();
+          const usersCollection = db.collection('users');
+
+          const existingUser = await usersCollection.findOne({ email: user.email });
+
+          if (!existingUser) {
+            const newUser = {
+              email: user.email,
+              name: user.name || '',
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+
+            const result = await usersCollection.insertOne(newUser);
+
+            // Create default organization and membership
+            await connectMongoose();
+            const organization = await Organization.create({
+              name: `${user.name || user.email}'s Organization`,
+              ownerId: result.insertedId.toString(),
+            });
+
+            await Membership.create({
+              userId: result.insertedId.toString(),
+              organizationId: organization._id.toString(),
+              role: 'owner',
+            });
+          }
+
+          return true;
+        } catch (error) {
+          console.error('SignIn callback error:', error);
+          return false;
+        }
+      }
+
+      return true;
+    },
     async jwt({
       token,
       user,

@@ -61,7 +61,6 @@ function CrawlerContent() {
     const interval = setInterval(async () => {
       const res = await fetch(`/api/crawl/${jobId}`);
       const data = await res.json();
-
       setStatus(data.status);
       setProgress({ processed: data.processed, total: data.total });
 
@@ -86,7 +85,7 @@ function CrawlerContent() {
         <h1 className="text-2xl font-bold">Ingresa una url</h1>
       </div>
 
-      <main className="w-full max-w-xl h-auto p-1.5 flex flex-row justify-center gap-8 items-center rounded-lg border border-b-blue-600">
+      <main className="w-full max-w-xl h-auto p-1.5 flex flex-row justify-center gap-8 items-center rounded-lg border shadow-md p-3">
         <Input
           className="flex bg-mist-200 grow-2 justify-center"
           placeholder="Ingresa una url"

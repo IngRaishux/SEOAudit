@@ -11,31 +11,7 @@ import Membership from '@/lib/models/Membership';
 import Organization from '@/lib/models/Organization';
 import { SiteDetailsTabs } from '@/components/SiteDetailsTabs';
 import { Card } from '@/components/Card';
-
-interface ISite {
-  _id: string;
-  url: string;
-  organizationId: string;
-  title?: string;
-  pageCount: number;
-  crawlStatus: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface IPage {
-  _id: string;
-  siteId: string;
-  url: string;
-  organizationId: string;
-  title?: string;
-  statusCode?: number;
-  canonical?: string;
-  headings: string[];
-  metaTags: Array<{ name: string; content: string }>;
-  createdAt: Date;
-  description?: string;
-}
+import type { ISite, IPage } from '@/lib/interfaces';
 
 export default async function SiteDetailsPage({
   params,
@@ -93,9 +69,10 @@ export default async function SiteDetailsPage({
     console.error('Error fetching pages:', error);
   }
 
+  console.log('sitio: ', site);
+  
   // Serialize pages data for client component
-  const serializedPages = JSON.parse(JSON.stringify(pages));
-
+  const serializedPages = JSON.parse(JSON.stringify(pages));  
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <div className="max-w-6xl mx-auto p-4 lg:p-8">
@@ -144,6 +121,7 @@ export default async function SiteDetailsPage({
         {/* Tabs Section */}
         <SiteDetailsTabs
           pages={serializedPages}
+          site={site}
           siteUrl={site.url}
           siteId={siteId}
           organizationId={site.organizationId}

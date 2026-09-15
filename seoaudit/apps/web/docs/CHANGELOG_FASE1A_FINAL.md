@@ -17,6 +17,52 @@ Fase 1A completada con éxito. Se implementaron 3 features principales:
 
 ---
 
+## Post-Fase 1A - Actualizaciones Posteriores
+
+### Firecrawl Integration & Metadata Enhancements
+
+#### 1. Site Metadata (metaTags)
+- **Archivos:** `lib/models/Site.ts`, `lib/interfaces/site.ts`, `lib/repositories/siteRepository.ts`
+- **Cambios:**
+  - Agregado campo `metaTags` al schema de Site
+  - Estructura: `Array<{ name: string; content: string }>`
+  - Incluye: og:title, og:description, og:image, robots tags
+  - Persiste metadatos del primer resultado de crawl a nivel de sitio
+
+#### 2. Interfaces Centralizadas
+- **Archivos nuevos:**
+  - `lib/interfaces/site.ts` - ISite interface
+  - `lib/interfaces/page.ts` - IPage interface
+  - `lib/interfaces/index.ts` - Exportaciones centralizadas
+- **Propósito:** Evitar duplicación de tipos, facilitar reutilización
+- **Importaciones:** `app/sites/[siteId]/page.tsx` ahora usa interfaces centralizadas
+
+#### 3. Google OAuth Auto-registration
+- **Archivo:** `lib/auth/auth.ts`
+- **Cambios:**
+  - Nuevo callback `signIn()` en NextAuth
+  - Crea automáticamente usuario + organización para nuevos usuarios de Google
+  - Elimina duplicidad de lógica de creación de org
+  - Usuario redirigido directamente a /organizations post-login
+
+#### 4. Login/Register Redirect Fix
+- **Archivos:** `components/LoginForm.tsx`, `components/RegisterForm.tsx`
+- **Cambios:**
+  - Removido `router.push()` redundante después de `signIn('google')`
+  - Agregado `redirect: true` para permitir que NextAuth maneje el redirect
+  - Arregla bucle de login → redirect infinito
+
+#### 5. Limpieza de Mongoose Model Cache
+- **Archivo:** `lib/models/Site.ts`
+- **Cambios:**
+  - Deletea modelo en caché antes de exportar
+  - `delete mongoose.models.Site`
+  - Asegura que nuevos campos (metaTags) se reconozcan correctamente
+
+---
+
+---
+
 ## Feature 1: Eliminar Sitios
 
 ### Backend

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { SERPPreview } from './SERPPreview';
 import { Card, CardContent } from './Card';
+import { ISite } from '@/lib/interfaces';
 
 interface MetaTag {
   name: string;
@@ -26,6 +27,7 @@ interface SiteDetailsTabsProps {
   siteUrl: string;
   siteId: string;
   organizationId: string;
+  site: ISite 
 }
 
 type TabType = 'serp' | 'pages' | 'meta';
@@ -35,11 +37,14 @@ export function SiteDetailsTabs({
   siteUrl,
   siteId,
   organizationId,
+  site
 }: SiteDetailsTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('serp');
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
 
+  console.log('Site en los detalles: ',site);
+  
   const tabs = [
     { id: 'serp', label: t('siteDetails.tabs.serp'), icon: '🔍' },
     { id: 'pages', label: `${t('siteDetails.tabs.pages')} (${pages.length})`, icon: '📄' },
@@ -72,12 +77,19 @@ export function SiteDetailsTabs({
           {/* SERP Preview Tab */}
           {activeTab === 'serp' && (
             <div className="space-y-4">
-              {pages.length > 0 && pages[0].title ? (
-                <SERPPreview
-                  title={pages[0].title || 'Sin título'}
-                  description={pages[0].description || 'Sin descripción'}
-                  url={siteUrl}
-                />
+              {site.title && site.description ? (
+                <>
+                  {(() => {
+                    
+                    return (
+                      <SERPPreview
+                        title={site.description}
+                        description={site.description}
+                        url={siteUrl}
+                      />
+                    );
+                  })()}
+                </>
               ) : (
                 <div className="alert alert-info">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
@@ -179,12 +191,12 @@ export function SiteDetailsTabs({
           {/* Meta Tags Tab */}
           {activeTab === 'meta' && (
             <div>
-              {pages.length > 0 && pages[0].metaTags && pages[0].metaTags.length > 0 ? (
+              {site.metaTags && site.metaTags.length > 0 ? (
                 <div className="space-y-4">
                   <p className="text-sm text-base-content/70 mb-4">
-                    {t('siteDetails.metaTagsFrom')} <span className="font-mono text-base-content font-medium">{pages[0].url}</span>
+                    {t('siteDetails.metaTagsFrom')} <span className="font-mono text-base-content font-medium">{site.url}</span>
                   </p>
-                  {pages[0].metaTags.map((tag, idx) => (
+                  {site.metaTags.map((tag, idx) => (
                     <Card key={idx} className="border-primary/50">
                       <CardContent className="pt-6">
                         <div className="text-sm space-y-2">
