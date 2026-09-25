@@ -102,17 +102,16 @@ async function runCrawl(jobId: string) {
   job.status = "running";
 
   try {
-    console.log('Starting Firecrawl for URL:', job.url);
-
-    const firecrawl = new FirecrawlAppV1({
-      apiKey: process.env.FIRECRAWL_API_KEY,
-    });
-
-    // Crawl the website using Firecrawl
-    const crawlResponse = await firecrawl.crawlUrl(job.url, {
-      limit: 50,
-      scrapeOptions: {
-        formats: ['markdown', 'html'],
+    const crawl4aiUrl = process.env.CRAWL4AI_URL || 'http://localhost:11235';
+    const result = await crawlSite(job.url, {
+      concurrency: 5,
+      crawl4aiUrl,
+      onProgress: (processed, total) => {
+        const j = jobStore.get(jobId);
+        if (j) {
+          j.processed = processed;
+          j.total = total;
+        }
       },
     });
 

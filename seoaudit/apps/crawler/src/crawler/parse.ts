@@ -22,16 +22,25 @@ export function parseSeoFromHtml(
   url: string,
   html: string,
   statusCode: number,
-  loadTimeMs: number
+  loadTimeMs: number,
+  metadata?: { title: string | null; description: string | null },
+  fullHtml?: string
 ): PageSeo {
   const $ = cheerio.load(html);
+
+  // Extract canonical from full HTML if available (cleaned_html may not have it)
+  let canonical: string | null = attr($('link[rel="canonical"]'), 'href');
+  if (!canonical && fullHtml) {
+    const $full = cheerio.load(fullHtml);
+    canonical = attr($full('link[rel="canonical"]'), 'href');
+  }
 
   return {
     url,
     statusCode,
-    title: text($('title').first()),
-    description: attr($('meta[name="description"]'), 'content'),
-    canonical: attr($('link[rel="canonical"]'), 'href'),
+    title: metadata?.title || text($('title').first()),
+    description: metadata?.description || attr($('meta[name="description"]'), 'content'),
+    canonical,
     ogTitle: attr($('meta[property="og:title"]'), 'content'),
     ogDescription: attr($('meta[property="og:description"]'), 'content'),
     ogImage: attr($('meta[property="og:image"]'), 'content'),
