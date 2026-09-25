@@ -1,0 +1,29 @@
+services:
+  # MongoDB para datos de usuarios, organizaciones y auditorías
+  mongodb:
+    image: mongo:7.0
+    container_name: seo-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - seo-audit-network
+
+  # Nota: Crawl4AI se levanta desde /Users/hescobar/Proyectos/crawl4ai
+  # Ejecuta: cd ../crawl4ai && docker-compose up -d
+
+volumes:
+  mongodb_data:
+
+networks:
+  seo-audit-network:
+    driver: bridge

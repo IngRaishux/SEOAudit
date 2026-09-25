@@ -9,6 +9,7 @@ export interface CrawlOptions {
   concurrency?: number;
   maxUrls?: number;
   renderJs?: boolean;
+  crawl4aiUrl?: string;
   onProgress?: (processed: number, total: number) => void;
 }
 
@@ -23,7 +24,7 @@ export async function crawlSite(
   siteUrl: string,
   options: CrawlOptions = {}
 ): Promise<CrawlResult> {
-  const { concurrency = 5, maxUrls, renderJs = false, onProgress } = options;
+  const { concurrency = 5, maxUrls, renderJs = false, crawl4aiUrl, onProgress } = options;
 
   const sitemapUrl = await discoverSitemap(siteUrl);
   if (!sitemapUrl) throw new Error(`No sitemap found for ${siteUrl}`);
@@ -44,7 +45,7 @@ export async function crawlSite(
         limit(async () => {
           const result = browser
             ? await extractPageSeoRendered(browser, url)
-            : await extractPageSeo(url);
+            : await extractPageSeo(url, 10_000, crawl4aiUrl);
           processed++;
           onProgress?.(processed, total);
           return result;

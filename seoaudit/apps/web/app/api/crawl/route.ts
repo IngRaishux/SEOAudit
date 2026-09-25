@@ -93,8 +93,10 @@ async function runCrawl(jobId: string) {
   job.status = "running";
 
   try {
+    const crawl4aiUrl = process.env.CRAWL4AI_URL || 'http://localhost:11235';
     const result = await crawlSite(job.url, {
       concurrency: 5,
+      crawl4aiUrl,
       onProgress: (processed, total) => {
         const j = jobStore.get(jobId);
         if (j) {
