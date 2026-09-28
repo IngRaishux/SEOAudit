@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/components/Button';
+import { Button } from '@seo-optimizer/ui';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
