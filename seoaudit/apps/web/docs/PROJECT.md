@@ -6,13 +6,10 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
 
 **Stack tecnológico:**
 - **Frontend/Backend:** Next.js 16.2.5 (Route Handlers + Server Components)
-- **Estilos:** Tailwind CSS 3 + daisyUI 4.12.10 (componentes pre-diseñados)
-- **Tema:** Personalizado "cupcake" con OKLch color scheme
 - **Base de datos:** MongoDB (usuarios, organización, sitios, sugerencias)
 - **Autenticación:** NextAuth v4.24.0 (Credentials + Google OAuth)
 - **ORM:** Mongoose 8
 - **Validación:** Zod
-- **Internacionalización:** Custom i18n (ES/EN)
 - **Seguridad:** bcryptjs para hashing de contraseñas
 
 ---
@@ -69,7 +66,6 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
   crawlStatus: 'pending' | 'in_progress' | 'completed' | 'failed',
   crawlErrorMessage: string | null,
   pageCount: number (default: 0),
-  metaTags: [{name: string, content: string}],
   createdAt: Date,
   updatedAt: Date
 }
@@ -127,11 +123,6 @@ SEO Audit es una aplicación SaaS multi-tenant construida con Next.js, MongoDB y
 - **Descripción:** Endpoint de NextAuth v4
 - **Providers:** Credentials (email/password), Google OAuth
 - **Callback:** `/api/auth/callback/google` para OAuth
-- **Estrategia:** JWT session strategy
-- **Callbacks implementados:**
-  - `signIn()` - Crea automáticamente usuario + organización en MongoDB para nuevos usuarios de Google
-  - `jwt()` - Resuelve organizaciones del usuario en el JWT
-  - `session()` - Agrega datos de usuario y organizaciones a la sesión
 
 #### `POST /api/register`
 - **Auth:** No requiere (público)
@@ -199,18 +190,17 @@ interface Site {
   crawlStatus: 'pending' | 'in_progress' | 'completed' | 'failed';
   crawlErrorMessage?: string;
   pageCount: number;
-  metaTags?: Array<{ name: string; content: string }>; // og:title, og:description, og:image, robots
   createdAt: Date;
   updatedAt: Date;
 }
 ```
 
 **Métodos disponibles en `siteRepository`:**
-- `createSite(data)` → Site (incluye metaTags)
-- `getSiteById(id)` → Site | null (retorna metaTags)
-- `listSitesByAccount(organizationId, {limit, skip})` → Site[] (retorna metaTags)
+- `createSite(data)` → Site
+- `getSiteById(id)` → Site | null
+- `listSitesByAccount(organizationId, {limit, skip})` → Site[]
 - `countSitesByAccount(organizationId)` → number
-- `updateSite(id, data)` → Site (puede actualizar metaTags)
+- `updateSite(id, data)` → Site
 - `deleteSite(id)` → void
 
 ### Page
@@ -280,80 +270,6 @@ interface Suggestion {
 - `deleteSuggestion(id)` → void
 - `deleteSuggestionsByPage(pageId)` → void
 - `deleteSuggestionsBySite(siteId)` → void
-
----
-
-## Tema y Estilos (daisyUI + Tailwind)
-
-### Configuración del Tema
-
-**Archivo:** `tailwind.config.ts`
-
-**Tema predeterminado:** `cupcake` (personalizado)
-
-**Colores disponibles:**
-```
-- Primary: oklch(90% 0.058 230.902) - Azul
-- Secondary: oklch(89% 0.061 343.231) - Rosa
-- Accent: oklch(90% 0.076 70.697) - Amarillo/Dorado
-- Success: oklch(69% 0.17 162.48) - Verde
-- Warning: oklch(79% 0.184 86.047) - Naranja
-- Error: oklch(64% 0.246 16.439) - Rojo
-- Base-100: oklch(97.788% 0.004 56.375) - Fondo claro
-```
-
-**Integración daisyUI:**
-- Plugin configurado en `tailwind.config.ts`
-- Componentes disponibles: `btn`, `input`, `card`, `badge`, `table`, etc.
-- Tema aplicado globalmente en `app/layout.tsx` con `data-theme="cupcake"`
-
-### Componentes UI (daisyUI)
-
-#### Button
-**Archivo:** `components/Button.tsx`
-
-- **Variantes:** `primary`, `secondary`, `light`, `ghost`, `destructive`
-- **Tamaños:** `sm`, `md`, `lg`
-- **Props:**
-  - `variant`: tipo de botón
-  - `size`: tamaño del botón
-  - `isLoading`: muestra estado de carga
-  - `loadingText`: texto durante carga
-- **Usos:** Forms, dialogs, acciones
-
-#### Input
-**Archivo:** `components/Input.tsx`
-
-- **Tipo de input:** text, email, password, search, number, etc.
-- **Variantes:**
-  - `hasError`: estado de error (rojo)
-  - `enableStepper`: para inputs numéricos
-- **Tamaños:** `sm`, `md`, `lg`
-- **Características especiales:**
-  - Password: toggle show/hide
-  - Search: icono de búsqueda
-- **Usos:** Forms, búsqueda, validación
-
-#### Card
-**Archivo:** `components/Card.tsx`
-
-**Componentes:**
-- `Card` - Contenedor principal
-- `CardHeader` - Encabezado con borde inferior
-- `CardTitle` - Título (h2)
-- `CardDescription` - Descripción
-- `CardContent` - Contenido principal
-- `CardFooter` - Pie de página con borde superior
-
-**Variantes:**
-- `default` - Fondo base-100 con borde
-- `outlined` - Solo borde, sin fondo
-- `filled` - Fondo base-200
-
-**Sombras:**
-- `none`, `sm`, `md`, `lg`
-
-**Usos:** Layouts, tarjetas de estadísticas, paneles
 
 ---
 
@@ -428,115 +344,41 @@ interface Suggestion {
 
 - **Contenido:** `<RegisterForm />` + link a `/login`
 
-#### Site Details (`/sites/[siteId]`)
-**Archivo:** `app/sites/[siteId]/page.tsx` (Server Component)
-
-**Funcionalidades:**
-- Tarjetas de estadísticas (Total Pages, Status, Page Title) con Cards
-- Tabs navegables (SERP Preview, Pages, Meta Tags)
-- Sistema de permisos basado en roles
-
-**Componentes:**
-- `SiteDetailsTabs` - Gestor de tabs y contenido
-- `SERPPreview` - Visualización de SERP desktop/mobile
-- `DashboardContent` - Componente refactorisado para dashboard
-
-### Componentes SEO
-
-#### SERPPreview
-**Archivo:** `components/SERPPreview.tsx` (Client Component)
-
-- **Funcionalidad:** Visualiza cómo aparecerá la página en resultados de búsqueda
-- **Vistas:**
-  - Desktop (1200px): Límites 60-70 caracteres título, 155-170 descripción
-  - Mobile (400px): Límites 55-60 caracteres título, 120-130 descripción
-- **Indicadores:**
-  - Verde: Óptimo
-  - Amarillo: Podría mejorar
-  - Rojo: Muy corto/largo
-- **Características:** i18n completo (ES/EN)
-- **Props:** `title`, `description`, `url`
-
-#### SiteDetailsTabs
-**Archivo:** `components/SiteDetailsTabs.tsx` (Client Component)
-
-- **Tabs:**
-  - 🔍 SERP Preview - Visualización de SERP
-  - 📄 Pages - Tabla de páginas crawleadas
-  - 🏷️ Meta Tags - Etiquetas meta de página home
-- **Características:**
-  - Navegación interactiva
-  - Tabla responsiva con daisyUI
-  - i18n completo
-- **Props:** `pages`, `siteUrl`, `siteId`, `organizationId`
-
 ---
 
 ## Flujos Principales
 
 ### Flujo de Registro y Primer Login
 
-#### Registro con Credenciales
 ```
-1. Usuario llena formulario en /register
+1. Usuario llena formulario en /register (sin crear org)
 2. POST /api/register {name, email, password}
 3. Servidor: valida, hashea password, inserta User en MongoDB
 4. Cliente: signIn('credentials') automáticamente
-5. NextAuth autentica → redirige a /organizations
-6. Usuario ve lista de organizaciones o crea nueva
-```
-
-#### Registro con Google OAuth
-```
-1. Usuario en /register clickea "Continue with Google"
-2. signIn('google', { callbackUrl: '/organizations', redirect: true })
-3. Redirige a Google OAuth flow
-4. Usuario autoriza → Callback de NextAuth
-5. Callback `signIn()` en auth.ts:
-   a. Verifica si usuario existe en MongoDB
-   b. Si NO existe:
-      - Crea User en MongoDB
-      - Crea Organization por defecto
-      - Crea Membership como owner
-   c. Si existe: Permite login directo
-6. NextAuth redirige a /organizations (con organizaciones cargadas)
-7. Usuario ve dashboard si solo tiene 1 org, o selector si tiene varias
+5. NextAuth autentica → redirige a /organizations (no hay org aún)
+6. Usuario llena nombre de org (opcional) y clickea "Create Organization"
+7. POST /api/organizations {name}
+8. Servidor: crea Organization + Membership (role: owner)
+9. Cookie se actualiza: selectedOrganization = orgId
+10. Redirige a /dashboard?org={orgId}
+11. Dashboard ve cookie sincronizada vía middleware
 ```
 
 ### Flujo de Login
 
-#### Con Credenciales
 ```
 1. Usuario llena formulario en /login
-2. Click "Sign In"
-3. signIn('credentials', { redirect: false })
-4. NextAuth valida credenciales
-5. Si válido: router.push('/organizations')
-6. Si inválido: Muestra error en login
-```
-
-#### Con Google OAuth
-```
-1. Usuario en /login clickea "Continue with Google"
-2. signIn('google', { callbackUrl: '/organizations', redirect: true })
-3. Redirige a Google OAuth flow
-4. Usuario autoriza → Callback de NextAuth
-5. Callback `signIn()` verifica si usuario existe en MongoDB
-   a. Si NO existe: Crea User + Organization + Membership
-   b. Si existe: Permite login
-6. NextAuth redirige a /organizations (callbackUrl)
-7. Middleware sincroniza cookie de organización
-8. Usuario ve dashboard si tiene 1 org, o selector si tiene varias
-```
-
-#### Flujo General Post-Login
-```
-/organizations GET → Obtiene todas las orgs del usuario
-Renderiza lista + selector
-Usuario selecciona org → setSelectedOrganization(orgId)
-router.push('/dashboard?org={orgId}') + router.refresh()
-Middleware sincroniza cookie
-Dashboard renderiza con org seleccionada
+2. Click "Sign in" o "Continue with Google"
+3. signIn('credentials' | 'google')
+4. NextAuth autentica → redirige a /organizations
+5. /organizations GET: obtiene todas las orgs del usuario
+6. Renderiza lista de orgs + selector
+7. Usuario selecciona org → OrganizationSelector.handleSelectOrganization()
+8. setSelectedOrganization(orgId) → actualiza cookie
+9. router.push('/dashboard?org={orgId}')
+10. router.refresh() → revalida Server Components
+11. Middleware ve ?org={orgId} → sincroniza cookie (redundante pero seguro)
+12. Dashboard renderiza con org seleccionada
 ```
 
 ### Flujo "Switch Org" (en Dashboard)
@@ -934,10 +776,6 @@ apps/web/
 │   ├── ui.ts                    # Diccionario (200+ strings)
 │   ├── useI18n.ts              # Hook para cliente
 │   └── server.ts               # Funciones para servidor
-├── lib/interfaces/              # Nueva: Interfaces centralizadas
-│   ├── site.ts                  # ISite interface
-│   ├── page.ts                  # IPage interface
-│   └── index.ts                 # Exportaciones centralizadas
 ├── components/
 │   ├── DashboardContent.tsx     # Nuevo: Dashboard refactorisado
 │   ├── DeleteSiteDialog.tsx     # Mejorado: Traducido
@@ -962,64 +800,6 @@ apps/web/
     ├── SETTINGS_ARCHITECTURE.md
     └── SESSION_SCHEMA_MIGRATION.md
 ```
-
----
-
-## Interfaces Centralizadas - Fase 1A (Implementado)
-
-### Propósito
-Centralizar definiciones de TypeScript interfaces genéricas en `lib/interfaces/` para promover reutilización de código y evitar duplicación de tipos en múltiples componentes.
-
-### Estructura
-
-#### `lib/interfaces/site.ts`
-```typescript
-export interface ISite {
-  _id: string;
-  url: string;
-  organizationId: string;
-  description?: string;
-  title?: string;
-  pageCount: number;
-  crawlStatus: string;
-  metaTags?: Array<{ name: string; content: string }>;
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-#### `lib/interfaces/page.ts`
-```typescript
-export interface IPage {
-  _id: string;
-  siteId: string;
-  url: string;
-  organizationId: string;
-  title?: string;
-  statusCode?: number;
-  canonical?: string;
-  headings: string[];
-  metaTags: Array<{ name: string; content: string }>;
-  createdAt: Date;
-  description?: string;
-}
-```
-
-#### `lib/interfaces/index.ts`
-```typescript
-export type { ISite } from './site';
-export type { IPage } from './page';
-```
-
-### Usos en la Aplicación
-- `app/sites/[siteId]/page.tsx` - Importa ISite e IPage para tipado de datos de servidor
-- Futuros componentes pueden reutilizar estas interfaces
-
-### Ventajas
-- ✅ Un solo lugar de verdad para tipos
-- ✅ Facilita cambios consistentes
-- ✅ Mejora legibilidad y mantenimiento
-- ✅ Promueve reutilización de código
 
 ---
 

@@ -1,10 +1,8 @@
 'use client';
 
-import { Button } from '@/components/Button';
+import { Button } from '@seo-optimizer/ui';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-
-export const dynamic = 'force-dynamic';
 
 export default function Home() {
   const { data: session } = useSession();

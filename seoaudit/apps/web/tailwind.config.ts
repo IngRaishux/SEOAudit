@@ -4,9 +4,25 @@ const config: Config = {
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
+    '../../packages/ui/src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      keyframes: {
+        dialogOverlayShow: {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        dialogContentShow: {
+          from: { opacity: '0', transform: 'translate(-50%, -45%) scale(0.95)' },
+          to: { opacity: '1', transform: 'translate(-50%, -50%) scale(1)' },
+        },
+      },
+      animation: {
+        'dialog-overlay-show': 'dialogOverlayShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
+        'dialog-content-show': 'dialogContentShow 150ms cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+    },
   },
   plugins: [
     require('daisyui'),

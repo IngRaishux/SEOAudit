@@ -6,19 +6,15 @@ export async function createSite(data: {
   organizationId: string;
   title?: string;
   description?: string;
-  metaTags?: Array<{ name: string; content: string }>;
 }) {
   await connectMongoose();
   const site = new Site(data);
-  const saved = await site.save();
-  return saved.toObject();
+  return site.save();
 }
 
 export async function getSiteById(siteId: string) {
   await connectMongoose();
-  return Site.findById(siteId)
-    .select('_id url organizationId title description crawlStatus metaTags pageCount crawlErrorMessage createdAt updatedAt')
-    .lean();
+  return Site.findById(siteId).lean();
 }
 
 export async function listSitesByAccount(
@@ -28,7 +24,6 @@ export async function listSitesByAccount(
   await connectMongoose();
   const { limit = 10, skip = 0 } = options;
   return Site.find({ organizationId })
-    .select('_id url organizationId title description crawlStatus metaTags pageCount crawlErrorMessage createdAt updatedAt')
     .sort({ createdAt: -1 })
     .limit(limit)
     .skip(skip)
@@ -48,7 +43,6 @@ export async function updateSite(
     crawlStatus: string;
     crawlErrorMessage: string;
     pageCount: number;
-    metaTags: Array<{ name: string; content: string }>;
   }>
 ) {
   await connectMongoose();

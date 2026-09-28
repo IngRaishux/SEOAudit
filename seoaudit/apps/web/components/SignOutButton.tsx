@@ -1,7 +1,7 @@
 'use client';
 
 import { signOut } from 'next-auth/react';
-import { Button } from '@/components/Button';
+import { Button } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 export function SignOutButton() {
@@ -14,9 +14,8 @@ export function SignOutButton() {
 
   return (
     <Button
-      variant="destructive"
-      size="sm"
       onClick={handleSignOut}
+      className="bg-red-600 hover:bg-red-700 text-white"
     >
       {t('header.logout')}
     </Button>

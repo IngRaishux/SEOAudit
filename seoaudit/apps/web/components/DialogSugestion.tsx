@@ -7,8 +7,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/Dialog";
-import { Button } from "@/components/Button";
+  Button,
+} from "@seo-optimizer/ui";
 import { Dispatch, SetStateAction, useState } from "react";
 import { useSession } from "next-auth/react";
 import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";

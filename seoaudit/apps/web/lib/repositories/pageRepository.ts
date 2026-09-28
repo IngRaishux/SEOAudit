@@ -38,7 +38,6 @@ export async function listPagesBySite(
   await connectMongoose();
   const { limit = 100, skip = 0 } = options;
   return Page.find({ siteId })
-    .select('_id siteId url organizationId title description statusCode canonical headings metaTags createdAt')
     .sort({ createdAt: -1 })
     .limit(limit)
     .skip(skip)

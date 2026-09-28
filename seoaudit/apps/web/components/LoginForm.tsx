@@ -4,8 +4,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/Button';
-import { Input } from '@/components/Input';
+import { Button, Input } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 export function LoginForm() {
@@ -46,7 +45,7 @@ export function LoginForm() {
   async function handleGoogleSignIn() {
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/organizations', redirect: true });
+      await signIn('google', { callbackUrl: '/organizations' });
     } catch (err) {
       setError(t('errors.serverError'));
       console.error(err);
