@@ -11,7 +11,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
-} from '@/components/Dialog';
+} from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 
 interface DeleteOrganizationDialogProps {

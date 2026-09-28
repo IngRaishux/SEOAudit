@@ -1,7 +1,6 @@
 "use client";
 
-import { Button } from "@/components/Button";
-import { Input } from "@/components/Input";
+import { Button, Input } from "@seo-optimizer/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState, Suspense } from "react";

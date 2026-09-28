@@ -19,6 +19,7 @@
     "@remixicon/react": "^4.9.0",
     "@seo-optimizer/crawler": "*",
     "@seo-optimizer/types": "*",
+    "@seo-optimizer/ui": "*",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
     "firecrawl": "^4.39.0",

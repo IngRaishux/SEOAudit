@@ -2,9 +2,8 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { BackButton } from '@/components/BackButton';
+import { BackButton, Dialog, DialogTrigger } from '@seo-optimizer/ui';
 import DialogSugestion from '@/components/DialogSugestion';
-import { Dialog, DialogTrigger } from '@/components/Dialog';
 import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
 import { useSession } from 'next-auth/react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';

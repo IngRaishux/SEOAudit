@@ -249,32 +249,328 @@ npm run dev 2>&1 | grep "Crawl4AI"
 
 ## Producción
 
-### Deployment
+### Opción 1: Docker en el mismo servidor (Recomendado para inicio)
 
-1. **Docker Compose en servidor:**
+1. **Clonar repositorio de crawl4ai en el servidor:**
 ```bash
-cd /path/to/crawl4ai
-export CRAWL4AI_API_TOKEN=prod-token-secreto
-docker compose up -d
+cd /var/www
+git clone https://github.com/unclecode/crawl4ai.git
+cd crawl4ai
 ```
 
-2. **Con Nginx reverse proxy:**
-```nginx
-location /crawl {
-  proxy_pass http://localhost:11235;
-  proxy_set_header Authorization "Bearer $http_authorization";
-}
+2. **Crear `.env` con token seguro:**
+```bash
+# Generar token aleatorio
+TOKEN=$(openssl rand -base64 32)
+echo "CRAWL4AI_API_TOKEN=$TOKEN" > .env
 ```
 
-3. **Configurar restart automático:**
+3. **Levantar con Docker Compose:**
 ```bash
+# Con imagen pre-built (más rápido)
+IMAGE=unclecode/crawl4ai:latest docker compose up -d
+
+# O compilar desde código
+docker compose up --build -d
+```
+
+4. **Verificar que esté corriendo:**
+```bash
+docker ps | grep crawl4ai
+docker logs crawl4ai
+```
+
+### Opción 2: Servidor separado (Escalable)
+
+Si quieres separar crawl4ai de la app Next.js:
+
+1. **Servidor A (Crawl4AI):**
+```bash
+# IP: 192.168.1.100 (interna)
 docker run -d \
   --restart=unless-stopped \
   --name crawl4ai \
   -p 11235:11235 \
-  -e CRAWL4AI_API_TOKEN=prod-token \
+  -e CRAWL4AI_API_TOKEN=tu-token-prod \
+  --memory=4g \
+  --cpus=2 \
   unclecode/crawl4ai:latest
 ```
+
+2. **Servidor B (Next.js App):**
+```bash
+# En apps/web/.env.production
+CRAWL4AI_URL=http://192.168.1.100:11235
+CRAWL4AI_API_TOKEN=tu-token-prod
+NODE_ENV=production
+```
+
+3. **Firewall (iptables o cloud security group):**
+```bash
+# Solo permitir traffic desde servidor Next.js
+iptables -A INPUT -p tcp --dport 11235 -s 192.168.1.200 -j ACCEPT
+iptables -A INPUT -p tcp --dport 11235 -j DROP
+```
+
+### Opción 3: Nginx Reverse Proxy (Producción Robusta)
+
+Si expones crawl4ai a internet:
+
+```nginx
+# /etc/nginx/sites-available/crawl4ai
+upstream crawl4ai_backend {
+  server localhost:11235 max_fails=3 fail_timeout=30s;
+}
+
+server {
+  listen 80;
+  server_name crawl4ai.tudominio.com;
+  
+  # Redirigir a HTTPS
+  return 301 https://$server_name$request_uri;
+}
+
+server {
+  listen 443 ssl http2;
+  server_name crawl4ai.tudominio.com;
+  
+  ssl_certificate /etc/letsencrypt/live/crawl4ai.tudominio.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/crawl4ai.tudominio.com/privkey.pem;
+  
+  # Rate limiting
+  limit_req_zone $binary_remote_addr zone=crawl_limit:10m rate=10r/s;
+  limit_req zone=crawl_limit burst=20 nodelay;
+  
+  location / {
+    proxy_pass http://crawl4ai_backend;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Authorization $http_authorization;
+    
+    # Timeouts más largos para crawling
+    proxy_connect_timeout 10s;
+    proxy_send_timeout 60s;
+    proxy_read_timeout 60s;
+  }
+}
+```
+
+Certificado SSL:
+```bash
+certbot certonly --standalone -d crawl4ai.tudominio.com
+```
+
+### Opción 4: Kubernetes (Escalable y Resiliente)
+
+```yaml
+# crawl4ai-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crawl4ai
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: crawl4ai
+  template:
+    metadata:
+      labels:
+        app: crawl4ai
+    spec:
+      containers:
+      - name: crawl4ai
+        image: unclecode/crawl4ai:latest
+        ports:
+        - containerPort: 11235
+        env:
+        - name: CRAWL4AI_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: crawl4ai-secrets
+              key: api-token
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 11235
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 11235
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crawl4ai-service
+spec:
+  selector:
+    app: crawl4ai
+  ports:
+  - protocol: TCP
+    port: 11235
+    targetPort: 11235
+  type: ClusterIP
+```
+
+Desplegar:
+```bash
+# Crear secret
+kubectl create secret generic crawl4ai-secrets \
+  --from-literal=api-token=$(openssl rand -base64 32)
+
+# Desplegar
+kubectl apply -f crawl4ai-deployment.yaml
+
+# Verificar
+kubectl get pods -l app=crawl4ai
+kubectl logs -l app=crawl4ai
+```
+
+### Configuración de Variables de Entorno en Producción
+
+**Next.js App (.env.production):**
+```env
+# Según tu opción elegida:
+
+# Opción 1 (mismo servidor)
+CRAWL4AI_URL=http://localhost:11235
+
+# Opción 2 (servidor separado)
+CRAWL4AI_URL=http://192.168.1.100:11235
+
+# Opción 3 (Nginx reverse proxy)
+CRAWL4AI_URL=https://crawl4ai.tudominio.com
+
+# Opción 4 (Kubernetes)
+CRAWL4AI_URL=http://crawl4ai-service.default.svc.cluster.local:11235
+
+# Token (USAR SECRETS, NO HARDCODEAR)
+CRAWL4AI_API_TOKEN=<valor-desde-secrets-manager>
+
+# Configuración de crawler
+CRAWLER_CONCURRENCY=10  # Aumentar en producción
+CRAWLER_TIMEOUT_MS=30000  # 30 segundos
+
+# Node env
+NODE_ENV=production
+```
+
+### Gestión de Secrets en Producción
+
+**Opción 1: Vercel (si usas Vercel para Next.js):**
+1. Ir a Project Settings → Environment Variables
+2. Agregar `CRAWL4AI_API_TOKEN` y `CRAWL4AI_URL`
+3. Seleccionar ambiente: Production
+
+**Opción 2: AWS Secrets Manager:**
+```bash
+aws secretsmanager create-secret \
+  --name crawl4ai/api-token \
+  --secret-string "tu-token-prod"
+
+# Usar en la app
+const token = await getSecretValue('crawl4ai/api-token');
+```
+
+**Opción 3: HashiCorp Vault:**
+```bash
+vault kv put secret/crawl4ai \
+  api_token="tu-token-prod" \
+  api_url="https://crawl4ai.tudominio.com"
+```
+
+### Monitoreo en Producción
+
+1. **Health checks:**
+```bash
+# Cron job cada 5 minutos
+*/5 * * * * curl -f https://crawl4ai.tudominio.com/health || alert
+
+# O usar uptimerobot.com (gratuito)
+```
+
+2. **Logs y errores:**
+```bash
+# ELK Stack o Datadog
+docker logs crawl4ai | filebeat → elasticsearch
+
+# CloudWatch (AWS)
+docker run ... --log-driver awslogs \
+  --log-opt awslogs-group=/crawl4ai \
+  --log-opt awslogs-region=us-east-1
+```
+
+3. **Métricas:**
+```bash
+# Prometheus en crawl4ai
+# Ver si hay endpoint /metrics
+curl https://crawl4ai.tudominio.com/metrics
+```
+
+4. **Alertas:**
+```bash
+# Si tasa de error > 5% en 5 min
+# Si response time > 30s
+# Si contenedor reinicia > 3 veces en 1 hora
+```
+
+### Reinicio Automático
+
+**systemd (VPS Linux):**
+```ini
+# /etc/systemd/system/crawl4ai.service
+[Unit]
+Description=Crawl4AI Docker Container
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/docker run --rm \
+  --name crawl4ai \
+  -p 11235:11235 \
+  -e CRAWL4AI_API_TOKEN=%i \
+  unclecode/crawl4ai:latest
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Habilitar:
+```bash
+systemctl enable crawl4ai
+systemctl start crawl4ai
+```
+
+### Checklist de Producción
+
+- [ ] Token generado con `openssl rand -base64 32`
+- [ ] Variables de entorno en secrets manager (no .env)
+- [ ] Firewall configurado (solo acceso interno)
+- [ ] SSL/TLS activado (Nginx con Let's Encrypt)
+- [ ] Health checks configurados
+- [ ] Logs y monitoreo activos
+- [ ] Backup de datos (si usas caché local)
+- [ ] Rate limiting implementado
+- [ ] Reinicio automático configurado
+- [ ] Tested bajo carga (load testing)
 
 ## Archivos Importantes
 
