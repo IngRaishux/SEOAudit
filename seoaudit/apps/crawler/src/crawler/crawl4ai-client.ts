@@ -13,6 +13,7 @@ export interface Crawl4AIResult {
     description: string | null;
     keywords: string | null;
     author: string | null;
+    [key: string]: string | null | undefined;
   };
   links: {
     internal: any[];
