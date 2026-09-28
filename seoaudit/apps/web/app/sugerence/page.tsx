@@ -4,8 +4,17 @@ import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BackButton, Dialog, DialogTrigger } from '@seo-optimizer/ui';
 import DialogSugestion from '@/components/DialogSugestion';
+import { SERPPreview } from '@/components/SERPPreview';
 import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
 import { useSession } from 'next-auth/react';
+
+type SugerenciaTabType = 'form' | 'serp' | 'meta';
+
+const sugerenciaTabs = [
+  { id: 'form', label: 'Sugerencia', icon: '📝' },
+  { id: 'serp', label: 'Vista previa SERP', icon: '🔍' },
+  { id: 'meta', label: 'Etiquetas meta', icon: '🏷️' },
+] as const;
 
 
 const mockSuggested = {
@@ -107,6 +116,7 @@ function SugerenciaContent() {
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [activeTab, setActiveTab] = useState<SugerenciaTabType>('form');
 
   const handleSuggestionsGenerated = async (suggestions: any) => {
     setForm(suggestions);
@@ -332,82 +342,142 @@ function SugerenciaContent() {
         </div>
       </div>
 
-      {/* Comparativa: original vs editable */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Columna izquierda: valor original */}
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">
-            Original (del crawl)
-          </h2>
-
-          <Field label="Title" value={mockPage.title || null} />
-          <Field label="Description" value={mockPage.description || null} multiline />
-          <Field label="Canonical" value={mockPage.canonical || null} />
-          <Field label="Slug" value={slug || "home"} />
+      {/* Tabs Navigation */}
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-wrap border-b border-zinc-200 dark:border-zinc-800">
+          {sugerenciaTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as SugerenciaTabType)}
+              className={`flex-1 md:flex-none px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Columna derecha: sugerencia editable */}
-        <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-blue-600">
-            Sugerencia (editable)
-          </h2>
+        {/* Tab Content */}
+        <div className="p-6">
+          {/* Sugerencia Tab */}
+          {activeTab === 'form' && (
+            <div className="grid grid-cols-2 gap-4">
+              {/* Columna izquierda: valor original */}
+              <div className="flex flex-col gap-3">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">
+                  Original (del crawl)
+                </h2>
 
-          <EditableField
-            label="Slug"
-            value={form.slug.S}
-            onChange={(v) => updateSimpleField("slug", v)}
-          />
-          <EditableField
-            label="Title"
-            value={form.title.S}
-            onChange={(v) => updateSimpleField("title", v)}
-            hint={`${form.title.S.length} chars (ideal 50-60)`}
-          />
-          <EditableField
-            label="Description"
-            value={form.description.S}
-            onChange={(v) => updateSimpleField("description", v)}
-            hint={`${form.description.S.length} chars (ideal 150-160)`}
-            multiline
-          />
-          <EditableField
-            label="Canonical URL"
-            value={form.canonicalUrl.S}
-            onChange={(v) => updateSimpleField("canonicalUrl", v)}
-          />
-          <EditableField
-            label="Keywords (separados por coma)"
-            value={form.keywords.SS.join(", ")}
-            onChange={(v) =>
-              updateKeywords(
-                v
-                  .split(",")
-                  .map((k) => k.trim())
-                  .filter(Boolean),
-              )
-            }
-            hint={`${form.keywords.SS.length} keywords`}
-          />
-          <div className="border border-blue-300 rounded p-3">
-            <h3 className="text-xs font-semibold text-blue-600 mb-2">
-              Lenguajes Alternos
-            </h3>
-            <EditableField
-              label="en-US"
-              value={form.alternateLanguages.M["en-US"].S}
-              onChange={(v) => updateAltLanguage("en-US", v)}
+                <Field label="Title" value={mockPage.title || null} />
+                <Field label="Description" value={mockPage.description || null} multiline />
+                <Field label="Canonical" value={mockPage.canonical || null} />
+                <Field label="Slug" value={slug || "home"} />
+              </div>
+
+              {/* Columna derecha: sugerencia editable */}
+              <div className="flex flex-col gap-3">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-blue-600">
+                  Sugerencia (editable)
+                </h2>
+
+                <EditableField
+                  label="Slug"
+                  value={form.slug.S}
+                  onChange={(v) => updateSimpleField("slug", v)}
+                />
+                <EditableField
+                  label="Title"
+                  value={form.title.S}
+                  onChange={(v) => updateSimpleField("title", v)}
+                  hint={`${form.title.S.length} chars (ideal 50-60)`}
+                />
+                <EditableField
+                  label="Description"
+                  value={form.description.S}
+                  onChange={(v) => updateSimpleField("description", v)}
+                  hint={`${form.description.S.length} chars (ideal 150-160)`}
+                  multiline
+                />
+                <EditableField
+                  label="Canonical URL"
+                  value={form.canonicalUrl.S}
+                  onChange={(v) => updateSimpleField("canonicalUrl", v)}
+                />
+                <EditableField
+                  label="Keywords (separados por coma)"
+                  value={form.keywords.SS.join(", ")}
+                  onChange={(v) =>
+                    updateKeywords(
+                      v
+                        .split(",")
+                        .map((k) => k.trim())
+                        .filter(Boolean),
+                    )
+                  }
+                  hint={`${form.keywords.SS.length} keywords`}
+                />
+                <div className="border border-blue-300 rounded p-3">
+                  <h3 className="text-xs font-semibold text-blue-600 mb-2">
+                    Lenguajes Alternos
+                  </h3>
+                  <EditableField
+                    label="en-US"
+                    value={form.alternateLanguages.M["en-US"].S}
+                    onChange={(v) => updateAltLanguage("en-US", v)}
+                  />
+                  <EditableField
+                    label="es-MX"
+                    value={form.alternateLanguages.M["es-MX"].S}
+                    onChange={(v) => updateAltLanguage("es-MX", v)}
+                  />
+                  <EditableField
+                    label="x-default"
+                    value={form.alternateLanguages.M["x-default"].S}
+                    onChange={(v) => updateAltLanguage("x-default", v)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SERP Preview Tab */}
+          {activeTab === 'serp' && (
+            <SERPPreview
+              title={form.title.S || mockPage.title || 'Sin título'}
+              description={form.description.S || mockPage.description || 'Sin descripción'}
+              url={mockPage.url}
             />
-            <EditableField
-              label="es-MX"
-              value={form.alternateLanguages.M["es-MX"].S}
-              onChange={(v) => updateAltLanguage("es-MX", v)}
-            />
-            <EditableField
-              label="x-default"
-              value={form.alternateLanguages.M["x-default"].S}
-              onChange={(v) => updateAltLanguage("x-default", v)}
-            />
-          </div>
+          )}
+
+          {/* Meta Tags Tab */}
+          {activeTab === 'meta' && (
+            <div>
+              {mockPage.metaTags && mockPage.metaTags.length > 0 ? (
+                <div className="space-y-3">
+                  {mockPage.metaTags.map((tag, idx) => (
+                    <div key={idx} className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                      <div className="text-sm">
+                        <span className="font-mono font-medium text-zinc-900 dark:text-white">{tag.name}</span>
+                        <span className="text-zinc-600 dark:text-zinc-400 ml-2">
+                          {tag.content}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <p className="text-zinc-600 dark:text-zinc-400">
+                    Sin etiquetas meta disponibles para esta página.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
