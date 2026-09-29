@@ -14,5 +14,9 @@
   },
   "devDependencies": {
     "next": "16.2.5"
+  },
+  "dependencies": {
+    "@radix-ui/react-toast": "^1.2.23",
+    "@remixicon/react": "^4.9.0"
   }
 }
