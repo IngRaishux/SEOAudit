@@ -8,8 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "cd apps/web && npm run build",
-    "dev": "cd apps/web && npm run dev",
+    "build": "npm run build --workspace=@seo-optimizer/ui && cd apps/web && npm run build",
+    "dev": "npm run build --workspace=@seo-optimizer/ui && cd apps/web && npm run dev",
     "start": "cd apps/web && npm run start"
   },
   "devDependencies": {
