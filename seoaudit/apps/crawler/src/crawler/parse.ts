@@ -23,17 +23,25 @@ export function parseSeoFromHtml(
   html: string,
   statusCode: number,
   loadTimeMs: number,
-  metadata?: { title: string | null; description: string | null },
+  metadata?: { title: string | null; description: string | null; [key: string]: string | null | undefined },
   fullHtml?: string
 ): PageSeo {
   const $ = cheerio.load(html);
+  const $full = fullHtml ? cheerio.load(fullHtml) : null;
 
   // Extract canonical from full HTML if available (cleaned_html may not have it)
   let canonical: string | null = attr($('link[rel="canonical"]'), 'href');
-  if (!canonical && fullHtml) {
-    const $full = cheerio.load(fullHtml);
+  if (!canonical && $full) {
     canonical = attr($full('link[rel="canonical"]'), 'href');
   }
+
+  // og:*/robots live in <head>, which cleaned_html strips out. Crawl4AI's
+  // metadata dict already parses these from the raw head, so prefer it and
+  // only fall back to scraping the full html's <head> ourselves.
+  const ogTitle = metadata?.['og:title'] ?? (($full && attr($full('meta[property="og:title"]'), 'content')) || null);
+  const ogDescription = metadata?.['og:description'] ?? (($full && attr($full('meta[property="og:description"]'), 'content')) || null);
+  const ogImage = metadata?.['og:image'] ?? (($full && attr($full('meta[property="og:image"]'), 'content')) || null);
+  const robots = metadata?.['robots'] ?? (($full && attr($full('meta[name="robots"]'), 'content')) || null);
 
   return {
     url,
@@ -41,10 +49,10 @@ export function parseSeoFromHtml(
     title: metadata?.title || text($('title').first()),
     description: metadata?.description || attr($('meta[name="description"]'), 'content'),
     canonical,
-    ogTitle: attr($('meta[property="og:title"]'), 'content'),
-    ogDescription: attr($('meta[property="og:description"]'), 'content'),
-    ogImage: attr($('meta[property="og:image"]'), 'content'),
-    robots: attr($('meta[name="robots"]'), 'content'),
+    ogTitle,
+    ogDescription,
+    ogImage,
+    robots,
     h1: headings($, 'h1'),
     h2: headings($, 'h2'),
     p: $('p').text().trim().split(/\n+/),
