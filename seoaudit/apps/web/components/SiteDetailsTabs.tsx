@@ -51,6 +51,9 @@ export function SiteDetailsTabs({
     { id: 'meta', label: t('siteDetails.tabs.meta'), icon: '🏷️' },
   ] as const;
 
+  console.log('pages => ', pages);
+  
+
   return (
     <div className="space-y-6">
       {/* Tabs Navigation */}

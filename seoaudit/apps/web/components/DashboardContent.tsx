@@ -5,7 +5,7 @@ import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { DeleteSiteDialog } from './DeleteSiteDialog';
 import { SwitchOrgButton } from './SwitchOrgButton';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
-import { Button } from './Button';
+import { Button } from '@seo-optimizer/ui';
 
 interface ISite {
   _id: string;
