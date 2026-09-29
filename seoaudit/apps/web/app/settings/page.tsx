@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { useI18n, useCurrentLanguage, setLanguage } from '@/lib/i18n/useI18n';
 import type { Language } from '@/lib/i18n/ui';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/Card';
-import { Button } from '@/components/Button';
+import { Button } from '@seo-optimizer/ui';
 
 export default function UserSettingsPage() {
   const { data: session } = useSession();

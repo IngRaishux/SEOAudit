@@ -1,6 +1,6 @@
 // Components
 export { Button, buttonVariants, type ButtonProps } from "./components/Button"
-export { Input, inputStyles, type InputProps } from "./components/Input"
+export { Input, type InputProps } from "./components/Input"
 export {
   Dialog,
   DialogClose,

@@ -540,7 +540,6 @@ function SugerenciaContent() {
             Generar y Exportar JSON
           </button>
         </div>
-      </div>
     </div>
   );
 }
