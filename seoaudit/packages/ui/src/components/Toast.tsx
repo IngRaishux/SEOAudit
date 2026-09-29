@@ -22,7 +22,8 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={forwardedRef}
     className={cx(
-      "fixed right-0 top-0 z-9999 m-0 flex w-full max-w-[100vw] list-none flex-col gap-2 p-[var(--viewport-padding)] [--viewport-padding:_15px] sm:max-w-md sm:gap-4",
+      // top offset clears the app's sticky navbar (h-16 + border) instead of covering it
+      "fixed right-0 top-[4.5rem] z-9999 m-0 flex w-full max-w-[100vw] list-none flex-col gap-2 p-[var(--viewport-padding)] [--viewport-padding:_15px] sm:max-w-md sm:gap-4",
       className,
     )}
     {...props}

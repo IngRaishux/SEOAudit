@@ -13,6 +13,7 @@ import {
   Button,
 } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { toastError, toastSuccess } from '@/lib/toast';
 import { RiDeleteBinLine } from "@remixicon/react"
 
 interface DeleteSiteDialogProps {
@@ -32,11 +33,9 @@ export function DeleteSiteDialog({
 
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleDelete = async () => {
     setIsLoading(true);
-    setError('');
     try {
       const response = await fetch(`/api/sites/${siteId}`, {
         method: 'DELETE',
@@ -45,12 +44,14 @@ export function DeleteSiteDialog({
         const data = await response.json();
         throw new Error(data.error || t('deleteSiteDialog.deletedError'));
       }
+      toastSuccess(t('deleteSiteDialog.deletedSuccess'), t('common.success'));
       setIsOpen(false);
       router.replace(`/dashboard?org=${orgId}`);
       router.refresh();
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : t('common.error')
+      toastError(
+        error instanceof Error ? error.message : t('common.error'),
+        t('common.error')
       );
     } finally {
       setIsLoading(false);
@@ -85,11 +86,6 @@ export function DeleteSiteDialog({
               {t('deleteSiteDialog.warning')}
             </p>
           </div>
-          {error && (
-            <div className="text-xs lg:text-sm text-red-600 dark:text-red-400 break-words">
-              {error}
-            </div>
-          )}
         </div>
 
         <DialogFooter>

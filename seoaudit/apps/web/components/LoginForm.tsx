@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Input } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { toastError } from '@/lib/toast';
 import { RiLoginBoxLine, RiGoogleFill } from '@remixicon/react';
 
 export function LoginForm() {
@@ -15,12 +16,10 @@ export function LoginForm() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError(null);
     setIsLoading(true);
 
     try {
@@ -31,12 +30,12 @@ export function LoginForm() {
       });
 
       if (result?.error) {
-        setError(t('auth.invalidCredentials'));
+        toastError(t('auth.invalidCredentials'), t('common.error'));
       } else if (result?.ok) {
         router.push('/organizations');
       }
     } catch (err) {
-      setError(t('errors.serverError'));
+      toastError(t('errors.serverError'), t('common.error'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -48,7 +47,7 @@ export function LoginForm() {
     try {
       await signIn('google', { callbackUrl: '/organizations', redirect: true });
     } catch (err) {
-      setError(t('errors.serverError'));
+      toastError(t('errors.serverError'), t('common.error'));
       console.error(err);
       setIsLoading(false);
     }
@@ -86,12 +85,6 @@ export function LoginForm() {
             required
           />
         </div>
-
-        {error && (
-          <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
-            {error}
-          </div>
-        )}
 
         <Button
           type="submit"

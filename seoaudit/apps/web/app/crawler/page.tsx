@@ -4,6 +4,7 @@ import { Button, Input } from "@seo-optimizer/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState, Suspense } from "react";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 function CrawlerContent() {
   const router = useRouter();
@@ -15,21 +16,18 @@ function CrawlerContent() {
   const [siteId, setSiteId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState({ processed: 0, total: 0 });
-  const [error, setError] = useState<string | null>(null);
 
   // Obtener organizationId actual del query param o de session
   const organizationId = searchParams.get('org') || session?.user?.accountId;
 
   async function sendInfo(url: string) {
-    setError(null);
-
     if (!url) {
-      setError("Ingresa una URL");
+      toastError("Ingresa una URL");
       return;
     }
 
     if (!organizationId) {
-      setError("No hay organización seleccionada");
+      toastError("No hay organización seleccionada");
       return;
     }
 
@@ -42,7 +40,7 @@ function CrawlerContent() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Error iniciando el crawl");
+        toastError(data.error || "Error iniciando el crawl");
         return;
       }
 
@@ -50,7 +48,7 @@ function CrawlerContent() {
       setSiteId(data.siteId);
       setStatus("running");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error de red");
+      toastError(err instanceof Error ? err.message : "Error de red");
     }
   }
 
@@ -66,10 +64,11 @@ function CrawlerContent() {
       if (data.status === "completed") {
         clearInterval(interval);
         setSiteId(data.siteId);
+        toastSuccess("El sitio se analizó correctamente");
         router.push(`/sites/${data.siteId}`);
       } else if (data.status === "failed") {
         clearInterval(interval);
-        setError(data.error || "El crawl falló");
+        toastError(data.error || "El crawl falló");
       }
     }, 1000);
 
@@ -109,8 +108,6 @@ function CrawlerContent() {
             : "Buscando sitemap..."}
         </div>
       )}
-
-      {error && <div className="mt-6 text-sm text-red-600">{error}</div>}
     </div>
   );
 }

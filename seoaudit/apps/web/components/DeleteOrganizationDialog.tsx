@@ -14,6 +14,7 @@ import {
   Button,
 } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { toastError, toastSuccess } from '@/lib/toast';
 import { RiDeleteBinLine } from '@remixicon/react';
 
 interface DeleteOrganizationDialogProps {
@@ -33,7 +34,6 @@ export function DeleteOrganizationDialog({
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmText, setConfirmText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const canDelete = confirmText === organizationName;
 
@@ -41,7 +41,6 @@ export function DeleteOrganizationDialog({
     if (!canDelete) return;
 
     setIsLoading(true);
-    setError('');
 
     try {
       const response = await fetch(`/api/organizations/${organizationId}`, {
@@ -53,10 +52,11 @@ export function DeleteOrganizationDialog({
         throw new Error(data.error || t('deleteOrgDialog.deletedError'));
       }
 
+      toastSuccess(t('deleteOrgDialog.deletedSuccess'), t('common.success'));
       setIsOpen(false);
       router.replace('/organizations');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('common.error'));
+      toastError(err instanceof Error ? err.message : t('common.error'), t('common.error'));
     } finally {
       setIsLoading(false);
     }
@@ -105,11 +105,6 @@ export function DeleteOrganizationDialog({
               className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
               autoFocus
             />
-            {error && (
-              <div className="text-sm text-red-600 dark:text-red-400">
-                {error}
-              </div>
-            )}
           </div>
         )}
 

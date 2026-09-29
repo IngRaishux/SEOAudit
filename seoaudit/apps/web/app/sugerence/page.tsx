@@ -6,6 +6,7 @@ import { BackButton, Dialog, DialogTrigger, Button } from '@seo-optimizer/ui';
 import DialogSugestion from '@/components/DialogSugestion';
 import { SERPPreview } from '@/components/SERPPreview';
 import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
+import { toastError, toastSuccess } from '@/lib/toast';
 import { useSession } from 'next-auth/react';
 import { RiFileEditLine, RiSearchLine, RiPriceTag3Line, RiMagicLine, RiDownloadLine, RiPlayLine } from '@remixicon/react';
 
@@ -104,6 +105,7 @@ function SugerenciaContent() {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        toastError('Error al cargar la información de la página');
       } finally {
         setLoadingPage(false);
       }
@@ -111,18 +113,15 @@ function SugerenciaContent() {
 
     fetchData();
   }, [pageId, siteId]);
-  
+
 
   const [form, setForm] = useState(mockSuggested);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<SugerenciaTabType>('form');
 
   const handleSuggestionsGenerated = async (suggestions: any) => {
     setForm(suggestions);
-    setError(null);
 
     // Persistir sugerencias en MongoDB si tenemos pageId y siteId
     if (pageId && siteId) {
@@ -140,14 +139,15 @@ function SugerenciaContent() {
         });
 
         if (res.ok) {
-          setSaved(true);
-          setTimeout(() => setSaved(false), 3000); // Mostrar confirmación por 3s
+          toastSuccess('Sugerencia guardada correctamente');
         } else {
           const data = await res.json();
           console.error('Error saving suggestion:', data.error);
+          toastError(data.error || 'Error al guardar la sugerencia');
         }
       } catch (err) {
         console.error('Error persisting suggestion:', err);
+        toastError('Error al guardar la sugerencia');
       }
     }
   };
@@ -248,17 +248,16 @@ function SugerenciaContent() {
 
   const handleGenerateAndExport = async () => {
     if (!mockPage) {
-      setError("No se ha cargado la información de la página");
+      toastError("No se ha cargado la información de la página");
       return;
     }
 
     if (!session?.user?.organizations || session.user.organizations.length === 0) {
-      setError("No se pudo obtener la información de tu organización");
+      toastError("No se pudo obtener la información de tu organización");
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const pageDataToGenerate: PageData = {
@@ -311,11 +310,10 @@ function SugerenciaContent() {
       URL.revokeObjectURL(downloadUrl);
 
       // Mostrar confirmación
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      toastSuccess('Sugerencia guardada correctamente');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error generating suggestions';
-      setError(message);
+      toastError(message);
       console.error('Error:', err);
     } finally {
       setLoading(false);
@@ -485,24 +483,6 @@ function SugerenciaContent() {
           )}
         </div>
       </div>
-
-        {/* Alerts */}
-        {error && (
-          <div className="alert alert-error text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2m0 0l2-2m-2 2l-2 2" />
-            </svg>
-            <span>Error: {error}</span>
-          </div>
-        )}
-        {saved && (
-          <div className="alert alert-success text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>✓ Sugerencia guardada correctamente</span>
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-end">

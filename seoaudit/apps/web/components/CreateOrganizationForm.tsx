@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { toastError, toastSuccess } from '@/lib/toast';
 import { RiSave2Line } from '@remixicon/react';
 
 interface CreateOrganizationFormProps {
@@ -17,14 +18,12 @@ export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) 
 
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     if (!name.trim()) {
-      setError(t('validation.required'));
+      toastError(t('validation.required'), t('common.error'));
       return;
     }
 
@@ -39,14 +38,15 @@ export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) 
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || t('errors.serverError'));
+        toastError(data.error || t('errors.serverError'), t('common.error'));
         return;
       }
 
       const data = await res.json();
+      toastSuccess(t('organizationSettings.createSuccess'), t('common.success'));
       router.push(`/dashboard?org=${data.organization._id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errors.serverError'));
+      toastError(err instanceof Error ? err.message : t('errors.serverError'), t('common.error'));
     } finally {
       setIsLoading(false);
     }
@@ -72,12 +72,6 @@ export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) 
           {isLoading ? t('common.loading') : t('common.save')}
         </Button>
       </div>
-
-      {error && (
-        <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
-          {error}
-        </div>
-      )}
     </form>
   );
 }

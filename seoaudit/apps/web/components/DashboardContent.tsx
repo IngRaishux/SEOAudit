@@ -125,15 +125,15 @@ export function DashboardContent({
                   {t('dashboard.noSites')}
                 </p>
                 <Button
-                  asChild
-                  variant="primary"
-                  size="sm"
-                  icon={<RiSearch2Line className="size-4" />}
-                >
-                  <Link href={`/crawler?org=${selectedOrgId}`}>
-                    {t('dashboard.goCrawler')}
-                  </Link>
-                </Button>
+              asChild
+              variant="primary"
+              size="sm"
+              icon={<RiSearch2Line className="size-4" />}
+            >
+              <Link href={`/crawler?org=${selectedOrgId}`}>
+                {t('dashboard.crawlNewSite')}
+              </Link>
+            </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">

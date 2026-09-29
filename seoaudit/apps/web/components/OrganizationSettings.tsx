@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { toastError, toastSuccess } from '@/lib/toast';
 
 interface OrganizationSettingsProps {
   organizationId: string;
@@ -21,12 +22,10 @@ export function OrganizationSettings({
   const [name, setName] = useState(organizationName);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const handleSave = async () => {
     if (!name.trim()) {
-      setError(t('validation.required'));
+      toastError(t('validation.required'), t('common.error'));
       return;
     }
 
@@ -36,8 +35,6 @@ export function OrganizationSettings({
     }
 
     setIsSaving(true);
-    setError(null);
-    setSuccess(false);
 
     try {
       const res = await fetch(`/api/organizations/${organizationId}`, {
@@ -48,18 +45,18 @@ export function OrganizationSettings({
 
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || t('errors.serverError'));
+        toastError(data.error || t('errors.serverError'), t('common.error'));
         setIsSaving(false);
         return;
       }
 
-      setSuccess(true);
+      toastSuccess(t('organizationSettings.updateSuccess'), t('common.success'));
       setIsEditing(false);
       setTimeout(() => {
         router.refresh();
       }, 1000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('errors.serverError'));
+      toastError(err instanceof Error ? err.message : t('errors.serverError'), t('common.error'));
     } finally {
       setIsSaving(false);
     }
@@ -67,44 +64,6 @@ export function OrganizationSettings({
 
   return (
     <div className="space-y-4">
-      {error && (
-        <div className="alert alert-error text-sm">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2m0 0l2-2m-2 2l-2 2"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success text-sm">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>✓ {t('organizationSettings.updateSuccess')}</span>
-        </div>
-      )}
-
       {isEditing ? (
         <div className="space-y-3">
           <Input
@@ -127,7 +86,6 @@ export function OrganizationSettings({
               onClick={() => {
                 setIsEditing(false);
                 setName(organizationName);
-                setError(null);
               }}
               disabled={isSaving}
             >

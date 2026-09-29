@@ -7,6 +7,7 @@ import { useI18n, useCurrentLanguage, setLanguage } from '@/lib/i18n/useI18n';
 import type { Language } from '@/lib/i18n/ui';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/Card';
 import { Button } from '@seo-optimizer/ui';
+import { toastError, toastSuccess } from '@/lib/toast';
 
 export default function UserSettingsPage() {
   const { data: session } = useSession();
@@ -17,7 +18,6 @@ export default function UserSettingsPage() {
   const [language, setLanguageState] = useState<Language>(currentLang);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [weeklyReport, setWeeklyReport] = useState(true);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     setLanguageState(currentLang);
@@ -43,12 +43,14 @@ export default function UserSettingsPage() {
       });
 
       if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-        window.location.reload();
+        toastSuccess(t('userSettings.saved'), t('common.success'));
+        setTimeout(() => window.location.reload(), 800);
+      } else {
+        toastError(t('errors.serverError'), t('common.error'));
       }
     } catch (error) {
       console.error('Error saving settings:', error);
+      toastError(t('errors.serverError'), t('common.error'));
     }
   };
 
@@ -176,11 +178,6 @@ export default function UserSettingsPage() {
               <Button variant="primary" onClick={handleSave}>
                 {t('userSettings.saveSettings')}
               </Button>
-              {saved && (
-                <p className="text-sm text-success">
-                  ✓ {t('userSettings.saved')}
-                </p>
-              )}
             </CardFooter>
           </Card>
         </div>
