@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { RiSave2Line } from '@remixicon/react';
 
 interface CreateOrganizationFormProps {
   userId: string;
@@ -66,6 +67,7 @@ export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) 
           type="submit"
           disabled={isLoading || !name.trim()}
           className="bg-blue-600 text-white hover:bg-blue-700"
+          icon={<RiSave2Line className="size-4" />}
         >
           {isLoading ? t('common.loading') : t('common.save')}
         </Button>

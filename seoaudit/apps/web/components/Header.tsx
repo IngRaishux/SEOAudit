@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { SignOutButton } from '@/components/SignOutButton';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { RiSearchLine } from '@remixicon/react';
 
 interface HeaderProps {
   currentOrganization?: string;
@@ -19,12 +20,14 @@ export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
     <header className="navbar bg-base-100 border-b border-base-300 sticky top-0 z-40">
       <div className="flex-1">
         {session ? (
-          <Link href="/organizations" className="btn btn-ghost text-lg lg:text-xl font-bold text-base-content">
-            🔍 SEO Audit
+          <Link href="/organizations" className="btn btn-ghost text-lg lg:text-xl font-bold text-base-content flex items-center gap-2">
+            <RiSearchLine className="text-xl" />
+            SEO Audit
           </Link>
         ) : (
-          <Link href="/" className="btn btn-ghost text-lg lg:text-xl font-bold text-base-content">
-            🔍 SEO Audit
+          <Link href="/" className="btn btn-ghost text-lg lg:text-xl font-bold text-base-content flex items-center gap-2">
+            <RiSearchLine className="text-xl" />
+            SEO Audit
           </Link>
         )}
       </div>

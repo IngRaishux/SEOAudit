@@ -6,6 +6,7 @@ import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Button, Input } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { RiShieldCheckLine, RiGoogleFill } from '@remixicon/react';
 
 export function RegisterForm() {
   const router = useRouter();
@@ -173,6 +174,7 @@ export function RegisterForm() {
           type="submit"
           disabled={isLoading}
           className="w-full"
+          icon={<RiShieldCheckLine className="size-4" />}
         >
           {isLoading ? t('common.loading') : t('auth.signUp')}
         </Button>
@@ -184,6 +186,7 @@ export function RegisterForm() {
           onClick={handleGoogleSignUp}
           disabled={isLoading}
           className="w-full bg-white border border-zinc-300 text-zinc-900 hover:bg-zinc-50"
+          icon={<RiGoogleFill className="size-4" />}
         >
           {isLoading ? t('common.loading') : t('auth.continueWithGoogle')}
         </Button>

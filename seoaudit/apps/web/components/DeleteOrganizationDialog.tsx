@@ -11,8 +11,10 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
+  Button,
 } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { RiDeleteBinLine } from '@remixicon/react';
 
 interface DeleteOrganizationDialogProps {
   organizationId: string;
@@ -63,9 +65,13 @@ export function DeleteOrganizationDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <button className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium">
+        <Button
+          variant="destructive"
+          size="sm"
+          icon={<RiDeleteBinLine className="size-4" />}
+        >
           {t('organizationSettings.deleteOrganization')}
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -109,25 +115,30 @@ export function DeleteOrganizationDialog({
 
         <DialogFooter>
           <DialogClose asChild>
-            <button className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium">
+            <Button variant="neutral" size="sm">
               {t('common.cancel')}
-            </button>
+            </Button>
           </DialogClose>
           {!isConfirming ? (
-            <button
+            <Button
               onClick={() => setIsConfirming(true)}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium"
+              variant="destructive"
+              size="sm"
             >
               {t('common.edit')}
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
               onClick={handleDelete}
               disabled={!canDelete || isLoading}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              isLoading={isLoading}
+              loadingText={t('deleteOrgDialog.deleting')}
+              variant="destructive"
+              size="sm"
+              icon={<RiDeleteBinLine className="size-4" />}
             >
-              {isLoading ? t('deleteOrgDialog.deleting') : t('deleteOrgDialog.deleteButton')}
-            </button>
+              {t('deleteOrgDialog.deleteButton')}
+            </Button>
           )}
         </DialogFooter>
       </DialogContent>

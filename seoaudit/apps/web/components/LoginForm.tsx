@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Input } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { RiLoginBoxLine, RiGoogleFill } from '@remixicon/react';
 
 export function LoginForm() {
   const router = useRouter();
@@ -96,6 +97,7 @@ export function LoginForm() {
           type="submit"
           disabled={isLoading}
           className="w-full"
+          icon={<RiLoginBoxLine className="size-4" />}
         >
           {isLoading ? t('common.loading') : t('auth.signIn')}
         </Button>
@@ -107,6 +109,7 @@ export function LoginForm() {
           onClick={handleGoogleSignIn}
           disabled={isLoading}
           className="w-full bg-white border border-zinc-300 text-zinc-900 hover:bg-zinc-50"
+          icon={<RiGoogleFill className="size-4" />}
         >
           {isLoading ? t('common.loading') : t('auth.continueWithGoogle')}
         </Button>

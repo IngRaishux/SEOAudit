@@ -6,6 +6,7 @@ import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { SERPPreview } from './SERPPreview';
 import { Card, CardContent } from './Card';
 import { ISite } from '@/lib/interfaces';
+import { RiSearchLine, RiFileTextLine, RiPriceTag3Line } from '@remixicon/react';
 
 interface MetaTag {
   name: string;
@@ -43,12 +44,11 @@ export function SiteDetailsTabs({
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
 
-  console.log('Site en los detalles: ',site);
   
   const tabs = [
-    { id: 'serp', label: t('siteDetails.tabs.serp'), icon: '🔍' },
-    { id: 'pages', label: `${t('siteDetails.tabs.pages')} (${pages.length})`, icon: '📄' },
-    { id: 'meta', label: t('siteDetails.tabs.meta'), icon: '🏷️' },
+    { id: 'serp', label: t('siteDetails.tabs.serp'), icon: <RiSearchLine className="size-4" /> },
+    { id: 'pages', label: `${t('siteDetails.tabs.pages')} (${pages.length})`, icon: <RiFileTextLine className="size-4" /> },
+    { id: 'meta', label: t('siteDetails.tabs.meta'), icon: <RiPriceTag3Line className="size-4" /> },
   ] as const;
 
   console.log('pages => ', pages);

@@ -2,18 +2,19 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { BackButton, Dialog, DialogTrigger } from '@seo-optimizer/ui';
+import { BackButton, Dialog, DialogTrigger, Button } from '@seo-optimizer/ui';
 import DialogSugestion from '@/components/DialogSugestion';
 import { SERPPreview } from '@/components/SERPPreview';
 import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
 import { useSession } from 'next-auth/react';
+import { RiFileEditLine, RiSearchLine, RiPriceTag3Line, RiMagicLine, RiDownloadLine, RiPlayLine } from '@remixicon/react';
 
 type SugerenciaTabType = 'form' | 'serp' | 'meta';
 
 const sugerenciaTabs = [
-  { id: 'form', label: 'Sugerencia', icon: '📝' },
-  { id: 'serp', label: 'Vista previa SERP', icon: '🔍' },
-  { id: 'meta', label: 'Etiquetas meta', icon: '🏷️' },
+  { id: 'form', label: 'Sugerencia', icon: <RiFileEditLine className="size-4" /> },
+  { id: 'serp', label: 'Vista previa SERP', icon: <RiSearchLine className="size-4" /> },
+  { id: 'meta', label: 'Etiquetas meta', icon: <RiPriceTag3Line className="size-4" /> },
 ] as const;
 
 
@@ -110,6 +111,7 @@ function SugerenciaContent() {
 
     fetchData();
   }, [pageId, siteId]);
+  
 
   const [form, setForm] = useState(mockSuggested);
   const [loading, setLoading] = useState(false);
@@ -271,7 +273,7 @@ function SugerenciaContent() {
         title: pageDataToGenerate.title,
         description: pageDataToGenerate.description,
         wordCount: pageDataToGenerate.wordCount,
-        accountName: session.user.organizations[0].name,
+        accountName: organizationName,
       });
 
       // Actualizar el form con las sugerencias
@@ -327,7 +329,7 @@ function SugerenciaContent() {
       <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 dark:bg-zinc-900">
           <span className="loading loading-spinner loading-xl text-neutral"></span>
-          <span className="skeleton skeleton-text">Generando sugerencias...</span>
+          <span className="skeleton skeleton-text p-2">Generando sugerencias...</span>
         </div>
       </div>
     )}
@@ -506,14 +508,19 @@ function SugerenciaContent() {
         <div className="flex flex-col sm:flex-row gap-3 justify-end">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <button
+              <Button
                 disabled={loading}
-                className="btn btn-warning btn-sm"
+                isLoading={loading}
+                loadingText="Generando..."
+                variant="secondary"
+                size="sm"
+                icon={<RiMagicLine className="size-4" />}
               >
-                {loading ? "Generando..." : "Generar Sugerencias"}
-              </button>
+                Generar Sugerencias
+              </Button>
             </DialogTrigger>
             <DialogSugestion
+              organizationName={organizationName}
               setIsOpen={setIsOpen}
               setIsLoading={setLoading}
               onSuggestionsGenerated={handleSuggestionsGenerated}
@@ -525,20 +532,24 @@ function SugerenciaContent() {
               }}
             />
           </Dialog>
-          <button
+          <Button
             onClick={handleExport}
-            className="btn btn-primary btn-sm"
             disabled={loading}
+            variant="primary"
+            size="sm"
+            icon={<RiDownloadLine className="size-4" />}
           >
             Exportar JSON
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleGenerateAndExport}
-            className="btn btn-success btn-sm"
             disabled={loading}
+            variant="primary"
+            size="sm"
+            icon={<RiPlayLine className="size-4" />}
           >
-            Generar y Exportar JSON
-          </button>
+            Generar y Exportar
+          </Button>
         </div>
     </div>
   );
@@ -613,7 +624,7 @@ export default function SugerenciaPage() {
       fallback={
         <div className="min-h-screen bg-base-100 p-8 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <span className="loading loading-spinner loading-lg text-primary mb-2"></span>
             <p className="text-base-content/70">Cargando...</p>
           </div>
         </div>

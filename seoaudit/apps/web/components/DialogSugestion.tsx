@@ -23,9 +23,10 @@ type DialogSugestionProps = {
     description: string | null;
     wordCount: number;
   };
+  organizationName: string;
 };
 
-const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoading }: DialogSugestionProps) => {
+const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoading, organizationName }: DialogSugestionProps) => {
   const { data: session } = useSession();
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +46,7 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
         title: pageData.title,
         description: pageData.description,
         wordCount: pageData.wordCount,
-        accountName: session.user.organizations[0].name,
+        accountName: organizationName,
       });
 
       onSuggestionsGenerated(suggestions);
@@ -65,7 +66,7 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
       <DialogHeader>
         <DialogTitle>Generar Sugerencias SEO</DialogTitle>
         <DialogDescription className="mt-1 text-sm leading-6">
-          Se generarán sugerencias SEO optimizadas para <span className="font-semibold">{session?.user?.organizations?.[0]?.name}</span>.
+          Se generarán sugerencias SEO optimizadas para <span className="font-semibold">{organizationName}</span>.
         </DialogDescription>
       </DialogHeader>
 
@@ -81,7 +82,7 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
         <DialogClose asChild>
           <Button
             className="mt-2 w-full sm:mt-0 sm:w-fit"
-            variant="destructive"
+            variant="neutral"
           >
             Cancelar
           </Button>

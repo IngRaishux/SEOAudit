@@ -170,8 +170,6 @@ async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
 
     // Actualizar job con el siteId de MongoDB
     job.siteId = site._id.toString();
-
-    console.log('metadatos => ', job.result.pages);
     
     // Crear Pages
     const pages = job.result.pages.map((page) => ({
