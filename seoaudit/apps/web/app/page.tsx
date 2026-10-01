@@ -3,6 +3,7 @@
 import { Button } from '@seo-optimizer/ui';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { RiSearchLine, RiLightbulbLine, RiBarChartLine } from '@remixicon/react';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,7 +53,7 @@ export default function Home() {
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <div className="text-3xl mb-3">🔍</div>
+            <RiSearchLine className="text-3xl mb-3 text-blue-600 dark:text-blue-400" />
             <h3 className="text-lg font-semibold mb-2">Deep Site Analysis</h3>
             <p className="text-zinc-600 dark:text-zinc-400">
               Automatically crawl your entire website and analyze every page for SEO issues.
@@ -60,7 +61,7 @@ export default function Home() {
           </div>
 
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <div className="text-3xl mb-3">💡</div>
+            <RiLightbulbLine className="text-3xl mb-3 text-yellow-500 dark:text-yellow-400" />
             <h3 className="text-lg font-semibold mb-2">Smart Suggestions</h3>
             <p className="text-zinc-600 dark:text-zinc-400">
               Get AI-powered recommendations to fix issues and improve your SEO performance.
@@ -68,7 +69,7 @@ export default function Home() {
           </div>
 
           <div className="bg-white dark:bg-zinc-900 p-6 rounded-lg border border-zinc-200 dark:border-zinc-800">
-            <div className="text-3xl mb-3">📊</div>
+            <RiBarChartLine className="text-3xl mb-3 text-green-600 dark:text-green-400" />
             <h3 className="text-lg font-semibold mb-2">Multi-Organization</h3>
             <p className="text-zinc-600 dark:text-zinc-400">
               Manage multiple websites and organizations in a single dashboard.

@@ -10,8 +10,11 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
+  Button,
 } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { toastError, toastSuccess } from '@/lib/toast';
+import { RiDeleteBinLine } from "@remixicon/react"
 
 interface DeleteSiteDialogProps {
   siteId: string;
@@ -30,11 +33,9 @@ export function DeleteSiteDialog({
 
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
 
   const handleDelete = async () => {
     setIsLoading(true);
-    setError('');
     try {
       const response = await fetch(`/api/sites/${siteId}`, {
         method: 'DELETE',
@@ -43,12 +44,14 @@ export function DeleteSiteDialog({
         const data = await response.json();
         throw new Error(data.error || t('deleteSiteDialog.deletedError'));
       }
+      toastSuccess(t('deleteSiteDialog.deletedSuccess'), t('common.success'));
       setIsOpen(false);
       router.replace(`/dashboard?org=${orgId}`);
       router.refresh();
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : t('common.error')
+      toastError(
+        error instanceof Error ? error.message : t('common.error'),
+        t('common.error')
       );
     } finally {
       setIsLoading(false);
@@ -58,9 +61,13 @@ export function DeleteSiteDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <button className="px-2 lg:px-4 py-1 lg:py-2 bg-red-600 text-white rounded hover:bg-red-700 text-xs lg:text-sm font-medium whitespace-nowrap">
+        <Button
+          variant="destructive"
+          size="sm"
+          icon={<RiDeleteBinLine className="size-4" />}
+        >
           {t('sites.delete')}
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -79,26 +86,24 @@ export function DeleteSiteDialog({
               {t('deleteSiteDialog.warning')}
             </p>
           </div>
-          {error && (
-            <div className="text-xs lg:text-sm text-red-600 dark:text-red-400 break-words">
-              {error}
-            </div>
-          )}
         </div>
 
         <DialogFooter>
           <DialogClose asChild>
-            <button className="px-3 lg:px-4 py-1.5 lg:py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-xs lg:text-sm font-medium">
+            <Button variant="neutral" size="sm">
               {t('common.cancel')}
-            </button>
+            </Button>
           </DialogClose>
-          <button
+          <Button
             onClick={handleDelete}
-            disabled={isLoading}
-            className="px-3 lg:px-4 py-1.5 lg:py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs lg:text-sm font-medium"
+            isLoading={isLoading}
+            loadingText={t('deleteSiteDialog.deleting')}
+            variant="destructive"
+            size="sm"
+            icon={<RiDeleteBinLine className="size-4" />}
           >
-            {isLoading ? t('deleteSiteDialog.deleting') : t('deleteSiteDialog.deleteButton')}
-          </button>
+            {t('deleteSiteDialog.deleteButton')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

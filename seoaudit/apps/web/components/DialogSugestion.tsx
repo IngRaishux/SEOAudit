@@ -9,9 +9,10 @@ import {
   DialogTitle,
   Button,
 } from "@seo-optimizer/ui";
-import { Dispatch, SetStateAction, useState } from "react";
+import { Dispatch, SetStateAction } from "react";
 import { useSession } from "next-auth/react";
 import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
+import { toastError } from "@/lib/toast";
 
 type DialogSugestionProps = {
   setIsOpen: Dispatch<SetStateAction<boolean>>;
@@ -23,21 +24,20 @@ type DialogSugestionProps = {
     description: string | null;
     wordCount: number;
   };
+  organizationName: string;
 };
 
-const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoading }: DialogSugestionProps) => {
+const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoading, organizationName }: DialogSugestionProps) => {
   const { data: session } = useSession();
-  const [error, setError] = useState<string | null>(null);
 
   const handleGenerateAndSave = async () => {
     if (!session?.user?.organizations || session.user.organizations.length === 0) {
-      setError("No se pudo obtener la información de tu organización");
+      toastError("No se pudo obtener la información de tu organización");
       return;
     }
 
     setIsOpen(false);
     setIsLoading(true);
-    setError(null);
 
     try {
       const suggestions = await generateSEOSuggestions({
@@ -45,14 +45,14 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
         title: pageData.title,
         description: pageData.description,
         wordCount: pageData.wordCount,
-        accountName: session.user.organizations[0].name,
+        accountName: organizationName,
       });
 
       onSuggestionsGenerated(suggestions);
       setIsOpen(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error generating suggestions';
-      setError(message);
+      toastError(message);
       console.error('Error generating SEO suggestions:', err);
       setIsOpen(true);
     } finally {
@@ -65,23 +65,15 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
       <DialogHeader>
         <DialogTitle>Generar Sugerencias SEO</DialogTitle>
         <DialogDescription className="mt-1 text-sm leading-6">
-          Se generarán sugerencias SEO optimizadas para <span className="font-semibold">{session?.user?.organizations?.[0]?.name}</span>.
+          Se generarán sugerencias SEO optimizadas para <span className="font-semibold">{organizationName}</span>.
         </DialogDescription>
       </DialogHeader>
-
-      <div className="flex flex-col gap-4 py-4">
-        {error && (
-          <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-      </div>
 
       <DialogFooter className="mt-6">
         <DialogClose asChild>
           <Button
             className="mt-2 w-full sm:mt-0 sm:w-fit"
-            variant="destructive"
+            variant="neutral"
           >
             Cancelar
           </Button>

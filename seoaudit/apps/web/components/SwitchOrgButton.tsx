@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { clearSelectedOrganization } from '@/app/actions';
-import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { useRouter } from "next/navigation";
+import { clearSelectedOrganization } from "@/app/actions";
+import { useI18n, useCurrentLanguage } from "@/lib/i18n/useI18n";
+import { Button } from "@seo-optimizer/ui";
+import { RiBuilding4Line } from "@remixicon/react";
 
 export function SwitchOrgButton() {
   const router = useRouter();
@@ -11,16 +13,23 @@ export function SwitchOrgButton() {
 
   const handleSwitchOrg = async () => {
     await clearSelectedOrganization();
-    router.push('/organizations');
+    router.push("/organizations");
     router.refresh();
   };
 
   return (
-    <button
+    <Button
+      size="sm"
+      variant="neutral"
+      asChild
       onClick={handleSwitchOrg}
-      className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium"
+      icon={<RiBuilding4Line className="size-4" />}
     >
-      {t('dashboard.switchOrg')}
-    </button>
+      {t("dashboard.switchOrg")}
+    </Button>
+    // <button
+    //   className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white rounded hover:bg-zinc-300 dark:hover:bg-zinc-700 text-sm font-medium"
+    // >
+    // </button>
   );
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CrawlProvider } from "@/lib/CrawlContext";
-import { SessionProvider } from "@seo-optimizer/ui";
+import { SessionProvider, Toaster } from "@seo-optimizer/ui";
 import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
@@ -21,6 +21,7 @@ export default function RootLayout({
           <Header />
           <CrawlProvider>{children}</CrawlProvider>
         </SessionProvider>
+        <Toaster />
       </body>
     </html>
   );

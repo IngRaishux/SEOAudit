@@ -6,6 +6,7 @@ import { DeleteSiteDialog } from './DeleteSiteDialog';
 import { SwitchOrgButton } from './SwitchOrgButton';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { Button } from '@seo-optimizer/ui';
+import { RiSettings4Line, RiSearch2Line, RiEyeLine } from '@remixicon/react';
 
 interface ISite {
   _id: string;
@@ -59,18 +60,26 @@ export function DashboardContent({
           </div>
           <div className="flex flex-wrap gap-2 lg:flex-nowrap">
             <SwitchOrgButton />
-            <Link
-              href={`/organization-settings/${selectedOrgId}`}
-              className="btn btn-secondary btn-sm"
+            <Button
+              asChild
+              variant="secondary"
+              size="sm"
+              icon={<RiSettings4Line className="size-4" />}
             >
-              {t('common.settings')}
-            </Link>
-            <Link
-              href={`/crawler?org=${selectedOrgId}`}
-              className="btn btn-primary btn-sm"
+              <Link href={`/organization-settings/${selectedOrgId}`}>
+                {t('common.settings')}
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="primary"
+              size="sm"
+              icon={<RiSearch2Line className="size-4" />}
             >
-              {t('dashboard.crawlNewSite')}
-            </Link>
+              <Link href={`/crawler?org=${selectedOrgId}`}>
+                {t('dashboard.crawlNewSite')}
+              </Link>
+            </Button>
           </div>
         </div>
 
@@ -115,9 +124,16 @@ export function DashboardContent({
                 <p className="text-base-content/70 mb-4 text-sm">
                   {t('dashboard.noSites')}
                 </p>
-                <Link href={`/crawler?org=${selectedOrgId}`} className="btn btn-primary btn-sm">
-                  {t('dashboard.goCrawler')}
-                </Link>
+                <Button
+              asChild
+              variant="primary"
+              size="sm"
+              icon={<RiSearch2Line className="size-4" />}
+            >
+              <Link href={`/crawler?org=${selectedOrgId}`}>
+                {t('dashboard.crawlNewSite')}
+              </Link>
+            </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -140,9 +156,9 @@ export function DashboardContent({
                         {t('sites.actions')}
                       </th>
                       {isOwner && (
-                        <th className="text-base-content">
-                          {t('sites.delete')}
-                        </th>
+                       <th className="text-base-content">
+                            {t('sites.delete')}
+                          </th>
                       )}
                     </tr>
                   </thead>
@@ -175,15 +191,20 @@ export function DashboardContent({
                           {new Date(site.createdAt).toISOString().split('T')[0]}
                         </td>
                         <td>
-                          <Link
-                            href={`/sites/${site._id.toString()}`}
-                            className="text-primary hover:text-primary/80 font-medium whitespace-nowrap text-xs lg:text-base"
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="sm"
+                            icon={<RiEyeLine className="size-4" />}
+                            className="text-primary hover:text-primary/80"
                           >
-                            {t('sites.view')}
-                          </Link>
+                            <Link href={`/sites/${site._id.toString()}`}>
+                              {t('sites.view')}
+                            </Link>
+                          </Button>
                         </td>
                         {isOwner && (
-                          <td>
+                          <td> 
                             <DeleteSiteDialog
                               siteId={site._id.toString()}
                               siteUrl={site.url.toString()}

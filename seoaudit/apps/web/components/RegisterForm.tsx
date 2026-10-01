@@ -6,6 +6,8 @@ import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Button, Input } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { toastError } from '@/lib/toast';
+import { RiShieldCheckLine, RiGoogleFill } from '@remixicon/react';
 
 export function RegisterForm() {
   const router = useRouter();
@@ -17,20 +19,18 @@ export function RegisterForm() {
   const [organizationName, setOrganizationName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError(null);
 
     if (password !== confirmPassword) {
-      setError(t('validation.required'));
+      toastError(t('validation.required'), t('common.error'));
       return;
     }
 
     if (password.length < 6) {
-      setError(t('auth.passwordMinLength'));
+      toastError(t('auth.passwordMinLength'), t('common.error'));
       return;
     }
 
@@ -51,7 +51,7 @@ export function RegisterForm() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || t('errors.serverError'));
+        toastError(data.error || t('errors.serverError'), t('common.error'));
         return;
       }
 
@@ -64,10 +64,10 @@ export function RegisterForm() {
       if (signInResult?.ok) {
         router.push('/organizations');
       } else {
-        setError(t('errors.serverError'));
+        toastError(t('errors.serverError'), t('common.error'));
       }
     } catch (err) {
-      setError(t('errors.serverError'));
+      toastError(t('errors.serverError'), t('common.error'));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -79,7 +79,7 @@ export function RegisterForm() {
     try {
       await signIn('google', { callbackUrl: '/organizations', redirect: true });
     } catch (err) {
-      setError(t('errors.serverError'));
+      toastError(t('errors.serverError'), t('common.error'));
       console.error(err);
       setIsLoading(false);
     }
@@ -163,16 +163,11 @@ export function RegisterForm() {
           />
         </div>
 
-        {error && (
-          <div className="p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
         <Button
           type="submit"
           disabled={isLoading}
           className="w-full"
+          icon={<RiShieldCheckLine className="size-4" />}
         >
           {isLoading ? t('common.loading') : t('auth.signUp')}
         </Button>
@@ -184,6 +179,7 @@ export function RegisterForm() {
           onClick={handleGoogleSignUp}
           disabled={isLoading}
           className="w-full bg-white border border-zinc-300 text-zinc-900 hover:bg-zinc-50"
+          icon={<RiGoogleFill className="size-4" />}
         >
           {isLoading ? t('common.loading') : t('auth.continueWithGoogle')}
         </Button>

@@ -2,18 +2,20 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { BackButton, Dialog, DialogTrigger } from '@seo-optimizer/ui';
+import { BackButton, Dialog, DialogTrigger, Button } from '@seo-optimizer/ui';
 import DialogSugestion from '@/components/DialogSugestion';
 import { SERPPreview } from '@/components/SERPPreview';
 import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
+import { toastError, toastSuccess } from '@/lib/toast';
 import { useSession } from 'next-auth/react';
+import { RiFileEditLine, RiSearchLine, RiPriceTag3Line, RiMagicLine, RiDownloadLine, RiPlayLine } from '@remixicon/react';
 
 type SugerenciaTabType = 'form' | 'serp' | 'meta';
 
 const sugerenciaTabs = [
-  { id: 'form', label: 'Sugerencia', icon: '📝' },
-  { id: 'serp', label: 'Vista previa SERP', icon: '🔍' },
-  { id: 'meta', label: 'Etiquetas meta', icon: '🏷️' },
+  { id: 'form', label: 'Sugerencia', icon: <RiFileEditLine className="size-4" /> },
+  { id: 'serp', label: 'Vista previa SERP', icon: <RiSearchLine className="size-4" /> },
+  { id: 'meta', label: 'Etiquetas meta', icon: <RiPriceTag3Line className="size-4" /> },
 ] as const;
 
 
@@ -103,6 +105,7 @@ function SugerenciaContent() {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        toastError('Error al cargar la información de la página');
       } finally {
         setLoadingPage(false);
       }
@@ -111,16 +114,14 @@ function SugerenciaContent() {
     fetchData();
   }, [pageId, siteId]);
 
+
   const [form, setForm] = useState(mockSuggested);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [activeTab, setActiveTab] = useState<SugerenciaTabType>('form');
 
   const handleSuggestionsGenerated = async (suggestions: any) => {
     setForm(suggestions);
-    setError(null);
 
     // Persistir sugerencias en MongoDB si tenemos pageId y siteId
     if (pageId && siteId) {
@@ -138,14 +139,15 @@ function SugerenciaContent() {
         });
 
         if (res.ok) {
-          setSaved(true);
-          setTimeout(() => setSaved(false), 3000); // Mostrar confirmación por 3s
+          toastSuccess('Sugerencia guardada correctamente');
         } else {
           const data = await res.json();
           console.error('Error saving suggestion:', data.error);
+          toastError(data.error || 'Error al guardar la sugerencia');
         }
       } catch (err) {
         console.error('Error persisting suggestion:', err);
+        toastError('Error al guardar la sugerencia');
       }
     }
   };
@@ -246,17 +248,16 @@ function SugerenciaContent() {
 
   const handleGenerateAndExport = async () => {
     if (!mockPage) {
-      setError("No se ha cargado la información de la página");
+      toastError("No se ha cargado la información de la página");
       return;
     }
 
     if (!session?.user?.organizations || session.user.organizations.length === 0) {
-      setError("No se pudo obtener la información de tu organización");
+      toastError("No se pudo obtener la información de tu organización");
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const pageDataToGenerate: PageData = {
@@ -271,7 +272,7 @@ function SugerenciaContent() {
         title: pageDataToGenerate.title,
         description: pageDataToGenerate.description,
         wordCount: pageDataToGenerate.wordCount,
-        accountName: session.user.organizations[0].name,
+        accountName: organizationName,
       });
 
       // Actualizar el form con las sugerencias
@@ -309,11 +310,10 @@ function SugerenciaContent() {
       URL.revokeObjectURL(downloadUrl);
 
       // Mostrar confirmación
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      toastSuccess('Sugerencia guardada correctamente');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error generating suggestions';
-      setError(message);
+      toastError(message);
       console.error('Error:', err);
     } finally {
       setLoading(false);
@@ -327,7 +327,7 @@ function SugerenciaContent() {
       <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 dark:bg-zinc-900">
           <span className="loading loading-spinner loading-xl text-neutral"></span>
-          <span className="skeleton skeleton-text">Generando sugerencias...</span>
+          <span className="skeleton skeleton-text p-2">Generando sugerencias...</span>
         </div>
       </div>
     )}
@@ -484,36 +484,23 @@ function SugerenciaContent() {
         </div>
       </div>
 
-        {/* Alerts */}
-        {error && (
-          <div className="alert alert-error text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2m0 0l2-2m-2 2l-2 2" />
-            </svg>
-            <span>Error: {error}</span>
-          </div>
-        )}
-        {saved && (
-          <div className="alert alert-success text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>✓ Sugerencia guardada correctamente</span>
-          </div>
-        )}
-
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-end">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <button
+              <Button
                 disabled={loading}
-                className="btn btn-warning btn-sm"
+                isLoading={loading}
+                loadingText="Generando..."
+                variant="secondary"
+                size="sm"
+                icon={<RiMagicLine className="size-4" />}
               >
-                {loading ? "Generando..." : "Generar Sugerencias"}
-              </button>
+                Generar Sugerencias
+              </Button>
             </DialogTrigger>
             <DialogSugestion
+              organizationName={organizationName}
               setIsOpen={setIsOpen}
               setIsLoading={setLoading}
               onSuggestionsGenerated={handleSuggestionsGenerated}
@@ -525,20 +512,24 @@ function SugerenciaContent() {
               }}
             />
           </Dialog>
-          <button
+          <Button
             onClick={handleExport}
-            className="btn btn-primary btn-sm"
             disabled={loading}
+            variant="primary"
+            size="sm"
+            icon={<RiDownloadLine className="size-4" />}
           >
             Exportar JSON
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleGenerateAndExport}
-            className="btn btn-success btn-sm"
             disabled={loading}
+            variant="primary"
+            size="sm"
+            icon={<RiPlayLine className="size-4" />}
           >
-            Generar y Exportar JSON
-          </button>
+            Generar y Exportar
+          </Button>
         </div>
     </div>
   );
@@ -613,7 +604,7 @@ export default function SugerenciaPage() {
       fallback={
         <div className="min-h-screen bg-base-100 p-8 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <span className="loading loading-spinner loading-lg text-primary mb-2"></span>
             <p className="text-base-content/70">Cargando...</p>
           </div>
         </div>
