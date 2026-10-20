@@ -10,20 +10,32 @@ export async function parseSitemap(sitemapUrl: string): Promise<string[]> {
   if (doc.sitemapindex) {
     const children = toArray(doc.sitemapindex.sitemap);
     const nested = await Promise.all(
-      children.map((s: { loc: string }) => parseSitemap(s.loc))
+      children.map((s: { loc: string }) => parseSitemap(resolveLoc(s.loc, sitemapUrl)))
     );
     return nested.flat();
   }
 
   if (doc.urlset) {
-    return toArray(doc.urlset.url).map((u: { loc: string }) => u.loc);
+    return toArray(doc.urlset.url).map((u: { loc: string }) => resolveLoc(u.loc, sitemapUrl));
   }
 
   return [];
 }
 
+// Some sites emit <loc> as a path relative to the sitemap's own URL instead of
+// an absolute URL (against the sitemap protocol spec, but seen in the wild),
+// which crashes Node's fetch() since it has no document origin to resolve against.
+function resolveLoc(loc: string, base: string): string {
+  try {
+    return new URL(loc, base).toString();
+  } catch {
+    return loc;
+  }
+}
+
 async function fetchSitemapXml(url: string): Promise<string> {
   const res = await fetch(url);
+
   if (!res.ok) throw new Error(`Failed to fetch sitemap: ${url} (${res.status})`);
 
   if (url.endsWith('.gz')) {
