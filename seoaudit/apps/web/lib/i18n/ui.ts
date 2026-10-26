@@ -128,6 +128,33 @@ export const translations = {
       deletedError: 'Error al eliminar la organización',
     },
 
+    // Generate All (bulk SEO generation)
+    generateAll: {
+      button: 'Generar todo',
+      dialogTitle: 'Generar todo',
+      dialogDescription:
+        'Se generarán metadatos SEO para las {{count}} páginas disponibles de este sitio. Esta acción puede tardar unos momentos.',
+      starting: 'Iniciando...',
+      confirmButton: 'Generar todo',
+      error: 'Error al generar los metadatos',
+      missingJob: 'No se encontró el proceso de generación. Vuelve a intentarlo desde la pestaña Páginas.',
+      alreadyRunning: 'Ya hay una generación en curso para este sitio. Te mostramos su progreso.',
+      generating: 'Generando sugerencias para todas las páginas...',
+      resultsTitle: 'Resultados de generación masiva',
+      fields: {
+        title: 'Título',
+        slug: 'Slug',
+        description: 'Descripción',
+        canonicalUrl: 'URL canónica',
+      },
+      saveAll: 'Guardar cambios',
+      saveSuccess: 'Cambios guardados correctamente',
+      saveError: 'Error al guardar los cambios',
+      savePartialError: 'No se pudieron guardar {{failed}} de {{total}} resultados',
+      unsaved: 'Sin guardar',
+      exportAll: 'Exportar todo',
+    },
+
     // Organization Settings
     organizationSettings: {
       title: 'Configuración de organización',
@@ -359,6 +386,33 @@ export const translations = {
       deleting: 'Deleting...',
       deletedSuccess: 'Organization deleted successfully',
       deletedError: 'Failed to delete organization',
+    },
+
+    // Generate All (bulk SEO generation)
+    generateAll: {
+      button: 'Generate All',
+      dialogTitle: 'Generate All',
+      dialogDescription:
+        'SEO metadata will be generated for the {{count}} available pages on this site. This may take a few moments.',
+      starting: 'Starting...',
+      confirmButton: 'Generate All',
+      error: 'Error generating metadata',
+      missingJob: 'The generation job was not found. Try again from the Pages tab.',
+      alreadyRunning: 'A generation is already running for this site. Showing its progress.',
+      generating: 'Generating suggestions for all pages...',
+      resultsTitle: 'Bulk Generation Results',
+      fields: {
+        title: 'Title',
+        slug: 'Slug',
+        description: 'Description',
+        canonicalUrl: 'Canonical URL',
+      },
+      saveAll: 'Save Changes',
+      saveSuccess: 'Changes saved successfully',
+      saveError: 'Error saving changes',
+      savePartialError: 'Could not save {{failed}} of {{total}} results',
+      unsaved: 'Unsaved',
+      exportAll: 'Export All',
     },
 
     // Organization Settings

@@ -1,6 +1,7 @@
 'use server';
 
 import { GoogleGenAI } from '@google/genai';
+import { toDynamoSuggestion, slugFromUrl } from './dynamoSuggestion';
 
 export interface PageData {
   url: string;
@@ -50,23 +51,7 @@ export async function generateSEOSuggestions(
 
   const genAI = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
 
-  // Extraer slug incluyendo patrones de idioma como /en/, /es-MX/, etc
-  const urlParts = pageData.url.split('/').filter(Boolean);
-  let slug = '/home/';
-
-  if (urlParts.length > 0) {
-    // Buscar si hay un segmento que sea un idioma (en, es, es-MX, etc)
-    const languagePattern = /^[a-z]{2}(-[a-zA-Z]{2})?$/;
-    const languageIndex = urlParts.findIndex(part => languagePattern.test(part));
-
-    if (languageIndex !== -1 && languageIndex < urlParts.length - 1) {
-      // Si hay un patrón de idioma y hay más segmentos después, incluir idioma + resto
-      slug = '/' + urlParts.slice(languageIndex).join('/') + '/';
-    } else {
-      // Si no hay patrón de idioma, solo tomar el último segmento
-      slug = '/' + urlParts[urlParts.length - 1] + '/';
-    }
-  }
+  const slug = slugFromUrl(pageData.url);
 
   const prompt = `Eres un experto en SEO. Analiza esta página y genera sugerencias optimizadas para los meta tags en formato DynamoDB.
 
@@ -149,7 +134,7 @@ Requisitos:
       throw new Error('Invalid SEO suggestion structure: missing required fields');
     }
 
-    return suggestion;
+    return toDynamoSuggestion(suggestion);
   } catch (error) {
     console.error('Error parsing SEO suggestion:', error);
     throw new Error('Failed to parse SEO suggestion');
