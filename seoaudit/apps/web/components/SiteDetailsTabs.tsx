@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { SERPPreview } from './SERPPreview';
 import { Card, CardContent } from './Card';
+import { GenerateAllDialog } from './GenerateAllDialog';
 import { ISite } from '@/lib/interfaces';
 import { RiSearchLine, RiFileTextLine, RiPriceTag3Line } from '@remixicon/react';
 
@@ -116,6 +117,9 @@ export function SiteDetailsTabs({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
+                  <div className="flex justify-end mb-4">
+                    <GenerateAllDialog siteId={siteId} pageCount={pages.length} />
+                  </div>
                   <table className="table w-full text-sm">
                     <thead className="bg-base-200">
                       <tr>

@@ -37,12 +37,17 @@ export async function listPagesBySite(
 ) {
   await connectMongoose();
   const { limit = 100, skip = 0 } = options;
-  return Page.find({ siteId })
+  const query = Page.find({ siteId })
     .select('_id siteId url organizationId title description statusCode canonical headings metaTags createdAt')
     .sort({ createdAt: -1 })
-    .limit(limit)
-    .skip(skip)
-    .lean();
+    .skip(skip);
+
+  // limit <= 0 significa "sin límite" (traer todas las páginas del sitio)
+  if (limit > 0) {
+    query.limit(limit);
+  }
+
+  return query.lean();
 }
 
 export async function countPagesBySite(siteId: string) {
