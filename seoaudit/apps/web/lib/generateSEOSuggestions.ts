@@ -113,7 +113,7 @@ Requisitos:
 - Los valores de "S" deben ser strings, los de "SS" deben ser arrays de strings`;
 
   const result = await genAI.models.generateContent({
-    model: 'gemini-3.5-flash',
+    model: 'gemini-3.6-flash',
     contents: prompt,
   });
   const responseText = result.text;

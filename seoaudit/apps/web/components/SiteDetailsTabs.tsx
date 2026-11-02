@@ -7,7 +7,8 @@ import { SERPPreview } from './SERPPreview';
 import { Card, CardContent } from './Card';
 import { GenerateAllDialog } from './GenerateAllDialog';
 import { ISite } from '@/lib/interfaces';
-import { RiSearchLine, RiFileTextLine, RiPriceTag3Line } from '@remixicon/react';
+import { RiSearchLine, RiFileTextLine, RiPriceTag3Line, RiSparklingLine } from '@remixicon/react';
+import { GeoTab } from './geo/GeoTab';
 
 interface MetaTag {
   name: string;
@@ -32,7 +33,7 @@ interface SiteDetailsTabsProps {
   site: ISite 
 }
 
-type TabType = 'serp' | 'pages' | 'meta';
+type TabType = 'serp' | 'pages' | 'meta' | 'geo';
 
 export function SiteDetailsTabs({
   pages,
@@ -50,6 +51,7 @@ export function SiteDetailsTabs({
     { id: 'serp', label: t('siteDetails.tabs.serp'), icon: <RiSearchLine className="size-4" /> },
     { id: 'pages', label: `${t('siteDetails.tabs.pages')} (${pages.length})`, icon: <RiFileTextLine className="size-4" /> },
     { id: 'meta', label: t('siteDetails.tabs.meta'), icon: <RiPriceTag3Line className="size-4" /> },
+    { id: 'geo', label: t('siteDetails.tabs.geo'), icon: <RiSparklingLine className="size-4" /> },
   ] as const;
 
   console.log('pages => ', pages);
@@ -228,6 +230,8 @@ export function SiteDetailsTabs({
               )}
             </div>
           )}
+
+          {activeTab === 'geo' && <GeoTab siteId={siteId} t={t} />}
         </div>
       </Card>
     </div>

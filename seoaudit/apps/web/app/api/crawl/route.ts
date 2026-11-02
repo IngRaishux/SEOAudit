@@ -9,13 +9,12 @@ import type { Session } from 'next-auth';
 import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
-import Organization from '@/lib/models/Organization';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
-    let session = (await getServerSession(handler)) as Session | null;
+    const session = (await getServerSession(handler)) as Session | null;
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -127,6 +126,7 @@ async function runCrawl(jobId: string) {
       sitemapUrl: result.sitemapUrl,
       total: pages.length,
       pages,
+      llmsTxt: result.llmsTxt,
     };
     j.finishedAt = Date.now();
 
@@ -166,6 +166,7 @@ async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
       title: firstPage?.title || undefined,
       description: firstPage?.description || undefined,
       metaTags: siteMetaTags,
+      llmsTxt: job.result.llmsTxt,
     });
 
     // Actualizar job con el siteId de MongoDB
@@ -187,7 +188,12 @@ async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
         ...(page.ogImage ? [{ name: 'og:image', content: page.ogImage }] : []),
         ...(page.robots ? [{ name: 'robots', content: page.robots }] : []),
       ],
-      links: [],
+      links: page.links,
+      images: page.images,
+      jsonLd: page.jsonLd,
+      bodyText: page.bodyText,
+      footerText: page.footerText,
+      textTruncated: page.textTruncated,
     }));
 
     if (pages.length > 0) {

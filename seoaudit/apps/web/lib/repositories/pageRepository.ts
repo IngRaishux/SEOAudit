@@ -15,6 +15,10 @@ export async function createPage(data: {
   links?: Array<{ url: string; text?: string; isExternal?: boolean }>;
   metaTags?: Array<{ name: string; content: string }>;
   images?: Array<{ url: string; alt?: string }>;
+  jsonLd?: Array<{ raw: string; parsed: unknown | null; parseError: string | null }>;
+  bodyText?: string;
+  footerText?: string;
+  textTruncated?: boolean;
 }) {
   await connectMongoose();
   const page = new Page(data);
@@ -77,4 +81,12 @@ export async function deletePage(pageId: string) {
 export async function deletePagesBySite(siteId: string) {
   await connectMongoose();
   return Page.deleteMany({ siteId });
+}
+
+/** Páginas con las señales que usa la capa GEO (JSON-LD, links, texto). */
+export async function listGeoPagesBySite(siteId: string) {
+  await connectMongoose();
+  return Page.find({ siteId })
+    .select('_id url statusCode title description canonical links images metaTags jsonLd bodyText footerText')
+    .lean();
 }

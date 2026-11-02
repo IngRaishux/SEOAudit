@@ -44,6 +44,17 @@ const pageSchema = new mongoose.Schema(
         alt: String,
       },
     ],
+    jsonLd: [
+      {
+        _id: false,
+        raw: String,
+        parsed: mongoose.Schema.Types.Mixed,
+        parseError: String,
+      },
+    ],
+    bodyText: String,
+    footerText: String,
+    textTruncated: Boolean,
   },
   { timestamps: true }
 );

@@ -4,6 +4,7 @@ import { parseSitemap } from './sitemap/parse';
 import { extractPageSeo } from './crawler/extract';
 import { extractPageSeoRendered, launchBrowser } from './crawler/render';
 import type { PageSeo } from './crawler/parse';
+import { fetchLlmsTxt, type LlmsTxtCapture } from './site/llmsTxt';
 
 export interface CrawlOptions {
   concurrency?: number;
@@ -18,6 +19,7 @@ export interface CrawlResult {
   sitemapUrl: string;
   total: number;
   pages: PageSeo[];
+  llmsTxt: LlmsTxtCapture;
 }
 
 export async function crawlSite(
@@ -25,6 +27,9 @@ export async function crawlSite(
   options: CrawlOptions = {}
 ): Promise<CrawlResult> {
   const { concurrency = 5, maxUrls, renderJs = false, crawl4aiUrl, onProgress } = options;
+
+  // Se pide en paralelo al crawl; fetchLlmsTxt nunca lanza
+  const llmsTxtPromise = fetchLlmsTxt(siteUrl);
 
   const sitemapUrl = await discoverSitemap(siteUrl);
   if (!sitemapUrl) throw new Error(`No sitemap found for ${siteUrl}`);
@@ -53,10 +58,11 @@ export async function crawlSite(
       )
     );
 
-    return { siteUrl, sitemapUrl, total, pages };
+    return { siteUrl, sitemapUrl, total, pages, llmsTxt: await llmsTxtPromise };
   } finally {
     await browser?.close();
   }
 }
 
-export type { PageSeo };
+export type { PageSeo, LlmsTxtCapture };
+export type { JsonLdBlock, PageLink, PageImage } from './crawler/parse';
