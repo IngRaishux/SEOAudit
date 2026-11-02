@@ -31,6 +31,20 @@ const siteSchema = new mongoose.Schema(
         content: String,
       },
     ],
+    llmsTxt: {
+      type: new mongoose.Schema(
+        {
+          url: String,
+          status: Number,
+          contentType: String,
+          content: String,
+          error: String,
+          fetchedAt: Date,
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
   },
   { timestamps: true }
 );
