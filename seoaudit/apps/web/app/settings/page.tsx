@@ -10,7 +10,7 @@ import { Button } from '@seo-optimizer/ui';
 import { toastError, toastSuccess } from '@/lib/toast';
 
 export default function UserSettingsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const currentLang = useCurrentLanguage();
   const { t } = useI18n(currentLang);
 
@@ -24,6 +24,15 @@ export default function UserSettingsPage() {
   if (syncedLang !== currentLang) {
     setSyncedLang(currentLang);
     setLanguageState(currentLang);
+  }
+
+  // Mientras useSession carga, session es undefined: redirigir entonces sacaba a usuarios con sesión
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <span className="loading loading-spinner loading-lg" aria-label={t('common.loading')} />
+      </div>
+    );
   }
 
   if (!session?.user) {

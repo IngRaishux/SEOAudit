@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import type { Session } from 'next-auth';
+import { getSessionUserId } from '@/lib/auth/sessionUser';
 import connectMongoose from '@/lib/db/mongoose';
 import Membership from '@/lib/models/Membership';
 import Site from '@/lib/models/Site';
@@ -14,9 +12,9 @@ export async function GET(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  const session = (await getServerSession(handler)) as Session | null;
+  const userId = await getSessionUserId();
 
-  if (!session?.user?.id) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -31,7 +29,7 @@ export async function GET(
 
     // Verify user is member of the organization
     const membership = await Membership.findOne({
-      userId: session.user.id,
+      userId,
       organizationId: site.organizationId,
     });
 
@@ -66,9 +64,9 @@ export async function POST(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  const session = (await getServerSession(handler)) as Session | null;
+  const userId = await getSessionUserId();
 
-  if (!session?.user?.id) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -93,7 +91,7 @@ export async function POST(
 
     // Verify user is member of the organization
     const membership = await Membership.findOne({
-      userId: session.user.id,
+      userId,
       organizationId: site.organizationId,
     });
 
