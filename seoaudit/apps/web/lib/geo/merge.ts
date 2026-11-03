@@ -26,13 +26,22 @@ export interface MergeResult {
   conflicts: Conflict[];
 }
 
+/**
+ * URL de la entidad en un idioma. La del perfil corresponde al idioma por defecto; los demás
+ * idiomas usan la página rastreada porque el perfil no guarda una URL por idioma.
+ */
+export function entityUrl(entity: ProfileEntity, profile: ProfileInput, lang: string, pageUrl: string): string {
+  return (lang === profile.defaultLanguage && entity.facts.url?.value) || pageUrl;
+}
+
 /** Nodo de la entidad construido solo con valores del perfil; un campo vacío se omite. */
 export function buildEntityNode(
   entity: ProfileEntity,
   profile: ProfileInput,
   lang: string,
-  url: string
+  pageUrl: string
 ): JsonLdNode {
+  const url = entityUrl(entity, profile, lang, pageUrl);
   const f = entity.facts;
   const family = familyOf(entity.type);
   const lodging = family === 'LodgingBusiness';

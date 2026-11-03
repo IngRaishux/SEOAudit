@@ -29,14 +29,12 @@ export async function PUT(
       const { db } = await connectToDatabase();
       const usersCollection = db.collection('users');
       const user = await usersCollection.findOne({ email: session.user.email });
-
       if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
       await connectMongoose();
       const membership = await Membership.findOne({ userId: user._id.toString() });
-
       if (membership) {
         session.user.id = user._id.toString();
         session.user.accountId = membership.organizationId.toString();
@@ -48,14 +46,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }
-
-  // Verify ownership
-  if (session.user.accountId !== orgId) {
-    return NextResponse.json(
-      { error: 'You can only modify your own organization' },
-      { status: 403 }
-    );
-  }
+  
 
   // Check if user is owner
   await connectMongoose();

@@ -8,7 +8,6 @@ import * as pageRepository from '@/lib/repositories/pageRepository';
 import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
-import Organization from '@/lib/models/Organization';
 import { SiteDetailsTabs } from '@/components/SiteDetailsTabs';
 import { Card } from '@/components/Card';
 import type { ISite, IPage } from '@/lib/interfaces';
@@ -19,7 +18,7 @@ export default async function SiteDetailsPage({
   params: Promise<{ siteId: string }>;
 }) {
   const { siteId } = await params;
-  let session = (await getServerSession(handler)) as Session | null;
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     redirect('/login');
@@ -39,7 +38,9 @@ export default async function SiteDetailsPage({
   // Get site first to determine organization
   let site: ISite | null = null;
   try {
-    site = (await siteRepository.getSiteById(siteId)) as unknown as ISite;
+    // .lean() devuelve ObjectId y Date de Mongo; se convierten a JSON plano para poder pasarlos a un Client Component
+    const found = await siteRepository.getSiteById(siteId);
+    site = found ? (JSON.parse(JSON.stringify(found)) as ISite) : null;
   } catch (error) {
     console.error('Error fetching site:', error);
   }
@@ -69,7 +70,6 @@ export default async function SiteDetailsPage({
     console.error('Error fetching pages:', error);
   }
 
-  console.log('sitio: ', site);
   
   // Serialize pages data for client component
   const serializedPages = JSON.parse(JSON.stringify(pages));  

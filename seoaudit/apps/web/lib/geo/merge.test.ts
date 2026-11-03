@@ -20,6 +20,17 @@ describe('buildEntityNode', () => {
     expect(profileNode).not.toHaveProperty('logo');
   });
 
+  it('usa la url del perfil en el idioma por defecto y la de la página en los demás', () => {
+    const edited = {
+      ...resortEntity,
+      facts: { ...resortEntity.facts, url: { value: 'https://acapulco.example.com/', source: 'user' as const } },
+    };
+    const lang = brisasProfile.defaultLanguage;
+    const other = brisasProfile.languages.find((l) => l !== lang) ?? 'en';
+    expect(buildEntityNode(edited, brisasProfile, lang, `${origin}/acapulco/`).url).toBe('https://acapulco.example.com/');
+    expect(buildEntityNode(edited, brisasProfile, other, `${origin}/en/acapulco/`).url).toBe(`${origin}/en/acapulco/`);
+  });
+
   it('describe en línea a un padre externo', () => {
     const org = buildEntityNode(brisasProfile.entities[1], brisasProfile, 'es', `${origin}/`);
     expect(org.parentOrganization).toEqual({
