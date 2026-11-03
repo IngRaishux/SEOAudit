@@ -5,7 +5,7 @@ import { SessionProvider, Toaster } from "@seo-optimizer/ui";
 import { Header } from "@/components/Header";
 import { cookies, headers } from "next/headers";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
-import { LANGUAGE_COOKIE, resolveLanguage } from "@/lib/i18n/language";
+import { LANDING_LANGUAGE_HEADER, LANGUAGE_COOKIE, resolveLanguage } from "@/lib/i18n/language";
 
 export const metadata: Metadata = {
   title: "SEO Audit",
@@ -17,9 +17,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const requestHeaders = await headers();
   const lang = resolveLanguage(
+    requestHeaders.get(LANDING_LANGUAGE_HEADER),
     (await cookies()).get(LANGUAGE_COOKIE)?.value,
-    (await headers()).get("accept-language")
+    requestHeaders.get("accept-language")
   );
 
   return (

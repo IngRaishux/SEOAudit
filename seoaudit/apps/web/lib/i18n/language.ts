@@ -28,8 +28,44 @@ export function languageFromAcceptLanguage(header: string | null | undefined): L
   return null;
 }
 
-export function resolveLanguage(cookieValue: string | null | undefined, acceptLanguage: string | null | undefined): Language {
-  return parseLanguage(cookieValue) ?? languageFromAcceptLanguage(acceptLanguage) ?? DEFAULT_LANGUAGE;
+// El middleware lo pone en la petición de la landing; nunca se confía en el que envía el cliente
+export const LANDING_LANGUAGE_HEADER = 'x-landing-lang';
+
+/** Idioma que fija la URL de la landing: `/` → es, `/en` → en; cualquier otra ruta → null. */
+export function landingLanguageForPath(pathname: string): Language | null {
+  if (pathname === '/') return 'es';
+  if (pathname === '/en' || pathname === '/en/') return 'en';
+  return null;
+}
+
+export function landingPath(lang: Language): string {
+  return lang === 'en' ? '/en' : '/';
+}
+
+/** En la landing la URL manda; fuera de ella, cookie > Accept-Language > español. */
+export function resolveLanguage(
+  routeLanguage: string | null | undefined,
+  cookieValue: string | null | undefined,
+  acceptLanguage: string | null | undefined
+): Language {
+  return (
+    parseLanguage(routeLanguage) ??
+    parseLanguage(cookieValue) ??
+    languageFromAcceptLanguage(acceptLanguage) ??
+    DEFAULT_LANGUAGE
+  );
+}
+
+/**
+ * Otra versión de la landing que conviene sugerir: solo cuando el navegador prefiere
+ * el otro idioma soportado. Coincidente, no soportado o sin header → null.
+ */
+export function alternateLandingLanguage(
+  pageLanguage: Language,
+  acceptLanguage: string | null | undefined
+): Language | null {
+  const preferred = languageFromAcceptLanguage(acceptLanguage);
+  return preferred && preferred !== pageLanguage ? preferred : null;
 }
 
 export function languageCookie(lang: Language): string {

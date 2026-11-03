@@ -341,6 +341,163 @@ export const translations = {
       descriptionLabel: 'Descripción',
       noDatabMessage: 'Sin datos de SERP disponibles. Ejecuta un crawl primero.',
     },
+
+    // Landing
+    home: {
+      hero: {
+        badge: 'Auditoría SEO y GEO con IA',
+        title: 'Haz que Google y la IA entiendan tu sitio',
+        subtitle:
+          'Rastrea tu sitio, detecta problemas de SEO, genera sugerencias con IA y prepara tus datos estructurados y tu llms.txt para los buscadores con IA.',
+        ctaPrimaryGuest: 'Empezar gratis',
+        ctaSecondaryGuest: 'Iniciar sesión',
+        ctaPrimaryUser: 'Ir al rastreador',
+        ctaSecondaryUser: 'Ver panel',
+      },
+      stats: {
+        tools: { value: '7', title: 'Herramientas', desc: 'Del rastreo al llms.txt' },
+        languages: { value: '2', title: 'Idiomas', desc: 'Interfaz en español e inglés' },
+        steps: { value: '4', title: 'Pasos', desc: 'De la URL a los cambios listos' },
+        formats: { value: 'JSON-LD', title: 'Formatos estándar', desc: 'Schema.org y llms.txt, sin formatos propietarios' },
+      },
+      howItWorks: {
+        title: 'Cómo funciona',
+        subtitle: 'De una URL a un sitio optimizado en cuatro pasos.',
+        steps: [
+          { title: 'Rastrea', desc: 'Ingresa tu URL: descubrimos el sitemap y renderizamos cada página, incluso las hechas con JavaScript.' },
+          { title: 'Analiza', desc: 'Revisa títulos, descripciones, meta tags y cómo se ve cada página en Google.' },
+          { title: 'Optimiza', desc: 'Genera sugerencias con IA página por página o para todo el sitio de una vez.' },
+          { title: 'Aplica', desc: 'Copia los textos, el JSON-LD y el llms.txt listos para publicar en tu sitio.' },
+        ],
+      },
+      tools: {
+        title: 'Todo lo que necesitas para posicionar tu sitio',
+        subtitle: 'Herramientas para el SEO de siempre y para los nuevos buscadores con IA.',
+        items: {
+          crawler: {
+            name: 'Rastreo del sitio',
+            desc: 'Descubre tus páginas desde el sitemap y las renderiza como un navegador para no perder contenido cargado con JavaScript.',
+          },
+          serp: {
+            name: 'Vista previa SERP',
+            desc: 'Mira cómo aparece cada página en Google en escritorio y móvil, con alertas de longitud del título y la descripción.',
+          },
+          meta: {
+            name: 'Auditoría de meta tags',
+            desc: 'Encuentra títulos, descripciones y canonicals ausentes o duplicados en todo el sitio.',
+          },
+          ai: {
+            name: 'Sugerencias con IA',
+            desc: 'Obtén propuestas de título, descripción y palabras clave para cada página, listas para revisar.',
+            badge: 'IA',
+          },
+          bulk: {
+            name: 'Generación masiva',
+            desc: 'Genera sugerencias para todas las páginas del sitio en un solo proceso y sigue su avance.',
+            badge: 'IA',
+          },
+          geo: {
+            name: 'GEO: JSON-LD y llms.txt',
+            desc: 'Define el perfil de tu negocio, revisa y completa tus datos estructurados y genera tu llms.txt para ChatGPT, Perplexity y AI Overviews.',
+            badge: 'GEO',
+          },
+          orgs: {
+            name: 'Multi-organización',
+            desc: 'Gestiona varios clientes o marcas desde una sola cuenta, con miembros y roles por organización.',
+          },
+        },
+      },
+      useCases: {
+        title: 'Ejemplos de uso',
+        subtitle: 'Así se ve SEOAudit resolviendo casos reales.',
+        tabs: {
+          seo: 'SEO clásico',
+          geo: 'IA y GEO',
+          agencies: 'Agencias',
+        },
+        seo: {
+          title: 'Mejora cómo apareces en Google',
+          desc: 'Un hotel descubre que el título de su página principal es demasiado corto y no menciona la ciudad. La vista previa SERP lo muestra al instante y la IA propone una alternativa.',
+          points: [
+            'Detecta títulos y descripciones fuera de rango',
+            'Compara escritorio y móvil',
+            'Acepta o ajusta la sugerencia antes de publicarla',
+          ],
+          before: 'Antes',
+          after: 'Después',
+        },
+        geo: {
+          title: 'Prepárate para los buscadores con IA',
+          desc: 'Los asistentes como ChatGPT o Perplexity citan a los negocios que describen bien quiénes son. SEOAudit completa tu JSON-LD a partir de tu perfil y genera un llms.txt con tus páginas clave.',
+          points: [
+            'Revisa si tu JSON-LD existe, es válido y está completo',
+            'Nunca inventa datos: dirección y teléfono salen de tu sitio',
+            'Genera el llms.txt en formato estándar',
+          ],
+          jsonLdLabel: 'JSON-LD',
+          llmsLabel: 'llms.txt',
+        },
+        agencies: {
+          title: 'Un panel para todos tus clientes',
+          desc: 'Una agencia separa a cada cliente en su propia organización, invita a su equipo y revisa todos los sitios desde un mismo lugar.',
+          points: [
+            'Organizaciones independientes por cliente',
+            'Roles de propietario, administrador y miembro',
+            'Interfaz en español e inglés para cada usuario',
+          ],
+          windowTitle: 'Organizaciones',
+          sitesLabel: 'sitios',
+        },
+      },
+      faq: {
+        title: 'Preguntas frecuentes',
+        items: [
+          {
+            q: '¿Qué necesito para empezar?',
+            a: 'Solo crear una cuenta e ingresar la URL de tu sitio. No hace falta instalar nada en tu servidor.',
+          },
+          {
+            q: '¿Funciona con sitios hechos en JavaScript?',
+            a: 'Sí. El rastreador renderiza cada página como un navegador antes de analizarla, así que ve el mismo contenido que tus visitantes.',
+          },
+          {
+            q: '¿Qué es GEO y por qué me importa?',
+            a: 'GEO (Generative Engine Optimization) es preparar tu sitio para que los buscadores con IA lo entiendan y lo citen. Los datos estructurados y el llms.txt son dos de sus piezas principales.',
+          },
+          {
+            q: '¿La IA inventa datos de mi negocio?',
+            a: 'No. Los datos factuales como la dirección o el teléfono se toman de tu sitio o los confirmas tú. La IA solo redacta textos, y se marcan como generados.',
+          },
+          {
+            q: '¿SEOAudit modifica mi sitio automáticamente?',
+            a: 'No. Te entrega sugerencias y bloques listos para copiar; tú decides qué publicar y dónde.',
+          },
+          {
+            q: '¿Puedo gestionar varios sitios o clientes?',
+            a: 'Sí. Puedes crear varias organizaciones, cada una con sus sitios y sus miembros.',
+          },
+        ],
+      },
+      finalCta: {
+        title: '¿Listo para auditar tu sitio?',
+        subtitle: 'Crea tu cuenta y obtén tu primer análisis en minutos.',
+      },
+      footer: {
+        tagline: 'Auditoría SEO y GEO para equipos de marketing y agencias.',
+        product: 'Producto',
+        account: 'Cuenta',
+        tools: 'Herramientas',
+        howItWorks: 'Cómo funciona',
+        faq: 'Preguntas frecuentes',
+      },
+      languageAlert: {
+        message: 'Esta página también está disponible en español.',
+        action: 'Ver en español',
+      },
+      languageSwitcher: {
+        label: 'Idioma',
+      },
+    },
   },
 
   en: {
@@ -684,6 +841,163 @@ export const translations = {
       titleLabel: 'Title',
       descriptionLabel: 'Description',
       noDatabMessage: 'No SERP data available. Run a crawl first.',
+    },
+
+    // Landing
+    home: {
+      hero: {
+        badge: 'AI-powered SEO and GEO audits',
+        title: 'Make Google and AI understand your site',
+        subtitle:
+          'Crawl your site, find SEO issues, generate AI suggestions, and get your structured data and llms.txt ready for AI search engines.',
+        ctaPrimaryGuest: 'Get started free',
+        ctaSecondaryGuest: 'Sign in',
+        ctaPrimaryUser: 'Go to crawler',
+        ctaSecondaryUser: 'View dashboard',
+      },
+      stats: {
+        tools: { value: '7', title: 'Tools', desc: 'From crawling to llms.txt' },
+        languages: { value: '2', title: 'Languages', desc: 'Interface in Spanish and English' },
+        steps: { value: '4', title: 'Steps', desc: 'From a URL to ready-to-ship changes' },
+        formats: { value: 'JSON-LD', title: 'Standard formats', desc: 'Schema.org and llms.txt, no proprietary formats' },
+      },
+      howItWorks: {
+        title: 'How it works',
+        subtitle: 'From a URL to an optimized site in four steps.',
+        steps: [
+          { title: 'Crawl', desc: 'Enter your URL: we discover the sitemap and render every page, even JavaScript-built ones.' },
+          { title: 'Analyze', desc: 'Review titles, descriptions, meta tags, and how each page looks on Google.' },
+          { title: 'Optimize', desc: 'Generate AI suggestions page by page or for the whole site at once.' },
+          { title: 'Ship', desc: 'Copy the texts, JSON-LD, and llms.txt ready to publish on your site.' },
+        ],
+      },
+      tools: {
+        title: 'Everything you need to rank your site',
+        subtitle: 'Tools for classic SEO and for the new AI search engines.',
+        items: {
+          crawler: {
+            name: 'Site crawler',
+            desc: 'Discovers your pages from the sitemap and renders them like a browser so no JavaScript-loaded content is missed.',
+          },
+          serp: {
+            name: 'SERP preview',
+            desc: 'See how each page shows up on Google on desktop and mobile, with length warnings for title and description.',
+          },
+          meta: {
+            name: 'Meta tag audit',
+            desc: 'Find missing or duplicate titles, descriptions, and canonicals across your whole site.',
+          },
+          ai: {
+            name: 'AI suggestions',
+            desc: 'Get title, description, and keyword proposals for every page, ready for you to review.',
+            badge: 'AI',
+          },
+          bulk: {
+            name: 'Bulk generation',
+            desc: 'Generate suggestions for every page on your site in a single run and track its progress.',
+            badge: 'AI',
+          },
+          geo: {
+            name: 'GEO: JSON-LD and llms.txt',
+            desc: 'Define your business profile, review and complete your structured data, and generate your llms.txt for ChatGPT, Perplexity, and AI Overviews.',
+            badge: 'GEO',
+          },
+          orgs: {
+            name: 'Multi-organization',
+            desc: 'Manage several clients or brands from one account, with members and roles per organization.',
+          },
+        },
+      },
+      useCases: {
+        title: 'Use cases',
+        subtitle: 'See SEOAudit solving real-world scenarios.',
+        tabs: {
+          seo: 'Classic SEO',
+          geo: 'AI and GEO',
+          agencies: 'Agencies',
+        },
+        seo: {
+          title: 'Improve how you show up on Google',
+          desc: 'A hotel finds out its homepage title is too short and never mentions the city. The SERP preview shows it instantly and AI suggests a better alternative.',
+          points: [
+            'Spot titles and descriptions out of range',
+            'Compare desktop and mobile',
+            'Accept or tweak the suggestion before publishing',
+          ],
+          before: 'Before',
+          after: 'After',
+        },
+        geo: {
+          title: 'Get ready for AI search engines',
+          desc: 'Assistants like ChatGPT and Perplexity cite businesses that clearly describe who they are. SEOAudit completes your JSON-LD from your profile and generates an llms.txt with your key pages.',
+          points: [
+            'Checks whether your JSON-LD exists, is valid, and is complete',
+            'Never makes up data: address and phone come from your site',
+            'Generates llms.txt in the standard format',
+          ],
+          jsonLdLabel: 'JSON-LD',
+          llmsLabel: 'llms.txt',
+        },
+        agencies: {
+          title: 'One dashboard for all your clients',
+          desc: 'An agency keeps each client in its own organization, invites their team, and reviews every site from one place.',
+          points: [
+            'Separate organizations per client',
+            'Owner, admin, and member roles',
+            'Spanish and English interface for each user',
+          ],
+          windowTitle: 'Organizations',
+          sitesLabel: 'sites',
+        },
+      },
+      faq: {
+        title: 'Frequently asked questions',
+        items: [
+          {
+            q: 'What do I need to get started?',
+            a: 'Just create an account and enter your site URL. There is nothing to install on your server.',
+          },
+          {
+            q: 'Does it work with JavaScript-built sites?',
+            a: 'Yes. The crawler renders each page like a browser before analyzing it, so it sees the same content your visitors do.',
+          },
+          {
+            q: 'What is GEO and why does it matter?',
+            a: 'GEO (Generative Engine Optimization) means preparing your site so AI search engines understand and cite it. Structured data and llms.txt are two of its key pieces.',
+          },
+          {
+            q: 'Does the AI make up data about my business?',
+            a: 'No. Factual data such as your address or phone number comes from your site or is confirmed by you. AI only drafts copy, and it is marked as generated.',
+          },
+          {
+            q: 'Does SEOAudit change my site automatically?',
+            a: 'No. It gives you suggestions and ready-to-copy blocks; you decide what to publish and where.',
+          },
+          {
+            q: 'Can I manage several sites or clients?',
+            a: 'Yes. You can create several organizations, each with its own sites and members.',
+          },
+        ],
+      },
+      finalCta: {
+        title: 'Ready to audit your site?',
+        subtitle: 'Create your account and get your first analysis in minutes.',
+      },
+      footer: {
+        tagline: 'SEO and GEO audits for marketing teams and agencies.',
+        product: 'Product',
+        account: 'Account',
+        tools: 'Tools',
+        howItWorks: 'How it works',
+        faq: 'FAQ',
+      },
+      languageAlert: {
+        message: 'This page is also available in English.',
+        action: 'View in English',
+      },
+      languageSwitcher: {
+        label: 'Language',
+      },
     },
   },
 } as const;

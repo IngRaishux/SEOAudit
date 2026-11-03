@@ -1,9 +1,18 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import {
+  LANDING_LANGUAGE_HEADER,
+  LANGUAGE_COOKIE,
+  landingLanguageForPath,
+} from '@/lib/i18n/language';
+import type { Language } from '@/lib/i18n/ui';
 
-// Rutas públicas que no requieren autenticación
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/api/auth', '/api/register'];
+// Landings por idioma: públicas y comparadas por igualdad exacta (/en no debe cubrir /enterprise)
+const LANDING_ROUTES = ['/', '/en'];
+
+// Rutas públicas por prefijo que no requieren autenticación
+const PUBLIC_ROUTES = ['/login', '/register', '/api/auth', '/api/register'];
 
 // Rutas que requieren autenticación
 const PROTECTED_ROUTES = [
@@ -21,30 +30,47 @@ const PROTECTED_ROUTES = [
   '/api/pages',
 ];
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
-  // Permitir rutas públicas
-  if (pathname === '/' || PUBLIC_ROUTES.some(route => route !== '/' && pathname.startsWith(route))) {
-    // Solo sincronizar cookie con org parameter en rutas permitidas
-    const response = NextResponse.next();
-    const { searchParams } = new URL(request.url);
-    const orgId = searchParams.get('org');
+function continueRequest(request: NextRequest, landingLanguage: Language | null) {
+  // El header de idioma solo lo pone el middleware: se descarta el que mande el cliente
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete(LANDING_LANGUAGE_HEADER);
+  if (landingLanguage) requestHeaders.set(LANDING_LANGUAGE_HEADER, landingLanguage);
 
-    if (orgId) {
-      response.cookies.set('selectedOrganization', orgId, {
-        maxAge: 60 * 60 * 24 * 30, // 30 days
-        path: '/',
-      });
-    }
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
 
-    return response;
+  // Quien llega por /en sigue en inglés al registrarse o entrar al panel
+  if (landingLanguage) {
+    response.cookies.set(LANGUAGE_COOKIE, landingLanguage, {
+      path: '/',
+      maxAge: ONE_YEAR_SECONDS,
+      sameSite: 'lax',
+    });
   }
 
-  // Verificar si es ruta protegida
-  const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
+  // Sincronizar cookie con org parameter si existe
+  const orgId = request.nextUrl.searchParams.get('org');
+  if (orgId) {
+    response.cookies.set('selectedOrganization', orgId, {
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: '/',
+    });
+  }
 
-  if (isProtectedRoute) {
+  return response;
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const landingLanguage = landingLanguageForPath(pathname);
+
+  const isPublicRoute =
+    landingLanguage !== null ||
+    LANDING_ROUTES.includes(pathname) ||
+    PUBLIC_ROUTES.some(route => pathname.startsWith(route));
+
+  if (!isPublicRoute && PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
     // Obtener token JWT para validar sesión
     const token = await getToken({
       req: request,
@@ -58,20 +84,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.next();
-
-  // Sincronizar cookie con org parameter si existe
-  const { searchParams } = new URL(request.url);
-  const orgId = searchParams.get('org');
-
-  if (orgId) {
-    response.cookies.set('selectedOrganization', orgId, {
-      maxAge: 60 * 60 * 24 * 30,
-      path: '/',
-    });
-  }
-
-  return response;
+  return continueRequest(request, landingLanguage);
 }
 
 export const config = {
