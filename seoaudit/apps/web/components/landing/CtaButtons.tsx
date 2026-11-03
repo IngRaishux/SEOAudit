@@ -19,13 +19,13 @@ export function CtaButtons({ texts, isAuthenticated, onPrimary = false }: CtaBut
 
   return (
     <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-      <Link href={primary.href} className={`btn btn-lg ${onPrimary ? 'btn-neutral' : 'btn-primary'}`}>
+      <Link href={primary.href} className={`btn btn-lg ${onPrimary ? 'btn-neutral landing-cta-neutral' : 'btn-primary landing-cta-primary'}`}>
         {primary.label}
         <RiArrowRightLine className="size-5" aria-hidden="true" />
       </Link>
       <Link
         href={secondary.href}
-        className={`btn btn-lg ${onPrimary ? 'btn-ghost border-current' : 'btn-outline'}`}
+        className={`btn btn-lg ${onPrimary ? 'btn-ghost border-current landing-cta-ghost' : 'btn-outline landing-cta-outline'}`}
       >
         {secondary.label}
       </Link>

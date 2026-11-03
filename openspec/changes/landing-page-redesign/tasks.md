@@ -40,6 +40,13 @@ Rutas relativas a `seoaudit/apps/web/`.
 - [x] 6.2 Recorrer los escenarios de `specs/landing-page/spec.md`: orden de secciones, un solo `h1`, todo el texto en el HTML (`curl` sin JS), CTA con y sin sesión, ninguna petición de red de las maquetas (DevTools), 360 px sin scroll horizontal, y cambio de `data-theme` a `dark` sin colores fuera del tema
 - [x] 6.3 Ejecutar `npm test`, `npm run lint` y `npm run build` en `apps/web` y verificar que terminan sin errores
 
+## 7. Ajustes tras la revisión de diseño
+
+- [x] 7.1 En `components/Header.tsx`, evitar que el selector ES/EN se solape con el logo en pantallas estrechas (logo solo con icono por debajo de `sm`, menos padding en móvil) y verificar con un barrido de 320 a 1440 px en `/`, `/en` y `/login`, con y sin sesión, que no hay solapes ni scroll horizontal
+- [x] 7.2 Por debajo de `sm`, sustituir "Iniciar sesión" y "Crear cuenta" por un botón con el icono `login-box` hacia `/login`, con nombre accesible traducido; verificar en `/` y `/en` a 425 px
+- [x] 7.3 Dar a los botones de llamada a la acción (hero y llamada final) un hover más oscuro con texto claro, también con foco de teclado; verificar los colores calculados al pasar el cursor
+- [x] 7.4 Hacer el aviso de idioma descartable (botón de cerrar y cierre automático a los 12 s, en pausa con cursor o foco encima) y con espacio inferior; verificar con el reloj simulado de Playwright y a 320 px
+
 ## Workflow follow-up
 
 - Archivar el cambio cuando se haya revisado y fusionado el PR.

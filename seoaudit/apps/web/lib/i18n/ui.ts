@@ -493,6 +493,7 @@ export const translations = {
       languageAlert: {
         message: 'Esta página también está disponible en español.',
         action: 'Ver en español',
+        close: 'Cerrar aviso',
       },
       languageSwitcher: {
         label: 'Idioma',
@@ -994,6 +995,7 @@ export const translations = {
       languageAlert: {
         message: 'This page is also available in English.',
         action: 'View in English',
+        close: 'Dismiss notice',
       },
       languageSwitcher: {
         label: 'Language',

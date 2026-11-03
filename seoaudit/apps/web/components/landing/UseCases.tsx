@@ -67,7 +67,7 @@ export function UseCases({ texts, lang }: SectionProps) {
           <p className="mt-3 text-lg text-base-content/70">{subtitle}</p>
         </div>
 
-        <div role="tablist" className="tabs tabs-lifted sm:tabs-lg">
+        <div role="tablist" className="tabs tabs-lifted tabs-sm sm:tabs-lg">
           <Tab label={tabs.seo} checked>
             <div className="space-y-6">
               <CaseText title={seo.title} desc={seo.desc} points={seo.points} />

@@ -83,3 +83,18 @@ La landing SHALL mostrar un aviso con un enlace a la otra versión cuando el idi
 #### Scenario: Idioma no soportado
 - **WHEN** un visitante con `Accept-Language: fr-FR` abre `/`
 - **THEN** no se muestra el aviso
+
+### Requirement: Cierre del aviso de idioma
+El aviso de versión en otro idioma SHALL poder cerrarse con un botón y SHALL ocultarse solo a los 12 segundos de mostrarse. Mientras el cursor o el foco del teclado están sobre el aviso, la cuenta atrás MUST quedar en pausa.
+
+#### Scenario: Cerrar el aviso
+- **WHEN** el visitante pulsa el botón de cerrar del aviso
+- **THEN** el aviso desaparece y el resto de la página no cambia
+
+#### Scenario: Cierre automático
+- **WHEN** el aviso lleva 12 segundos visible sin que el visitante interactúe con él
+- **THEN** el aviso desaparece
+
+#### Scenario: Pausa al interactuar
+- **WHEN** el cursor está sobre el aviso al cumplirse los 12 segundos
+- **THEN** el aviso sigue visible hasta que el cursor sale y vuelven a pasar 12 segundos

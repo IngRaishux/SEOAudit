@@ -1,3 +1,40 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /*
+   * Botones de llamada a la acción de la landing: al pasar el cursor el fondo se oscurece
+   * de forma visible y el texto pasa a un tono claro para no perder contraste.
+   * Usan las variables del tema de daisyUI 4, así que funcionan también en modo oscuro.
+   * `.btn.` sube la especificidad por encima del :hover propio de daisyUI.
+   */
+  .btn.landing-cta-primary:hover,
+  .btn.landing-cta-primary:focus-visible {
+    background-color: color-mix(in oklch, oklch(var(--p)) 60%, black);
+    border-color: color-mix(in oklch, oklch(var(--p)) 60%, black);
+    color: oklch(var(--b1));
+  }
+
+  .btn.landing-cta-outline:hover,
+  .btn.landing-cta-outline:focus-visible {
+    background-color: oklch(var(--bc));
+    border-color: oklch(var(--bc));
+    color: oklch(var(--b1));
+  }
+
+  /* Sobre el fondo primario de la llamada final */
+  .btn.landing-cta-neutral:hover,
+  .btn.landing-cta-neutral:focus-visible {
+    background-color: color-mix(in oklch, oklch(var(--n)) 70%, black);
+    border-color: color-mix(in oklch, oklch(var(--n)) 70%, black);
+    color: oklch(var(--b1));
+  }
+
+  .btn.landing-cta-ghost:hover,
+  .btn.landing-cta-ghost:focus-visible {
+    background-color: oklch(var(--pc));
+    border-color: oklch(var(--pc));
+    color: oklch(var(--p));
+  }
+}

@@ -7,7 +7,7 @@ import { SignOutButton } from '@/components/SignOutButton';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { landingLanguageForPath, landingPath } from '@/lib/i18n/language';
 import type { Language } from '@/lib/i18n/ui';
-import { RiSearchLine } from '@remixicon/react';
+import { RiLoginBoxLine, RiSearchLine } from '@remixicon/react';
 
 const LANDING_LANGUAGES: Language[] = ['es', 'en'];
 
@@ -43,18 +43,19 @@ export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
   const landingLanguage = landingLanguageForPath(usePathname() ?? '');
 
   return (
-    <header className="navbar bg-base-100 border-b border-base-300 sticky top-0 z-40">
-      <div className="flex-1">
+    <header className="navbar px-1 sm:px-2 bg-base-100 border-b border-base-300 sticky top-0 z-40">
+      {/* Por debajo de sm solo el icono: el texto chocaba con el selector de idioma y los botones */}
+      <div className="flex-1 min-w-0">
         {session ? (
-          <Link href="/organizations" className="btn btn-ghost text-lg lg:text-xl font-bold text-base-content flex items-center gap-2">
-            <RiSearchLine className="text-xl" />
-            SEO Audit
+          <Link href="/organizations" aria-label="SEO Audit" className="btn btn-ghost px-2 sm:px-4 text-lg lg:text-xl font-bold text-base-content flex items-center gap-2">
+            <RiSearchLine className="text-xl" aria-hidden="true" />
+            <span className="hidden sm:inline">SEO Audit</span>
           </Link>
         ) : (
           // <a> nativo: vuelve a la landing del idioma actual recargando el layout
-          <a href={landingPath(lang)} className="btn btn-ghost px-2 sm:px-4 text-lg lg:text-xl font-bold text-base-content flex items-center gap-2">
-            <RiSearchLine className="text-xl" />
-            SEO Audit
+          <a href={landingPath(lang)} aria-label="SEO Audit" className="btn btn-ghost px-2 sm:px-4 text-lg lg:text-xl font-bold text-base-content flex items-center gap-2">
+            <RiSearchLine className="text-xl" aria-hidden="true" />
+            <span className="hidden sm:inline">SEO Audit</span>
           </a>
         )}
       </div>
@@ -98,15 +99,24 @@ export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
           </>
         ) : (
           <>
+            {/* En pantallas pequeñas los dos enlaces de texto se sustituyen por un icono de acceso */}
             <Link
               href="/login"
-              className="btn btn-ghost btn-sm text-xs lg:text-sm"
+              aria-label={t('auth.login')}
+              title={t('auth.login')}
+              className="btn btn-ghost btn-sm btn-square sm:hidden"
+            >
+              <RiLoginBoxLine className="size-5" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/login"
+              className="hidden sm:inline-flex btn btn-ghost btn-sm text-xs lg:text-sm"
             >
               {t('auth.login')}
             </Link>
             <Link
               href="/register"
-              className="btn btn-primary btn-sm text-xs lg:text-sm"
+              className="hidden sm:inline-flex btn btn-primary btn-sm text-xs lg:text-sm"
             >
               {t('auth.signUp')}
             </Link>
