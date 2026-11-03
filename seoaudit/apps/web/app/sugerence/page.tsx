@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { BackButton, Dialog, DialogTrigger, Button } from '@seo-optimizer/ui';
 import DialogSugestion from '@/components/DialogSugestion';
 import { SERPPreview } from '@/components/SERPPreview';
-import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
+import { generateSEOSuggestions, type SEOSuggestion } from "@/lib/generateSEOSuggestions";
 import { toastError, toastSuccess } from '@/lib/toast';
 import { useSession } from 'next-auth/react';
 import { RiFileEditLine, RiSearchLine, RiPriceTag3Line, RiMagicLine, RiDownloadLine, RiPlayLine } from '@remixicon/react';
@@ -47,14 +47,6 @@ interface Page {
   metaTags?: Array<{ name: string; content: string }>;
 }
 
-interface Site {
-  _id: string;
-  url: string;
-  organizationId: string;
-  title?: string;
-  pageCount: number;
-}
-
 interface PageData {
     url: string;
     title: string | null;
@@ -72,14 +64,13 @@ function SugerenciaContent() {
 
   const [mockPage, setMockPage] = useState<Page | null>(null);
   const [organizationName, setOrganizationName] = useState('default');
-  const [loadingPage, setLoadingPage] = useState(true);
+  const [fetchingPage, setFetchingPage] = useState(true);
+  // Sin pageId/siteId no hay nada que cargar
+  const loadingPage = Boolean(pageId && siteId) && fetchingPage;
 
 
   useEffect(() => {
-    if (!pageId || !siteId) {
-      setLoadingPage(false);
-      return;
-    }
+    if (!pageId || !siteId) return;
 
     // Fetch page and site data from MongoDB
     const fetchData = async () => {
@@ -107,7 +98,7 @@ function SugerenciaContent() {
         console.error('Error fetching data:', error);
         toastError('Error al cargar la información de la página');
       } finally {
-        setLoadingPage(false);
+        setFetchingPage(false);
       }
     };
 
@@ -120,7 +111,7 @@ function SugerenciaContent() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<SugerenciaTabType>('form');
 
-  const handleSuggestionsGenerated = async (suggestions: any) => {
+  const handleSuggestionsGenerated = async (suggestions: SEOSuggestion) => {
     setForm(suggestions);
 
     // Persistir sugerencias en MongoDB si tenemos pageId y siteId

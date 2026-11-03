@@ -39,7 +39,6 @@ export function SiteDetailsTabs({
   pages,
   siteUrl,
   siteId,
-  organizationId,
   site
 }: SiteDetailsTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('serp');

@@ -7,7 +7,7 @@ import UserSettings from '@/lib/models/UserSettings';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: Request) {
+export async function GET() {
   const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.id) {
@@ -17,16 +17,12 @@ export async function GET(request: Request) {
   try {
     await connectMongoose();
 
-    let settings = (await UserSettings.findOne({ userId: session.user.id }).lean()) as any;
-
-    if (!settings) {
-      settings = {
-        theme: 'system',
-        language: 'en',
-        emailNotifications: true,
-        weeklyReport: true,
-      };
-    }
+    const settings = (await UserSettings.findOne({ userId: session.user.id }).lean()) ?? {
+      theme: 'system',
+      language: 'en',
+      emailNotifications: true,
+      weeklyReport: true,
+    };
 
     return NextResponse.json(settings);
   } catch (error) {

@@ -1,4 +1,6 @@
 import type { Config } from 'tailwindcss';
+import plugin from 'tailwindcss/plugin';
+import daisyui from 'daisyui';
 
 const config: Config = {
   content: [
@@ -35,8 +37,8 @@ const config: Config = {
     },
   },
   plugins: [
-    require('daisyui'),
-    function ({ addBase, theme }: any) {
+    daisyui,
+    plugin(function ({ addBase }) {
       addBase({
         ':root': {
           '--color-base-100': 'oklch(97.788% 0.004 56.375)',
@@ -69,7 +71,7 @@ const config: Config = {
           '--noise': '0',
         },
       });
-    },
+    }),
   ],
   daisyui: {
     themes: ['cupcake', 'light', 'dark'],

@@ -27,6 +27,8 @@ export function CrawlProvider({ children }: { children: ReactNode }) {
     const raw = sessionStorage.getItem(STORAGE_KEY);
     if (raw) {
       try {
+        // Leerlo en el estado inicial rompería la hidratación: el servidor no tiene sessionStorage
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCrawlState(JSON.parse(raw));
       } catch {
         sessionStorage.removeItem(STORAGE_KEY);

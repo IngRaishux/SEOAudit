@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import { useI18n, useCurrentLanguage, setLanguage } from '@/lib/i18n/useI18n';
@@ -19,9 +19,12 @@ export default function UserSettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [weeklyReport, setWeeklyReport] = useState(true);
 
-  useEffect(() => {
+  // Si el idioma cambia fuera de esta página, el selector lo refleja (patrón "estado del render anterior")
+  const [syncedLang, setSyncedLang] = useState<Language>(currentLang);
+  if (syncedLang !== currentLang) {
+    setSyncedLang(currentLang);
     setLanguageState(currentLang);
-  }, [currentLang]);
+  }
 
   if (!session?.user) {
     redirect('/login');

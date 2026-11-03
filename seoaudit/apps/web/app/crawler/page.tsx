@@ -13,7 +13,6 @@ function CrawlerContent() {
 
   const [url, setUrl] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
-  const [siteId, setSiteId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState({ processed: 0, total: 0 });
 
@@ -45,7 +44,6 @@ function CrawlerContent() {
       }
 
       setJobId(data.jobId);
-      setSiteId(data.siteId);
       setStatus("running");
     } catch (err) {
       toastError(err instanceof Error ? err.message : "Error de red");
@@ -63,7 +61,6 @@ function CrawlerContent() {
 
       if (data.status === "completed") {
         clearInterval(interval);
-        setSiteId(data.siteId);
         toastSuccess("El sitio se analizó correctamente");
         router.push(`/sites/${data.siteId}`);
       } else if (data.status === "failed") {

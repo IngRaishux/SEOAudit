@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth/next';
 import { handler } from '@/lib/auth/auth';
 import type { Session } from 'next-auth';
 import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
 import Site from '@/lib/models/Site';
 import SiteSettings from '@/lib/models/SiteSettings';
@@ -25,7 +24,7 @@ export async function GET(
     await connectMongoose();
 
     // Get site to find organization
-    const site = (await Site.findById(siteId).lean()) as any;
+    const site = await Site.findById(siteId).lean();
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
@@ -41,20 +40,16 @@ export async function GET(
     }
 
     // Get or create site settings
-    let settings = (await SiteSettings.findOne({ siteId }).lean()) as any;
-
-    if (!settings) {
-      settings = {
-        siteId,
-        organizationId: site.organizationId,
-        crawlFrequency: 'manual',
-        maxPages: 1000,
-        followRobots: true,
-        checkSSL: true,
-        trackMetrics: true,
-        excludePatterns: [],
-      };
-    }
+    const settings = (await SiteSettings.findOne({ siteId }).lean()) ?? {
+      siteId,
+      organizationId: site.organizationId,
+      crawlFrequency: 'manual',
+      maxPages: 1000,
+      followRobots: true,
+      checkSSL: true,
+      trackMetrics: true,
+      excludePatterns: [],
+    };
 
     return NextResponse.json(settings);
   } catch (error) {
@@ -91,7 +86,7 @@ export async function POST(
     await connectMongoose();
 
     // Get site to find organization
-    const site = (await Site.findById(siteId)) as any;
+    const site = await Site.findById(siteId);
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }

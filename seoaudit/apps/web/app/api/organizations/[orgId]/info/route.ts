@@ -46,7 +46,7 @@ export async function GET(
 
     // Verify user is member of the requested org
     const userMembership = memberships.find(
-      (m) => (m.organizationId as any).toString() === orgId
+      (m) => String(m.organizationId) === orgId
     );
 
     if (!userMembership) {
@@ -54,7 +54,7 @@ export async function GET(
     }
 
     // Get organization details
-    const org = (await Organization.findById(orgId).lean()) as any;
+    const org = await Organization.findById(orgId).lean<{ _id: unknown; name: string; slug: string }>();
 
     if (!org) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
@@ -62,18 +62,18 @@ export async function GET(
 
     return NextResponse.json({
       organization: {
-        id: org._id.toString(),
+        id: String(org._id),
         name: org.name,
         slug: org.slug,
       },
       membership: {
-        _id: (userMembership._id as any).toString(),
+        _id: String(userMembership._id),
         organizationId: orgId,
         role: userMembership.role,
       },
-      memberships: memberships.map((m: any) => ({
-        _id: m._id.toString(),
-        organizationId: m.organizationId.toString(),
+      memberships: memberships.map((m) => ({
+        _id: String(m._id),
+        organizationId: String(m.organizationId),
         role: m.role,
       })),
     });
