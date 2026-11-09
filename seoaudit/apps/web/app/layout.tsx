@@ -3,9 +3,8 @@ import "./globals.css";
 import { CrawlProvider } from "@/lib/CrawlContext";
 import { SessionProvider, Toaster } from "@seo-optimizer/ui";
 import { Header } from "@/components/Header";
-import { cookies, headers } from "next/headers";
 import { LanguageProvider } from "@/lib/i18n/LanguageProvider";
-import { LANDING_LANGUAGE_HEADER, LANGUAGE_COOKIE, resolveLanguage } from "@/lib/i18n/language";
+import { getRequestLanguage } from "@/lib/i18n/server";
 
 export const metadata: Metadata = {
   title: "SEO Audit",
@@ -17,12 +16,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const requestHeaders = await headers();
-  const lang = resolveLanguage(
-    requestHeaders.get(LANDING_LANGUAGE_HEADER),
-    (await cookies()).get(LANGUAGE_COOKIE)?.value,
-    requestHeaders.get("accept-language")
-  );
+  const lang = await getRequestLanguage();
 
   return (
     <html lang={lang} data-theme="cupcake" className="antialiased">
