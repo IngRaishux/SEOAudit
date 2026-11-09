@@ -1,25 +1,66 @@
 import { gunzipSync } from 'node:zlib';
 import { XMLParser } from 'fast-xml-parser';
+import type { HreflangAlternate } from '../crawler/parse';
 
 const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '' });
 
+export interface SitemapEntry {
+  loc: string;
+  /** Alternos declarados con <xhtml:link rel="alternate" hreflang>, con fuente "sitemap". */
+  alternates: HreflangAlternate[];
+}
+
+interface XhtmlLink {
+  rel?: string;
+  hreflang?: string;
+  href?: string;
+}
+
+interface SitemapUrlNode {
+  loc: string;
+  'xhtml:link'?: XhtmlLink | XhtmlLink[];
+}
+
 export async function parseSitemap(sitemapUrl: string): Promise<string[]> {
+  return (await parseSitemapEntries(sitemapUrl)).map((entry) => entry.loc);
+}
+
+export async function parseSitemapEntries(sitemapUrl: string): Promise<SitemapEntry[]> {
   const xml = await fetchSitemapXml(sitemapUrl);
   const doc = parser.parse(xml);
 
   if (doc.sitemapindex) {
     const children = toArray(doc.sitemapindex.sitemap);
     const nested = await Promise.all(
-      children.map((s: { loc: string }) => parseSitemap(resolveLoc(s.loc, sitemapUrl)))
+      children.map((s: { loc: string }) => parseSitemapEntries(resolveLoc(s.loc, sitemapUrl)))
     );
     return nested.flat();
   }
 
   if (doc.urlset) {
-    return toArray(doc.urlset.url).map((u: { loc: string }) => resolveLoc(u.loc, sitemapUrl));
+    return toArray<SitemapUrlNode>(doc.urlset.url).map((u) => {
+      const loc = resolveLoc(u.loc, sitemapUrl);
+      return { loc, alternates: sitemapAlternates(u['xhtml:link'], loc) };
+    });
   }
 
   return [];
+}
+
+function sitemapAlternates(links: XhtmlLink | XhtmlLink[] | undefined, loc: string): HreflangAlternate[] {
+  const seen = new Set<string>();
+  const alternates: HreflangAlternate[] = [];
+  for (const link of toArray(links)) {
+    if (!(link.rel ?? '').toLowerCase().split(/\s+/).includes('alternate')) continue;
+    const hreflang = (link.hreflang ?? '').trim();
+    const href = link.href ? resolveLoc(link.href.trim(), loc) : '';
+    if (!hreflang || !href) continue;
+    const key = `${hreflang.toLowerCase()} ${href}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    alternates.push({ hreflang, href, source: 'sitemap' });
+  }
+  return alternates;
 }
 
 // Some sites emit <loc> as a path relative to the sitemap's own URL instead of

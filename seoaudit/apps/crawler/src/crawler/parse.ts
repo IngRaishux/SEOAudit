@@ -21,7 +21,21 @@ export interface PageSeo {
   bodyText: string;
   footerText: string;
   textTruncated: boolean;
+  /** Versiones por idioma declaradas con hreflang (HTML y, tras combinar, sitemap). */
+  alternates: HreflangAlternate[];
+  /** Atributo lang de <html>, o null si no existe. */
+  htmlLang: string | null;
   error?: string;
+}
+
+export type HreflangSource = 'html' | 'sitemap' | 'both';
+
+export interface HreflangAlternate {
+  /** Código tal como aparece en el documento, sin normalizar. */
+  hreflang: string;
+  /** URL absoluta. */
+  href: string;
+  source: HreflangSource;
 }
 
 export interface JsonLdBlock {
@@ -72,6 +86,9 @@ export function parseSeoFromHtml(
   // JSON-LD, links e imágenes se leen del documento completo: cleaned_html pierde el <head>
   const $doc = $full ?? $;
   const wordCount = $('body').text().trim().split(/\s+/).filter(Boolean).length;
+  // Se leen antes que las señales GEO, que eliminan nodos del documento
+  const alternates = extractAlternates($doc, url);
+  const htmlLang = attr($doc('html'), 'lang');
   const signals = extractGeoSignals($doc, url);
 
   return {
@@ -90,6 +107,8 @@ export function parseSeoFromHtml(
     wordCount,
     loadTimeMs,
     ...signals,
+    alternates,
+    htmlLang,
   };
 }
 
@@ -115,8 +134,29 @@ export function emptyPageSeo(url: string, loadTimeMs: number, error: string): Pa
     bodyText: '',
     footerText: '',
     textTruncated: false,
+    alternates: [],
+    htmlLang: null,
     error,
   };
+}
+
+/** <link rel="alternate" hreflang href> del documento completo, con URL absoluta y sin duplicados. */
+export function extractAlternates($: cheerio.CheerioAPI, pageUrl: string): HreflangAlternate[] {
+  const seen = new Set<string>();
+  const alternates: HreflangAlternate[] = [];
+  $('link[hreflang][href]').each((_, el) => {
+    // rel admite varios valores separados por espacios ("alternate nofollow")
+    const rel = ($(el).attr('rel') ?? '').toLowerCase().split(/\s+/);
+    if (!rel.includes('alternate')) return;
+    const hreflang = ($(el).attr('hreflang') ?? '').trim();
+    const href = safeUrl(($(el).attr('href') ?? '').trim(), pageUrl)?.href;
+    if (!hreflang || !href) return;
+    const key = `${hreflang.toLowerCase()} ${href}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    alternates.push({ hreflang, href, source: 'html' });
+  });
+  return alternates;
 }
 
 function headings($: cheerio.CheerioAPI, selector: string): string[] {

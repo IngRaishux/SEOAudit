@@ -71,3 +71,47 @@ describe('parseSeoFromHtml — texto', () => {
     expect(rendered.footerText).toEqual(crawl4ai.footerText);
   });
 });
+
+describe('parseSeoFromHtml — idiomas alternos (hreflang)', () => {
+  const url = 'https://hotel.example.com/habitaciones/';
+  const doc = (head: string, lang = 'es-MX') =>
+    `<html lang="${lang}"><head>${head}</head><body><p>hola</p></body></html>`;
+
+  it('captura dos idiomas con URL absoluta y fuente html', () => {
+    const html = doc(
+      '<link rel="alternate" hreflang="es-MX" href="https://hotel.example.com/habitaciones/">' +
+        '<link rel="alternate" hreflang="en-US" href="/en/rooms/">'
+    );
+    const seo = parseSeoFromHtml(url, html.replace(/<head>[\s\S]*<\/head>/, ''), 200, 0, undefined, html);
+    expect(seo.alternates).toEqual([
+      { hreflang: 'es-MX', href: 'https://hotel.example.com/habitaciones/', source: 'html' },
+      { hreflang: 'en-US', href: 'https://hotel.example.com/en/rooms/', source: 'html' },
+    ]);
+    expect(seo.htmlLang).toBe('es-MX');
+  });
+
+  it('acepta rel con varios valores e ignora links sin alternate', () => {
+    const html = doc(
+      '<link rel="alternate nofollow" hreflang="x-default" href="/">' +
+        '<link rel="canonical" hreflang="en" href="/en/">'
+    );
+    expect(parseSeoFromHtml(url, html, 200, 0).alternates).toEqual([
+      { hreflang: 'x-default', href: 'https://hotel.example.com/', source: 'html' },
+    ]);
+  });
+
+  it('elimina duplicados sin distinguir mayúsculas en el código', () => {
+    const html = doc('<link rel="alternate" hreflang="en" href="/en/"><link rel="alternate" hreflang="EN" href="/en/">');
+    expect(parseSeoFromHtml(url, html, 200, 0).alternates).toHaveLength(1);
+  });
+
+  it('sin anotaciones deja la lista vacía y sin lang deja null', () => {
+    const seo = parseSeoFromHtml(url, '<html><head></head><body></body></html>', 200, 0);
+    expect(seo.alternates).toEqual([]);
+    expect(seo.htmlLang).toBeNull();
+  });
+
+  it('el fixture del hotel conserva su lang', () => {
+    expect(parseSeoFromHtml(pageUrl, cleanedHtml, 200, 0, undefined, pageHtml).htmlLang).toBe('es');
+  });
+});

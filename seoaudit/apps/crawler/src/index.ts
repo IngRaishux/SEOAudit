@@ -1,6 +1,7 @@
 import pLimit from 'p-limit';
 import { discoverSitemap } from './sitemap/discover';
-import { parseSitemap } from './sitemap/parse';
+import { parseSitemapEntries } from './sitemap/parse';
+import { mergeAlternates } from './crawler/alternates';
 import { extractPageSeo } from './crawler/extract';
 import { extractPageSeoRendered, launchBrowser } from './crawler/render';
 import type { PageSeo } from './crawler/parse';
@@ -34,8 +35,11 @@ export async function crawlSite(
   const sitemapUrl = await discoverSitemap(siteUrl);
   if (!sitemapUrl) throw new Error(`No sitemap found for ${siteUrl}`);
 
-  let urls = await parseSitemap(sitemapUrl);
-  if (maxUrls) urls = urls.slice(0, maxUrls);
+  let entries = await parseSitemapEntries(sitemapUrl);
+  if (maxUrls) entries = entries.slice(0, maxUrls);
+  const urls = entries.map((entry) => entry.loc);
+  // Solo se conservan los alternos del sitemap de las URLs que se rastrean
+  const sitemapAlternates = new Map(entries.map((entry) => [entry.loc, entry.alternates]));
 
   const total = urls.length;
   const effectiveConcurrency = renderJs ? Math.min(concurrency, 3) : concurrency;
@@ -53,7 +57,7 @@ export async function crawlSite(
             : await extractPageSeo(url, 10_000, crawl4aiUrl);
           processed++;
           onProgress?.(processed, total);
-          return result;
+          return { ...result, alternates: mergeAlternates(result.alternates, sitemapAlternates.get(url) ?? []) };
         })
       )
     );
@@ -65,4 +69,4 @@ export async function crawlSite(
 }
 
 export type { PageSeo, LlmsTxtCapture };
-export type { JsonLdBlock, PageLink, PageImage } from './crawler/parse';
+export type { JsonLdBlock, PageLink, PageImage, HreflangAlternate, HreflangSource } from './crawler/parse';
