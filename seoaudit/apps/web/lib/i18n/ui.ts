@@ -337,6 +337,68 @@ export const translations = {
       noPagesMessage: 'Sin páginas crawleadas aún.',
       noMetaTagsMessage: 'Sin etiquetas meta disponibles. Ejecuta un crawl para ver las etiquetas de la página de inicio.',
       metaTagsFrom: 'Etiquetas meta de la página de inicio',
+      hreflang: {
+        column: 'Idiomas',
+        summaryWithAlternates: '{{count}} de {{total}} páginas declaran idiomas alternos',
+        summaryProblems: '{{count}} con problemas de hreflang',
+        summaryNoProblems: 'Sin problemas de hreflang',
+        summaryNone: 'Ninguna página declara idiomas alternos (hreflang).',
+        recrawl: 'Vuelve a rastrear el sitio para ver los idiomas',
+        problemsCount: '{{count}} problema(s)',
+        details: 'Detalle',
+        showUrl: 'Ver la URL de la versión {{code}}',
+        alternatesTitle: 'Idiomas alternos',
+        pageLang: 'lang de la página: {{lang}}',
+        fix: {
+          add: 'Cómo corregirlo: añade esta línea en el <head> de {{target}}',
+          replace: 'Cómo corregirlo: sustituye la línea por esta en el <head> de {{target}}',
+          keepOne: 'Cómo corregirlo: deja solo una línea para «{{code}}» en el <head> de {{target}}, por ejemplo',
+          placeholderNote: 'Cambia «es-MX» por el código de idioma de esta página.',
+          sitemapNote: 'Si declaras los idiomas en el sitemap, haz el mismo cambio allí.',
+          copy: 'Copiar',
+          copied: 'Copiado',
+        },
+        noIssues: 'Sin problemas',
+        source: {
+          html: 'HTML',
+          sitemap: 'Sitemap',
+          both: 'HTML y sitemap',
+        },
+        issues: {
+          invalidCode: {
+            title: '«{{code}}» no es un código de idioma válido',
+            help: 'Usa el formato idioma o idioma-PAÍS, por ejemplo es, es-MX o en-US. Google ignora los códigos que no reconoce.',
+          },
+          invalidCodeSuggestion: {
+            title: '«{{code}}» no es un código válido: usa «{{suggestion}}»',
+            help: 'Es un error habitual; Google solo reconoce el código «{{suggestion}}».',
+          },
+          missingSelf: {
+            title: 'La página no aparece en su propia lista de idiomas',
+            help: 'Cada versión debe incluirse a sí misma. Añade un hreflang con su idioma que apunte a esta misma URL.',
+          },
+          missingXDefault: {
+            title: 'Falta la versión por defecto (x-default)',
+            help: 'Indica qué página mostrar a quien no coincide con ninguno de los idiomas declarados, normalmente la portada o el selector de idioma.',
+          },
+          conflictingCode: {
+            title: 'El idioma «{{code}}» apunta a varias páginas',
+            help: 'Cada idioma debe apuntar a una sola URL; ahora apunta a {{hrefs}}. Deja solo la correcta.',
+          },
+          missingReturn: {
+            title: 'La versión {{href}} no enlaza de vuelta a esta página',
+            help: 'Las versiones deben enlazarse entre sí. Si {{href}} no menciona esta página en sus hreflang, Google puede ignorar la relación entre ambas.',
+          },
+          xDefaultElsewhere: {
+            title: 'x-default apunta a otra página ({{href}})',
+            help: 'La versión por defecto debe ser una de las versiones de esta misma página. {{href}} no enlaza de vuelta, así que Google ignora este x-default.',
+          },
+          unverifiable: {
+            title: 'No se pudo comprobar {{href}}',
+            help: 'Esa página no se rastreó, así que no se sabe si enlaza de vuelta. No cuenta como problema.',
+          },
+        },
+      },
     },
 
     // SERP Preview
@@ -851,6 +913,68 @@ export const translations = {
       noPagesMessage: 'No pages crawled yet.',
       noMetaTagsMessage: 'No meta tags available. Run a crawl to see home page meta tags.',
       metaTagsFrom: 'Meta tags from home page',
+      hreflang: {
+        column: 'Languages',
+        summaryWithAlternates: '{{count}} of {{total}} pages declare alternate languages',
+        summaryProblems: '{{count}} with hreflang issues',
+        summaryNoProblems: 'No hreflang issues',
+        summaryNone: 'No page declares alternate languages (hreflang).',
+        recrawl: 'Crawl the site again to see languages',
+        problemsCount: '{{count}} issue(s)',
+        details: 'Details',
+        showUrl: 'Show the URL of the {{code}} version',
+        alternatesTitle: 'Alternate languages',
+        pageLang: 'page lang: {{lang}}',
+        fix: {
+          add: 'How to fix it: add this line to the <head> of {{target}}',
+          replace: 'How to fix it: replace the line with this one in the <head> of {{target}}',
+          keepOne: 'How to fix it: keep a single line for "{{code}}" in the <head> of {{target}}, for example',
+          placeholderNote: 'Replace "es-MX" with this page\'s language code.',
+          sitemapNote: 'If you declare languages in your sitemap, make the same change there.',
+          copy: 'Copy',
+          copied: 'Copied',
+        },
+        noIssues: 'No issues',
+        source: {
+          html: 'HTML',
+          sitemap: 'Sitemap',
+          both: 'HTML and sitemap',
+        },
+        issues: {
+          invalidCode: {
+            title: '"{{code}}" is not a valid language code',
+            help: 'Use language or language-COUNTRY, for example en, en-US or es-MX. Google ignores codes it does not recognize.',
+          },
+          invalidCodeSuggestion: {
+            title: '"{{code}}" is not a valid code: use "{{suggestion}}"',
+            help: 'This is a common mistake; Google only recognizes "{{suggestion}}".',
+          },
+          missingSelf: {
+            title: 'The page is missing from its own language list',
+            help: 'Each version must include itself. Add an hreflang for its language pointing to this same URL.',
+          },
+          missingXDefault: {
+            title: 'No default version (x-default)',
+            help: 'Tell search engines which page to show visitors who match none of the declared languages, usually the home page or a language picker.',
+          },
+          conflictingCode: {
+            title: 'Language "{{code}}" points to several pages',
+            help: 'Each language must point to a single URL; it now points to {{hrefs}}. Keep only the right one.',
+          },
+          missingReturn: {
+            title: 'The {{href}} version does not link back to this page',
+            help: 'Versions must link to each other. If {{href}} does not list this page in its hreflang, Google may ignore the relationship.',
+          },
+          xDefaultElsewhere: {
+            title: 'x-default points to another page ({{href}})',
+            help: 'The default version must be one of this page\'s own versions. {{href}} does not link back, so Google ignores this x-default.',
+          },
+          unverifiable: {
+            title: 'Could not check {{href}}',
+            help: 'That page was not crawled, so we cannot tell whether it links back. It does not count as an issue.',
+          },
+        },
+      },
     },
 
     // SERP Preview

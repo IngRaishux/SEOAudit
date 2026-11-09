@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { SERPPreview } from './SERPPreview';
@@ -9,6 +9,8 @@ import { GenerateAllDialog } from './GenerateAllDialog';
 import { ISite } from '@/lib/interfaces';
 import { RiSearchLine, RiFileTextLine, RiPriceTag3Line, RiSparklingLine } from '@remixicon/react';
 import { GeoTab } from './geo/GeoTab';
+import { HreflangCell, HreflangSummary } from './hreflang/HreflangCell';
+import { normalizeUrl, reviewHreflang, type HreflangAlternate } from '@/lib/hreflang/review';
 
 interface MetaTag {
   name: string;
@@ -23,6 +25,9 @@ interface Page {
   headings: string[];
   metaTags: MetaTag[];
   description?: string
+  /** undefined: rastreada antes de capturar hreflang */
+  alternates?: HreflangAlternate[];
+  htmlLang?: string;
 }
 
 interface SiteDetailsTabsProps {
@@ -44,8 +49,9 @@ export function SiteDetailsTabs({
   const [activeTab, setActiveTab] = useState<TabType>('serp');
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
+  const hreflangReviews = useMemo(() => reviewHreflang(pages), [pages]);
+  const pagesByUrl = useMemo(() => new Map(pages.map((p) => [normalizeUrl(p.url), p])), [pages]);
 
-  
   const tabs = [
     { id: 'serp', label: t('siteDetails.tabs.serp'), icon: <RiSearchLine className="size-4" /> },
     { id: 'pages', label: `${t('siteDetails.tabs.pages')} (${pages.length})`, icon: <RiFileTextLine className="size-4" /> },
@@ -121,6 +127,7 @@ export function SiteDetailsTabs({
                   <div className="flex justify-end mb-4">
                     <GenerateAllDialog siteId={siteId} pageCount={pages.length} />
                   </div>
+                  <HreflangSummary pages={pages} reviews={hreflangReviews} t={t} />
                   <table className="table w-full text-sm">
                     <thead className="bg-base-200">
                       <tr>
@@ -135,6 +142,9 @@ export function SiteDetailsTabs({
                         </th>
                         <th className="text-base-content">
                           {t('pages.headings')}
+                        </th>
+                        <th className="text-base-content">
+                          {t('siteDetails.hreflang.column')}
                         </th>
                         <th className="text-base-content">
                           {t('sites.actions')}
@@ -178,6 +188,16 @@ export function SiteDetailsTabs({
                             ) : (
                               '—'
                             )}
+                          </td>
+                          <td className="align-top">
+                            <HreflangCell
+                              pageUrl={page.url}
+                              pagesByUrl={pagesByUrl}
+                              alternates={page.alternates}
+                              htmlLang={page.htmlLang}
+                              review={hreflangReviews.get(normalizeUrl(page.url))}
+                              t={t}
+                            />
                           </td>
                           <td>
                             <Link
