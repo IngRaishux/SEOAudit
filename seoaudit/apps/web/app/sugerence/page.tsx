@@ -6,6 +6,8 @@ import { BackButton, Dialog, DialogTrigger, Button } from '@seo-optimizer/ui';
 import DialogSugestion from '@/components/DialogSugestion';
 import { SERPPreview } from '@/components/SERPPreview';
 import { generateSEOSuggestions, type SEOSuggestion } from "@/lib/generateSEOSuggestions";
+import { applyDetectedAlternates } from "@/lib/hreflang/form";
+import type { HreflangAlternate } from "@/lib/hreflang/review";
 import { toastError, toastSuccess } from '@/lib/toast';
 import { useSession } from 'next-auth/react';
 import { RiFileEditLine, RiSearchLine, RiPriceTag3Line, RiMagicLine, RiDownloadLine, RiPlayLine } from '@remixicon/react';
@@ -45,6 +47,7 @@ interface Page {
   canonical?: string;
   headings: string[];
   metaTags?: Array<{ name: string; content: string }>;
+  alternates?: HreflangAlternate[];
 }
 
 interface PageData {
@@ -65,6 +68,7 @@ function SugerenciaContent() {
   const [mockPage, setMockPage] = useState<Page | null>(null);
   const [organizationName, setOrganizationName] = useState('default');
   const [fetchingPage, setFetchingPage] = useState(true);
+  const [form, setForm] = useState(mockSuggested);
   // Sin pageId/siteId no hay nada que cargar
   const loadingPage = Boolean(pageId && siteId) && fetchingPage;
 
@@ -83,6 +87,8 @@ function SugerenciaContent() {
         if (pageRes.ok) {
           const pageData = await pageRes.json();
           setMockPage(pageData.page);
+          // Los idiomas alternos que declara la página precargan el formulario
+          setForm((prev) => applyDetectedAlternates(prev, pageData.page?.alternates));
         }
 
         if (siteRes.ok) {
@@ -106,12 +112,12 @@ function SugerenciaContent() {
   }, [pageId, siteId]);
 
 
-  const [form, setForm] = useState(mockSuggested);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<SugerenciaTabType>('form');
 
-  const handleSuggestionsGenerated = async (suggestions: SEOSuggestion) => {
+  const handleSuggestionsGenerated = async (generated: SEOSuggestion) => {
+    const suggestions = applyDetectedAlternates(generated, mockPage?.alternates);
     setForm(suggestions);
 
     // Persistir sugerencias en MongoDB si tenemos pageId y siteId
@@ -258,13 +264,15 @@ function SugerenciaContent() {
         wordCount: 0,
       };
 
-      const suggestions = await generateSEOSuggestions({
+      const generated = await generateSEOSuggestions({
         url: pageDataToGenerate.url,
         title: pageDataToGenerate.title,
         description: pageDataToGenerate.description,
         wordCount: pageDataToGenerate.wordCount,
         accountName: organizationName,
       });
+      // Los idiomas detectados en la página prevalecen sobre los propuestos por la IA
+      const suggestions = applyDetectedAlternates(generated, mockPage.alternates);
 
       // Actualizar el form con las sugerencias
       setForm(suggestions);
