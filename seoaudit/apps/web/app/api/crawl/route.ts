@@ -194,6 +194,8 @@ async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
       bodyText: page.bodyText,
       footerText: page.footerText,
       textTruncated: page.textTruncated,
+      alternates: page.alternates ?? [],
+      htmlLang: page.htmlLang || undefined,
     }));
 
     if (pages.length > 0) {

@@ -55,6 +55,19 @@ const pageSchema = new mongoose.Schema(
     bodyText: String,
     footerText: String,
     textTruncated: Boolean,
+    // Sin el campo = página rastreada antes de capturar hreflang; [] = sin alternos
+    alternates: {
+      type: [
+        {
+          _id: false,
+          hreflang: String,
+          href: String,
+          source: { type: String, enum: ['html', 'sitemap', 'both'] },
+        },
+      ],
+      default: undefined,
+    },
+    htmlLang: String,
   },
   { timestamps: true }
 );
