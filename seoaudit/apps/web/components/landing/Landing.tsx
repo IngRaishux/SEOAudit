@@ -10,6 +10,7 @@ import { Footer } from './Footer';
 import { Hero } from './Hero';
 import { HowItWorks } from './HowItWorks';
 import { LanguageAlert } from './LanguageAlert';
+import { LandingMotion } from './LandingMotion';
 import { LanguageSync } from './LanguageSync';
 import { Stats } from './Stats';
 import { Tools } from './Tools';
@@ -28,13 +29,19 @@ export async function Landing({ lang }: { lang: Language }) {
     <main className="bg-base-100">
       <LanguageSync lang={lang} />
       <LanguageAlert lang={lang} acceptLanguage={acceptLanguage} />
-      <Hero {...section} isAuthenticated={isAuthenticated} />
-      <Stats {...section} />
-      <HowItWorks {...section} />
-      <Tools {...section} />
-      <UseCases {...section} />
-      <Faq {...section} />
-      <FinalCta {...section} isAuthenticated={isAuthenticated} />
+      {/* Sin JavaScript no hay animación: el hero se muestra desde el principio */}
+      <noscript
+        dangerouslySetInnerHTML={{ __html: "<style>[data-motion='hero']{visibility:visible;animation:none}</style>" }}
+      />
+      <LandingMotion>
+        <Hero {...section} isAuthenticated={isAuthenticated} />
+        <Stats {...section} />
+        <HowItWorks {...section} />
+        <Tools {...section} />
+        <UseCases {...section} />
+        <Faq {...section} />
+        <FinalCta {...section} isAuthenticated={isAuthenticated} />
+      </LandingMotion>
       <Footer {...section} />
     </main>
   );
