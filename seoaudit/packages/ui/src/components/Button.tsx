@@ -60,6 +60,31 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const Component = asChild ? Slot : 'button';
 
+    // With asChild, Slot merges the button props onto its single child element.
+    // Inject the icon inside that child (e.g. a <Link>) instead of wrapping it in
+    // a <span>, otherwise the span becomes the styled button and only the inner
+    // text remains clickable.
+    if (asChild && React.isValidElement<{ children?: React.ReactNode }>(children)) {
+      const childContent = children.props.children;
+      return (
+        <Slot
+          ref={forwardedRef}
+          className={cx(buttonVariants({ variant, size }), className)}
+          {...props}
+        >
+          {React.cloneElement(
+            children,
+            undefined,
+            <>
+              {icon && iconPosition === 'left' && icon}
+              {childContent}
+              {icon && iconPosition === 'right' && icon}
+            </>,
+          )}
+        </Slot>
+      );
+    }
+
     const content = isLoading ? (
       <>
         <RiLoader2Fill

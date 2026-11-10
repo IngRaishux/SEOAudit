@@ -21,7 +21,6 @@ export function SwitchOrgButton() {
     <Button
       size="sm"
       variant="neutral"
-      asChild
       onClick={handleSwitchOrg}
       icon={<RiBuilding4Line className="size-4" />}
     >
