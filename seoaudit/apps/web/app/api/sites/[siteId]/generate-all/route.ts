@@ -18,7 +18,8 @@ import * as generationJobRepository from '@/lib/repositories/generationJobReposi
 export const runtime = 'nodejs';
 // La generación corre en after() dentro de esta misma invocación, así que necesita cubrir
 // GENERATION_TIMEOUT_MS (10 min por defecto). 800s es el máximo del plan Pro de Vercel
-export const maxDuration = 800;
+//300 en el plan hobby
+export const maxDuration = 300;
 
 export async function POST(
   request: Request,
