@@ -62,12 +62,13 @@ export function UseCases({ texts, lang }: SectionProps) {
   return (
     <section id="use-cases" className="px-4 py-20 scroll-mt-20">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-12">
+        <div data-motion="reveal" className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-base-content">{title}</h2>
           <p className="mt-3 text-lg text-base-content/70">{subtitle}</p>
         </div>
 
-        <div role="tablist" className="tabs tabs-lifted tabs-sm sm:tabs-lg">
+        {/* Se anima el bloque entero, nunca los paneles: ocultaría uno al cambiar de pestaña */}
+        <div data-motion="reveal" role="tablist" className="tabs tabs-lifted tabs-sm sm:tabs-lg">
           <Tab label={tabs.seo} checked>
             <div className="space-y-6">
               <CaseText title={seo.title} desc={seo.desc} points={seo.points} />

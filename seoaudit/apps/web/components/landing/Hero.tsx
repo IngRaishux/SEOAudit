@@ -11,18 +11,23 @@ export function Hero({ texts, lang, isAuthenticated }: SectionProps & { isAuthen
     <section className="hero bg-gradient-to-b from-base-200 to-base-100">
       <div className="hero-content max-w-6xl w-full min-w-0 flex-col lg:flex-row gap-12 px-4 py-16 lg:py-24">
         <div className="flex-1 min-w-0 w-full text-center lg:text-left">
-          <span className="badge badge-secondary gap-1 mb-4 py-3 h-auto whitespace-normal">
-            <RiSparklingLine className="size-4" aria-hidden="true" />
-            {texts.hero.badge}
-          </span>
+          {/* Envoltorio: la transición CSS de .badge sobre opacity chocaría con GSAP */}
+          <div data-motion="hero">
+            <span className="badge badge-secondary gap-1 mb-4 py-3 h-auto whitespace-normal">
+              <RiSparklingLine className="size-4" aria-hidden="true" />
+              {texts.hero.badge}
+            </span>
+          </div>
           {/* Único h1 de la página */}
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight text-base-content">{texts.hero.title}</h1>
-          <p className="py-6 text-lg text-base-content/70">{texts.hero.subtitle}</p>
-          <CtaButtons texts={texts.hero} isAuthenticated={isAuthenticated} />
+          <h1 data-motion="hero" className="text-4xl md:text-5xl font-bold leading-tight text-base-content">{texts.hero.title}</h1>
+          <p data-motion="hero" className="py-6 text-lg text-base-content/70">{texts.hero.subtitle}</p>
+          <div data-motion="hero">
+            <CtaButtons texts={texts.hero} isAuthenticated={isAuthenticated} />
+          </div>
         </div>
 
         <div className="flex-1 w-full min-w-0">
-          <div className="mockup-browser border border-base-300 bg-base-300 shadow-xl">
+          <div data-motion="hero" className="mockup-browser border border-base-300 bg-base-300 shadow-xl">
             <div className="mockup-browser-toolbar">
               {/* daisyUI v4 fija la barra en 24rem: más ancha que un móvil de 360 px */}
               <div className="input truncate !w-auto max-w-sm flex-1 mx-2">{EXAMPLE_URL}</div>
