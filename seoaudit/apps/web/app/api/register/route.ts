@@ -15,6 +15,9 @@ const registerSchema = z.object({
 
 export const runtime = 'nodejs';
 
+// `code` permite al cliente traducir el error sin depender del texto en inglés de `error`
+export type RegisterErrorCode = 'EMAIL_IN_USE' | 'VALIDATION_ERROR' | 'SERVER_ERROR';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -28,7 +31,7 @@ export async function POST(request: NextRequest) {
     const existingUser = await usersCollection.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Email already in use' },
+        { error: 'Email already in use', code: 'EMAIL_IN_USE' satisfies RegisterErrorCode },
         { status: 400 }
       );
     }
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.errors },
+        { error: 'Validation error', code: 'VALIDATION_ERROR' satisfies RegisterErrorCode, details: error.errors },
         { status: 400 }
       );
     }
@@ -83,7 +86,7 @@ export async function POST(request: NextRequest) {
     console.error('Registration error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Internal server error', details: errorMessage },
+      { error: 'Internal server error', code: 'SERVER_ERROR' satisfies RegisterErrorCode, details: errorMessage },
       { status: 500 }
     );
   }

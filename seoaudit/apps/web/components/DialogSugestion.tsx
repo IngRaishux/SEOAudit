@@ -11,12 +11,12 @@ import {
 } from "@seo-optimizer/ui";
 import { Dispatch, SetStateAction } from "react";
 import { useSession } from "next-auth/react";
-import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
+import { generateSEOSuggestions, type SEOSuggestion } from "@/lib/generateSEOSuggestions";
 import { toastError } from "@/lib/toast";
 
 type DialogSugestionProps = {
   setIsOpen: Dispatch<SetStateAction<boolean>>;
-  onSuggestionsGenerated: (suggestions: any) => void;
+  onSuggestionsGenerated: (suggestions: SEOSuggestion) => void;
   setIsLoading: Dispatch<SetStateAction<boolean>>;
   pageData: {
     url: string;

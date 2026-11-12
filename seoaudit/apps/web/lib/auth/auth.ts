@@ -111,7 +111,6 @@ export const authConfig = {
     async jwt({
       token,
       user,
-      account,
     }: {
       token: JWT;
       user?: User | null;

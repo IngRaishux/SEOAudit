@@ -4,39 +4,57 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Input } from '@seo-optimizer/ui';
+import { Button } from '@seo-optimizer/ui';
+import { RiErrorWarningLine, RiGoogleFill, RiLoginBoxLine } from '@remixicon/react';
+import { FormField } from '@/components/auth/FormField';
+import { validateLogin, type LoginValues } from '@/lib/auth/validation';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
-import { toastError } from '@/lib/toast';
-import { RiLoginBoxLine, RiGoogleFill } from '@remixicon/react';
+
+const FIELD_ORDER: (keyof LoginValues)[] = ['email', 'password'];
 
 export function LoginForm() {
   const router = useRouter();
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [values, setValues] = useState<LoginValues>({ email: '', password: '' });
+  // Los errores de campo solo se muestran tras el primer intento de envío; luego se recalculan en vivo
+  const [submitted, setSubmitted] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const errors = submitted ? validateLogin(values) : {};
+  const update = (field: keyof LoginValues) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setValues((prev) => ({ ...prev, [field]: e.target.value }));
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsLoading(true);
+    setSubmitted(true);
+    setFormError(null);
 
+    const currentErrors = validateLogin(values);
+    const firstInvalid = FIELD_ORDER.find((field) => currentErrors[field]);
+    if (firstInvalid) {
+      document.getElementById(firstInvalid)?.focus();
+      return;
+    }
+
+    setIsLoading(true);
     try {
       const result = await signIn('credentials', {
-        email,
-        password,
+        email: values.email.trim(),
+        password: values.password,
         redirect: false,
       });
 
-      if (result?.error) {
-        toastError(t('auth.invalidCredentials'), t('common.error'));
-      } else if (result?.ok) {
+      if (result?.ok && !result.error) {
         router.push('/organizations');
+        return;
       }
+      setFormError(result?.error ? 'auth.invalidCredentials' : 'errors.serverError');
     } catch (err) {
-      toastError(t('errors.serverError'), t('common.error'));
       console.error(err);
+      setFormError('errors.serverError');
     } finally {
       setIsLoading(false);
     }
@@ -47,70 +65,67 @@ export function LoginForm() {
     try {
       await signIn('google', { callbackUrl: '/organizations', redirect: true });
     } catch (err) {
-      toastError(t('errors.serverError'), t('common.error'));
       console.error(err);
+      setFormError('errors.serverError');
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="w-full max-w-md mx-auto p-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-zinc-700">
-            {t('auth.email')}
-          </label>
-          <Input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            disabled={isLoading}
-            required
-          />
+    <div className="space-y-5">
+      {formError && (
+        <div role="alert" className="alert alert-error text-sm py-3">
+          <RiErrorWarningLine className="size-5" aria-hidden="true" />
+          <span>{t(formError)}</span>
         </div>
+      )}
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
-            {t('auth.password')}
-          </label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            disabled={isLoading}
-            required
-          />
-        </div>
+      {/* noValidate: la validación y sus mensajes son de la aplicación, iguales en todos los navegadores */}
+      <form noValidate onSubmit={handleSubmit} className="space-y-3">
+        <FormField
+          id="email"
+          type="email"
+          autoComplete="email"
+          label={t('auth.email')}
+          placeholder={t('auth.emailPlaceholder')}
+          value={values.email}
+          onChange={update('email')}
+          error={errors.email && t(errors.email)}
+          disabled={isLoading}
+        />
+        <FormField
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          label={t('auth.password')}
+          placeholder="••••••••"
+          value={values.password}
+          onChange={update('password')}
+          error={errors.password && t(errors.password)}
+          disabled={isLoading}
+        />
 
         <Button
           type="submit"
-          disabled={isLoading}
-          className="w-full"
-          icon={<RiLoginBoxLine className="size-4" />}
+          isLoading={isLoading}
+          loadingText={t('common.loading')}
+          className="w-full mt-2"
+          icon={<RiLoginBoxLine className="size-4" aria-hidden="true" />}
         >
-          {isLoading ? t('common.loading') : t('auth.signIn')}
+          {t('auth.signIn')}
         </Button>
       </form>
 
-      <div className="mt-4">
-        <Button
-          type="button"
-          onClick={handleGoogleSignIn}
-          disabled={isLoading}
-          className="w-full bg-white border border-zinc-300 text-zinc-900 hover:bg-zinc-50"
-          icon={<RiGoogleFill className="size-4" />}
-        >
-          {isLoading ? t('common.loading') : t('auth.continueWithGoogle')}
-        </Button>
-      </div>
+      <div className="divider text-sm text-base-content/60 my-0">{t('auth.or')}</div>
 
-      <p className="mt-6 text-center text-sm text-zinc-600">
+      <button type="button" onClick={handleGoogleSignIn} disabled={isLoading} className="btn btn-outline w-full">
+        <RiGoogleFill className="size-4" aria-hidden="true" />
+        {t('auth.continueWithGoogle')}
+      </button>
+
+      <p className="text-center text-sm text-base-content/70">
         {t('auth.dontHaveAccount')}{' '}
-        <Link href="/register" className="font-semibold text-blue-600 hover:text-blue-700">
+        <Link href="/register" className="link link-hover font-semibold text-base-content">
           {t('auth.registerHere')}
         </Link>
       </p>

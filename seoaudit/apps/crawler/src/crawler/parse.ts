@@ -15,8 +15,48 @@ export interface PageSeo {
   p: string[];
   wordCount: number;
   loadTimeMs: number;
+  jsonLd: JsonLdBlock[];
+  links: PageLink[];
+  images: PageImage[];
+  bodyText: string;
+  footerText: string;
+  textTruncated: boolean;
+  /** Versiones por idioma declaradas con hreflang (HTML y, tras combinar, sitemap). */
+  alternates: HreflangAlternate[];
+  /** Atributo lang de <html>, o null si no existe. */
+  htmlLang: string | null;
   error?: string;
 }
+
+export type HreflangSource = 'html' | 'sitemap' | 'both';
+
+export interface HreflangAlternate {
+  /** Código tal como aparece en el documento, sin normalizar. */
+  hreflang: string;
+  /** URL absoluta. */
+  href: string;
+  source: HreflangSource;
+}
+
+export interface JsonLdBlock {
+  raw: string;
+  parsed: unknown | null;
+  parseError: string | null;
+}
+
+export interface PageLink {
+  url: string;
+  text: string;
+  isExternal: boolean;
+}
+
+export interface PageImage {
+  url: string;
+  alt: string;
+}
+
+export const BODY_TEXT_MAX_CHARS = 20_000;
+export const FOOTER_TEXT_MAX_CHARS = 4_000;
 
 export function parseSeoFromHtml(
   url: string,
@@ -43,6 +83,14 @@ export function parseSeoFromHtml(
   const ogImage = metadata?.['og:image'] ?? (($full && attr($full('meta[property="og:image"]'), 'content')) || null);
   const robots = metadata?.['robots'] ?? (($full && attr($full('meta[name="robots"]'), 'content')) || null);
 
+  // JSON-LD, links e imágenes se leen del documento completo: cleaned_html pierde el <head>
+  const $doc = $full ?? $;
+  const wordCount = $('body').text().trim().split(/\s+/).filter(Boolean).length;
+  // Se leen antes que las señales GEO, que eliminan nodos del documento
+  const alternates = extractAlternates($doc, url);
+  const htmlLang = attr($doc('html'), 'lang');
+  const signals = extractGeoSignals($doc, url);
+
   return {
     url,
     statusCode,
@@ -56,8 +104,11 @@ export function parseSeoFromHtml(
     h1: headings($, 'h1'),
     h2: headings($, 'h2'),
     p: $('p').text().trim().split(/\n+/),
-    wordCount: $('body').text().trim().split(/\s+/).filter(Boolean).length,
+    wordCount,
     loadTimeMs,
+    ...signals,
+    alternates,
+    htmlLang,
   };
 }
 
@@ -77,8 +128,35 @@ export function emptyPageSeo(url: string, loadTimeMs: number, error: string): Pa
     p:[],
     wordCount: 0,
     loadTimeMs,
+    jsonLd: [],
+    links: [],
+    images: [],
+    bodyText: '',
+    footerText: '',
+    textTruncated: false,
+    alternates: [],
+    htmlLang: null,
     error,
   };
+}
+
+/** <link rel="alternate" hreflang href> del documento completo, con URL absoluta y sin duplicados. */
+export function extractAlternates($: cheerio.CheerioAPI, pageUrl: string): HreflangAlternate[] {
+  const seen = new Set<string>();
+  const alternates: HreflangAlternate[] = [];
+  $('link[hreflang][href]').each((_, el) => {
+    // rel admite varios valores separados por espacios ("alternate nofollow")
+    const rel = ($(el).attr('rel') ?? '').toLowerCase().split(/\s+/);
+    if (!rel.includes('alternate')) return;
+    const hreflang = ($(el).attr('hreflang') ?? '').trim();
+    const href = safeUrl(($(el).attr('href') ?? '').trim(), pageUrl)?.href;
+    if (!hreflang || !href) return;
+    const key = `${hreflang.toLowerCase()} ${href}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    alternates.push({ hreflang, href, source: 'html' });
+  });
+  return alternates;
 }
 
 function headings($: cheerio.CheerioAPI, selector: string): string[] {
@@ -93,4 +171,83 @@ function text($el: cheerio.Cheerio<any>): string | null {
 function attr($el: cheerio.Cheerio<any>, name: string): string | null {
   const v = $el.attr(name);
   return v ? v.trim() : null;
+}
+
+function extractGeoSignals($: cheerio.CheerioAPI, pageUrl: string) {
+  const jsonLd: JsonLdBlock[] = $('script[type="application/ld+json"]')
+    .map((_, el) => parseJsonLd($(el).text()))
+    .get();
+
+  const pageHost = safeUrl(pageUrl)?.host;
+  const seenLinks = new Set<string>();
+  const links: PageLink[] = [];
+  $('a[href]').each((_, el) => {
+    const href = ($(el).attr('href') ?? '').trim();
+    const resolved = resolveHref(href, pageUrl);
+    if (!resolved || seenLinks.has(resolved)) return;
+    seenLinks.add(resolved);
+    const parsed = safeUrl(resolved);
+    const isHttp = parsed?.protocol === 'http:' || parsed?.protocol === 'https:';
+    links.push({
+      url: resolved,
+      text: collapse($(el).text()),
+      isExternal: isHttp && parsed!.host !== pageHost,
+    });
+  });
+
+  const seenImages = new Set<string>();
+  const images: PageImage[] = [];
+  $('img').each((_, el) => {
+    const src = ($(el).attr('src') || $(el).attr('data-src') || '').trim();
+    if (!src || src.startsWith('data:')) return;
+    const resolved = safeUrl(src, pageUrl)?.href;
+    if (!resolved || seenImages.has(resolved)) return;
+    seenImages.add(resolved);
+    images.push({ url: resolved, alt: ($(el).attr('alt') ?? '').trim() });
+  });
+
+  // Se eliminan nodos no visibles solo después de leer el JSON-LD
+  $('script, style, noscript, template').remove();
+  const footer = truncate(collapse($('footer, [role="contentinfo"]').text()), FOOTER_TEXT_MAX_CHARS);
+  const body = truncate(collapse($('body').text()), BODY_TEXT_MAX_CHARS);
+
+  return {
+    jsonLd,
+    links,
+    images,
+    bodyText: body.text,
+    footerText: footer.text,
+    textTruncated: body.truncated || footer.truncated,
+  };
+}
+
+function parseJsonLd(raw: string): JsonLdBlock {
+  const trimmed = raw.trim();
+  try {
+    return { raw: trimmed, parsed: JSON.parse(trimmed), parseError: null };
+  } catch (err) {
+    return { raw: trimmed, parsed: null, parseError: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+function resolveHref(href: string, base: string): string | null {
+  if (!href || href.startsWith('#') || /^javascript:/i.test(href)) return null;
+  if (/^(tel|mailto):/i.test(href)) return href;
+  return safeUrl(href, base)?.href ?? null;
+}
+
+function safeUrl(value: string, base?: string): URL | null {
+  try {
+    return new URL(value, base);
+  } catch {
+    return null;
+  }
+}
+
+function collapse(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function truncate(value: string, max: number): { text: string; truncated: boolean } {
+  return value.length > max ? { text: value.slice(0, max), truncated: true } : { text: value, truncated: false };
 }

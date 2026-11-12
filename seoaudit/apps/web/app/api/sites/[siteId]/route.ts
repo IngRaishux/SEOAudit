@@ -17,7 +17,7 @@ export async function GET(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  let session = (await getServerSession(handler)) as Session | null;
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,7 +37,7 @@ export async function GET(
   try {
     // Get site by ID
     await connectMongoose();
-    const site = (await siteRepository.getSiteById(siteId)) as any;
+    const site = await siteRepository.getSiteById(siteId);
 
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
@@ -79,7 +79,7 @@ export async function DELETE(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  let session = (await getServerSession(handler)) as Session | null;
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -101,7 +101,7 @@ export async function DELETE(
     }
 
     // Get site by ID
-    const site = (await siteRepository.getSiteById(siteId)) as any;
+    const site = await siteRepository.getSiteById(siteId);
 
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });

@@ -163,7 +163,7 @@ export function DashboardContent({
                     </tr>
                   </thead>
                   <tbody>
-                    {sites.map((site: any) => (
+                    {sites.map((site) => (
                       <tr key={site._id.toString()} className="hover">
                         <td className="text-base-content truncate max-w-20 lg:max-w-xs">
                           {site.url}

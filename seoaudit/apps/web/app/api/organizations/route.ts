@@ -10,7 +10,7 @@ import Membership from '@/lib/models/Membership';
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  let session = (await getServerSession(handler)) as Session | null;
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

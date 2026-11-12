@@ -1,32 +1,26 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import type { Session } from 'next-auth';
+import { getSessionUserId } from '@/lib/auth/sessionUser';
 import connectMongoose from '@/lib/db/mongoose';
 import UserSettings from '@/lib/models/UserSettings';
 
 export const runtime = 'nodejs';
 
-export async function GET(request: Request) {
-  const session = (await getServerSession(handler)) as Session | null;
+export async function GET() {
+  const userId = await getSessionUserId();
 
-  if (!session?.user?.id) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     await connectMongoose();
 
-    let settings = (await UserSettings.findOne({ userId: session.user.id }).lean()) as any;
-
-    if (!settings) {
-      settings = {
-        theme: 'system',
-        language: 'en',
-        emailNotifications: true,
-        weeklyReport: true,
-      };
-    }
+    const settings = (await UserSettings.findOne({ userId }).lean()) ?? {
+      theme: 'system',
+      language: 'en',
+      emailNotifications: true,
+      weeklyReport: true,
+    };
 
     return NextResponse.json(settings);
   } catch (error) {
@@ -39,9 +33,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = (await getServerSession(handler)) as Session | null;
+  const userId = await getSessionUserId();
 
-  if (!session?.user?.id) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -52,9 +46,9 @@ export async function POST(request: Request) {
     await connectMongoose();
 
     const settings = await UserSettings.findOneAndUpdate(
-      { userId: session.user.id },
+      { userId },
       {
-        userId: session.user.id,
+        userId,
         theme: theme || 'system',
         language: language || 'en',
         emailNotifications:

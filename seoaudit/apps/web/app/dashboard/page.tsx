@@ -27,7 +27,7 @@ export default async function DashboardPage(props: {
   const searchParams = await props.searchParams;
   const selectedOrgId = searchParams.org;
 
-  let session = (await getServerSession(handler)) as Session | null;
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     redirect('/login');
@@ -56,10 +56,8 @@ export default async function DashboardPage(props: {
 
   // Determine which organization to display
   // Priority: URL param > cookie > redirect
-  let accountId: string;
-
   // 1. Try URL parameter first (explicit choice)
-  let resolvedOrgId = selectedOrgId;
+  const resolvedOrgId = selectedOrgId;
 
   // 2. If not in URL, try cookie (remembered choice)
   if (!resolvedOrgId) {
@@ -83,19 +81,19 @@ export default async function DashboardPage(props: {
     redirect('/organizations');
   }
 
-  accountId = resolvedOrgId;
+  const accountId = resolvedOrgId;
 
   // Get organization details
-  const orgData = (await Organization.findById(accountId).lean()) as any;
+  const orgData = await Organization.findById(accountId).lean();
   if (!orgData) {
     redirect('/organizations');
   }
 
   // Get membership for this org to check role
-  const membershipData = (await Membership.findOne({
+  const membershipData = await Membership.findOne({
     userId: session.user.id,
     organizationId: accountId,
-  }).lean()) as any;
+  }).lean();
 
   let sitesData: ISite[] = [];
   let total = 0;

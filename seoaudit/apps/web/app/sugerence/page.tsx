@@ -5,7 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { BackButton, Dialog, DialogTrigger, Button } from '@seo-optimizer/ui';
 import DialogSugestion from '@/components/DialogSugestion';
 import { SERPPreview } from '@/components/SERPPreview';
-import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
+import { generateSEOSuggestions, type SEOSuggestion } from "@/lib/generateSEOSuggestions";
+import { applyDetectedAlternates } from "@/lib/hreflang/form";
+import type { HreflangAlternate } from "@/lib/hreflang/review";
 import { toastError, toastSuccess } from '@/lib/toast';
 import { useSession } from 'next-auth/react';
 import { RiFileEditLine, RiSearchLine, RiPriceTag3Line, RiMagicLine, RiDownloadLine, RiPlayLine } from '@remixicon/react';
@@ -45,14 +47,7 @@ interface Page {
   canonical?: string;
   headings: string[];
   metaTags?: Array<{ name: string; content: string }>;
-}
-
-interface Site {
-  _id: string;
-  url: string;
-  organizationId: string;
-  title?: string;
-  pageCount: number;
+  alternates?: HreflangAlternate[];
 }
 
 interface PageData {
@@ -72,14 +67,14 @@ function SugerenciaContent() {
 
   const [mockPage, setMockPage] = useState<Page | null>(null);
   const [organizationName, setOrganizationName] = useState('default');
-  const [loadingPage, setLoadingPage] = useState(true);
+  const [fetchingPage, setFetchingPage] = useState(true);
+  const [form, setForm] = useState(mockSuggested);
+  // Sin pageId/siteId no hay nada que cargar
+  const loadingPage = Boolean(pageId && siteId) && fetchingPage;
 
 
   useEffect(() => {
-    if (!pageId || !siteId) {
-      setLoadingPage(false);
-      return;
-    }
+    if (!pageId || !siteId) return;
 
     // Fetch page and site data from MongoDB
     const fetchData = async () => {
@@ -92,6 +87,8 @@ function SugerenciaContent() {
         if (pageRes.ok) {
           const pageData = await pageRes.json();
           setMockPage(pageData.page);
+          // Los idiomas alternos que declara la página precargan el formulario
+          setForm((prev) => applyDetectedAlternates(prev, pageData.page?.alternates));
         }
 
         if (siteRes.ok) {
@@ -107,7 +104,7 @@ function SugerenciaContent() {
         console.error('Error fetching data:', error);
         toastError('Error al cargar la información de la página');
       } finally {
-        setLoadingPage(false);
+        setFetchingPage(false);
       }
     };
 
@@ -115,12 +112,12 @@ function SugerenciaContent() {
   }, [pageId, siteId]);
 
 
-  const [form, setForm] = useState(mockSuggested);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<SugerenciaTabType>('form');
 
-  const handleSuggestionsGenerated = async (suggestions: any) => {
+  const handleSuggestionsGenerated = async (generated: SEOSuggestion) => {
+    const suggestions = applyDetectedAlternates(generated, mockPage?.alternates);
     setForm(suggestions);
 
     // Persistir sugerencias en MongoDB si tenemos pageId y siteId
@@ -267,13 +264,15 @@ function SugerenciaContent() {
         wordCount: 0,
       };
 
-      const suggestions = await generateSEOSuggestions({
+      const generated = await generateSEOSuggestions({
         url: pageDataToGenerate.url,
         title: pageDataToGenerate.title,
         description: pageDataToGenerate.description,
         wordCount: pageDataToGenerate.wordCount,
         accountName: organizationName,
       });
+      // Los idiomas detectados en la página prevalecen sobre los propuestos por la IA
+      const suggestions = applyDetectedAlternates(generated, mockPage.alternates);
 
       // Actualizar el form con las sugerencias
       setForm(suggestions);

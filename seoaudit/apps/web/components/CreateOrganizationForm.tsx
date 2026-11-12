@@ -7,11 +7,7 @@ import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { RiSave2Line } from '@remixicon/react';
 
-interface CreateOrganizationFormProps {
-  userId: string;
-}
-
-export function CreateOrganizationForm({ userId }: CreateOrganizationFormProps) {
+export function CreateOrganizationForm() {
   const router = useRouter();
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);

@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import type { Session } from 'next-auth';
+import { getSessionUserId } from '@/lib/auth/sessionUser';
 import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
 import Site from '@/lib/models/Site';
 import SiteSettings from '@/lib/models/SiteSettings';
@@ -15,9 +12,9 @@ export async function GET(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  const session = (await getServerSession(handler)) as Session | null;
+  const userId = await getSessionUserId();
 
-  if (!session?.user?.id) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -25,14 +22,14 @@ export async function GET(
     await connectMongoose();
 
     // Get site to find organization
-    const site = (await Site.findById(siteId).lean()) as any;
+    const site = await Site.findById(siteId).lean();
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
 
     // Verify user is member of the organization
     const membership = await Membership.findOne({
-      userId: session.user.id,
+      userId,
       organizationId: site.organizationId,
     });
 
@@ -41,20 +38,16 @@ export async function GET(
     }
 
     // Get or create site settings
-    let settings = (await SiteSettings.findOne({ siteId }).lean()) as any;
-
-    if (!settings) {
-      settings = {
-        siteId,
-        organizationId: site.organizationId,
-        crawlFrequency: 'manual',
-        maxPages: 1000,
-        followRobots: true,
-        checkSSL: true,
-        trackMetrics: true,
-        excludePatterns: [],
-      };
-    }
+    const settings = (await SiteSettings.findOne({ siteId }).lean()) ?? {
+      siteId,
+      organizationId: site.organizationId,
+      crawlFrequency: 'manual',
+      maxPages: 1000,
+      followRobots: true,
+      checkSSL: true,
+      trackMetrics: true,
+      excludePatterns: [],
+    };
 
     return NextResponse.json(settings);
   } catch (error) {
@@ -71,9 +64,9 @@ export async function POST(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  const session = (await getServerSession(handler)) as Session | null;
+  const userId = await getSessionUserId();
 
-  if (!session?.user?.id) {
+  if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -91,14 +84,14 @@ export async function POST(
     await connectMongoose();
 
     // Get site to find organization
-    const site = (await Site.findById(siteId)) as any;
+    const site = await Site.findById(siteId);
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
 
     // Verify user is member of the organization
     const membership = await Membership.findOne({
-      userId: session.user.id,
+      userId,
       organizationId: site.organizationId,
     });
 

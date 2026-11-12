@@ -74,6 +74,7 @@ export async function updateSuggestion(
     isResolved: boolean;
     resolvedAt: Date;
     notes: string;
+    description: string;
   }>
 ) {
   await connectMongoose();
@@ -93,4 +94,9 @@ export async function deleteSuggestionsByPage(pageId: string) {
 export async function deleteSuggestionsBySite(siteId: string) {
   await connectMongoose();
   return Suggestion.deleteMany({ siteId });
+}
+
+export async function listSuggestionsByIds(suggestionIds: string[]) {
+  await connectMongoose();
+  return Suggestion.find({ _id: { $in: suggestionIds } }).lean();
 }
