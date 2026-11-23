@@ -3,7 +3,6 @@ import { discoverSitemap } from './sitemap/discover';
 import { parseSitemapEntries } from './sitemap/parse';
 import { mergeAlternates } from './crawler/alternates';
 import { extractPageSeo } from './crawler/extract';
-import { extractPageSeoRendered, launchBrowser } from './crawler/render';
 import type { PageSeo } from './crawler/parse';
 import { fetchLlmsTxt, type LlmsTxtCapture } from './site/llmsTxt';
 
@@ -55,7 +54,10 @@ export async function crawlSite(
   const limit = pLimit(effectiveConcurrency);
   let processed = 0;
 
-  const browser = renderJs ? await launchBrowser() : null;
+  // Playwright solo se carga si se pide renderizar: importarlo al inicio rompe el despliegue en
+  // Vercel (el paquete no incluye sus binarios) aunque el crawl use Crawl4AI
+  const render = renderJs ? await import('./crawler/render') : null;
+  const browser = render ? await render.launchBrowser() : null;
 
   try {
     const pages = await Promise.all(
@@ -63,8 +65,8 @@ export async function crawlSite(
         limit(async () => {
           // Pasado el deadline las URLs que aún esperan turno se descartan
           if (deadline !== undefined && Date.now() >= deadline) return null;
-          const result = browser
-            ? await extractPageSeoRendered(browser, url)
+          const result = render && browser
+            ? await render.extractPageSeoRendered(browser, url)
             : await extractPageSeo(url, 10_000, crawl4aiUrl);
           processed++;
           onProgress?.(processed, total);
