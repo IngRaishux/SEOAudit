@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import type { Session } from 'next-auth';
 import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
-import Membership from '@/lib/models/Membership';
+import { isObjectId, requireJobAccess, requireUser } from '@/lib/auth/orgAccess';
 import * as generationJobRepository from '@/lib/repositories/generationJobRepository';
 import * as suggestionRepository from '@/lib/repositories/suggestionRepository';
 import type { SEOSuggestion } from '@/lib/generateSEOSuggestions';
@@ -16,20 +12,10 @@ export async function GET(
   { params }: { params: Promise<{ siteId: string; jobId: string }> }
 ) {
   const { siteId, jobId } = await params;
-  const session = (await getServerSession(handler)) as Session | null;
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  if (!session.user.id) {
-    const { db } = await connectToDatabase();
-    const usersCollection = db.collection('users');
-    const user = await usersCollection.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    session.user.id = user._id.toString();
+  const user = await requireUser();
+  if (!user.ok) return user.response;
+  if (!isObjectId(jobId)) {
+    return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
   await connectMongoose();
@@ -40,14 +26,8 @@ export async function GET(
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
-  const membership = await Membership.findOne({
-    userId: session.user.id,
-    organizationId: job.organizationId,
-  });
-
-  if (!membership) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
+  const access = await requireJobAccess(job, 'site.read');
+  if (!access.ok) return access.response;
 
   // Si la función que generaba murió (timeout de la plataforma, redeploy), el job se
   // quedaría en "running" para siempre

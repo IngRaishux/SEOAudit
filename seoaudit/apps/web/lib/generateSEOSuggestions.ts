@@ -1,6 +1,7 @@
 'use server';
 
 import { GoogleGenAI } from '@google/genai';
+import { requireSiteAccess } from '@/lib/auth/orgAccess';
 import { toDynamoSuggestion, slugFromUrl } from './dynamoSuggestion';
 
 export interface PageData {
@@ -42,9 +43,19 @@ export interface SEOSuggestion {
   title: DynamoDBString;
 }
 
+/**
+ * Server Action: cualquier cliente puede invocarla, así que exige sesión y permiso de edición
+ * de contenido en la organización del sitio antes de llamar al modelo.
+ */
 export async function generateSEOSuggestions(
-  pageData: PageData
+  pageData: PageData,
+  siteId: string
 ): Promise<SEOSuggestion> {
+  const access = await requireSiteAccess(siteId, 'content.edit');
+  if (!access.ok) {
+    throw new Error('No tienes permiso para generar sugerencias en este sitio');
+  }
+
   if (!process.env.GOOGLE_API_KEY) {
     throw new Error('GOOGLE_API_KEY environment variable is not set');
   }

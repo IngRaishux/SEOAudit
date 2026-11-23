@@ -1,10 +1,5 @@
 import { NextResponse, after } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import type { Session } from 'next-auth';
-import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
-import Membership from '@/lib/models/Membership';
+import { requireSiteAccess } from '@/lib/auth/orgAccess';
 import Organization from '@/lib/models/Organization';
 import * as siteRepository from '@/lib/repositories/siteRepository';
 import * as pageRepository from '@/lib/repositories/pageRepository';
@@ -26,24 +21,11 @@ export async function POST(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  const session = (await getServerSession(handler)) as Session | null;
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  if (!session.user.id) {
-    const { db } = await connectToDatabase();
-    const usersCollection = db.collection('users');
-    const user = await usersCollection.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    session.user.id = user._id.toString();
-  }
 
   try {
-    await connectMongoose();
+    const access = await requireSiteAccess(siteId, 'content.edit');
+    if (!access.ok) return access.response;
+
     const site = (await siteRepository.getSiteById(siteId)) as {
       _id: string;
       organizationId: string;
@@ -51,15 +33,6 @@ export async function POST(
 
     if (!site) {
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
-    }
-
-    const membership = await Membership.findOne({
-      userId: session.user.id,
-      organizationId: site.organizationId,
-    });
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const pages = (await pageRepository.listPagesBySite(siteId, {

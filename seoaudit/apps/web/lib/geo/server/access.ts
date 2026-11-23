@@ -1,10 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import type { Session } from 'next-auth';
-import { handler } from '@/lib/auth/auth';
-import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
-import Membership from '@/lib/models/Membership';
+import { requireSiteAccess } from '@/lib/auth/orgAccess';
+import type { OrgAction } from '@/lib/auth/permissions';
 import * as siteRepository from '@/lib/repositories/siteRepository';
 import * as pageRepository from '@/lib/repositories/pageRepository';
 import * as businessProfileRepository from '@/lib/repositories/businessProfileRepository';
@@ -26,25 +22,14 @@ type Access = { ok: true; context: GeoContext } | { ok: false; response: NextRes
 
 const deny = (error: string, status: number): Access => ({ ok: false, response: NextResponse.json({ error }, { status }) });
 
-/** Valida sesión y membresía, y resuelve perfil + páginas por el origen del sitio. */
-export async function resolveGeoContext(siteId: string): Promise<Access> {
-  const session = (await getServerSession(handler)) as Session | null;
-  if (!session?.user?.email) return deny('Unauthorized', 401);
+/** Valida sesión y el permiso `action` en la organización del sitio, y resuelve perfil + páginas por su origen. */
+export async function resolveGeoContext(siteId: string, action: OrgAction): Promise<Access> {
+  const access = await requireSiteAccess(siteId, action);
+  if (!access.ok) return access;
 
-  if (!session.user.id) {
-    const { db } = await connectToDatabase();
-    const user = await db.collection('users').findOne({ email: session.user.email });
-    if (!user) return deny('Unauthorized', 401);
-    session.user.id = user._id.toString();
-  }
-
-  await connectMongoose();
-  const site = (await siteRepository.getSiteById(siteId)) as { _id: unknown; url: string; organizationId: string } | null;
+  const organizationId = access.organizationId;
+  const site = (await siteRepository.getSiteById(siteId)) as { _id: unknown; url: string } | null;
   if (!site) return deny('Site not found', 404);
-
-  const organizationId = site.organizationId.toString();
-  const membership = await Membership.findOne({ userId: session.user.id, organizationId });
-  if (!membership) return deny('No tienes acceso a esta organización', 403);
 
   const origin = new URL(site.url).origin;
   const latest = (await siteRepository.getLatestCompletedSiteForOrigin(organizationId, origin)) as {

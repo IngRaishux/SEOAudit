@@ -6,6 +6,7 @@ import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { SERPPreview } from './SERPPreview';
 import { Card, CardContent } from './Card';
 import { GenerateAllDialog } from './GenerateAllDialog';
+import { can, type OrgRole } from '@/lib/auth/permissions';
 import { ISite } from '@/lib/interfaces';
 import { RiSearchLine, RiFileTextLine, RiPriceTag3Line, RiSparklingLine } from '@remixicon/react';
 import { GeoTab } from './geo/GeoTab';
@@ -35,6 +36,7 @@ interface SiteDetailsTabsProps {
   siteUrl: string;
   siteId: string;
   organizationId: string;
+  role: OrgRole;
   site: ISite 
 }
 
@@ -44,8 +46,10 @@ export function SiteDetailsTabs({
   pages,
   siteUrl,
   siteId,
-  site
+  site,
+  role,
 }: SiteDetailsTabsProps) {
+  const canEdit = can(role, 'content.edit');
   const [activeTab, setActiveTab] = useState<TabType>('serp');
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
@@ -124,9 +128,11 @@ export function SiteDetailsTabs({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <div className="flex justify-end mb-4">
-                    <GenerateAllDialog siteId={siteId} pageCount={pages.length} />
-                  </div>
+                  {canEdit && (
+                    <div className="flex justify-end mb-4">
+                      <GenerateAllDialog siteId={siteId} pageCount={pages.length} />
+                    </div>
+                  )}
                   <HreflangSummary pages={pages} reviews={hreflangReviews} t={t} />
                   <table className="table w-full text-sm">
                     <thead className="bg-base-200">
@@ -200,12 +206,14 @@ export function SiteDetailsTabs({
                             />
                           </td>
                           <td>
-                            <Link
-                              href={`/sugerence?url=${encodeURIComponent(page.url)}&pageId=${page._id}&siteId=${siteId}`}
-                              className="link link-primary font-medium"
-                            >
-                              {t('sites.actions')} →
-                            </Link>
+                            {canEdit && (
+                              <Link
+                                href={`/sugerence?url=${encodeURIComponent(page.url)}&pageId=${page._id}&siteId=${siteId}`}
+                                className="link link-primary font-medium"
+                              >
+                                {t('sites.actions')} →
+                              </Link>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -250,7 +258,7 @@ export function SiteDetailsTabs({
             </div>
           )}
 
-          {activeTab === 'geo' && <GeoTab siteId={siteId} t={t} />}
+          {activeTab === 'geo' && <GeoTab siteId={siteId} t={t} canEdit={canEdit} />}
         </div>
       </Card>
     </div>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import connectMongoose from '@/lib/db/mongoose';
+import { requirePageAccess } from '@/lib/auth/orgAccess';
 import * as pageRepository from '@/lib/repositories/pageRepository';
 
 export const runtime = 'nodejs';
@@ -11,7 +11,9 @@ export async function GET(
   const { pageId } = await params;
 
   try {
-    await connectMongoose();
+    const access = await requirePageAccess(pageId, 'site.read');
+    if (!access.ok) return access.response;
+
     const page = await pageRepository.getPageById(pageId);
 
     if (!page) {

@@ -9,19 +9,21 @@ import { RiErrorWarningLine, RiGoogleFill, RiShieldCheckLine } from '@remixicon/
 import { FormField } from '@/components/auth/FormField';
 import { validateRegistration, type RegistrationValues } from '@/lib/auth/validation';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { InviteBanner } from '@/components/invitations/InviteBanner';
+import { inviteCallbackUrl, withInvite, type InviteContext } from '@/components/invitations/inviteContext';
 
 const FIELD_ORDER: (keyof RegistrationValues)[] = ['name', 'email', 'password', 'confirmPassword'];
 
 type Values = RegistrationValues & { organizationName: string };
 
-export function RegisterForm() {
+export function RegisterForm({ invite = null }: { invite?: InviteContext | null }) {
   const router = useRouter();
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
 
   const [values, setValues] = useState<Values>({
     name: '',
-    email: '',
+    email: invite?.email ?? '',
     organizationName: '',
     password: '',
     confirmPassword: '',
@@ -70,7 +72,8 @@ export function RegisterForm() {
           name: values.name.trim(),
           email,
           password: values.password,
-          organizationName: values.organizationName.trim() || undefined,
+          // Un invitado entra a la organización que lo invitó: no crea una propia
+          organizationName: invite ? undefined : values.organizationName.trim() || undefined,
         }),
       });
 
@@ -87,7 +90,7 @@ export function RegisterForm() {
 
       const signInResult = await signIn('credentials', { email, password: values.password, redirect: false });
       if (signInResult?.ok && !signInResult.error) {
-        router.push('/organizations');
+        router.push(inviteCallbackUrl(invite));
       } else {
         setFormError('errors.serverError');
       }
@@ -102,7 +105,7 @@ export function RegisterForm() {
   async function handleGoogleSignUp() {
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/organizations', redirect: true });
+      await signIn('google', { callbackUrl: inviteCallbackUrl(invite), redirect: true });
     } catch (err) {
       console.error(err);
       setFormError('errors.serverError');
@@ -112,6 +115,8 @@ export function RegisterForm() {
 
   return (
     <div className="space-y-5">
+      {invite && <InviteBanner invite={invite} />}
+
       {formError && (
         <div role="alert" className="alert alert-error text-sm py-3">
           <RiErrorWarningLine className="size-5" aria-hidden="true" />
@@ -141,19 +146,24 @@ export function RegisterForm() {
           value={values.email}
           onChange={update('email')}
           error={emailError && t(emailError)}
+          hint={invite ? t('team.acceptPage.lockedEmail') : undefined}
+          readOnly={Boolean(invite)}
+          className={invite ? 'bg-base-200' : ''}
           disabled={isLoading}
         />
-        <FormField
-          id="organizationName"
-          type="text"
-          autoComplete="organization"
-          label={t('common.organization')}
-          optionalLabel={t('auth.optional')}
-          placeholder={t('auth.organizationPlaceholder')}
-          value={values.organizationName}
-          onChange={update('organizationName')}
-          disabled={isLoading}
-        />
+        {!invite && (
+          <FormField
+            id="organizationName"
+            type="text"
+            autoComplete="organization"
+            label={t('common.organization')}
+            optionalLabel={t('auth.optional')}
+            placeholder={t('auth.organizationPlaceholder')}
+            value={values.organizationName}
+            onChange={update('organizationName')}
+            disabled={isLoading}
+          />
+        )}
         <FormField
           id="password"
           type="password"
@@ -198,7 +208,7 @@ export function RegisterForm() {
 
       <p className="text-center text-sm text-base-content/70">
         {t('auth.alreadyHaveAccount')}{' '}
-        <Link href="/login" className="link link-hover font-semibold text-base-content">
+        <Link href={withInvite('/login', invite)} className="link link-hover font-semibold text-base-content">
           {t('auth.loginHere')}
         </Link>
       </p>

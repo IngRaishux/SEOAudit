@@ -20,7 +20,17 @@ const STATUS_BADGE: Record<LlmsTxtStatus, string> = {
   unknown: 'badge-ghost',
 };
 
-export function LlmsTxtSection({ siteId, t, reloadKey }: { siteId: string; t: Translate; reloadKey: number }) {
+export function LlmsTxtSection({
+  siteId,
+  t,
+  reloadKey,
+  canEdit = true,
+}: {
+  siteId: string;
+  t: Translate;
+  reloadKey: number;
+  canEdit?: boolean;
+}) {
   const [data, setData] = useState<LlmsResponse | null>(null);
   const [loadedKey, setLoadedKey] = useState<number | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -109,6 +119,7 @@ export function LlmsTxtSection({ siteId, t, reloadKey }: { siteId: string; t: Tr
       )}
 
       {data.hasProfile ? (
+        canEdit && (
         <div className="flex flex-wrap items-end gap-2">
           {data.languages.length > 1 && (
             <label className="form-control">
@@ -127,6 +138,7 @@ export function LlmsTxtSection({ siteId, t, reloadKey }: { siteId: string; t: Tr
             {generating ? t('geo.llms.generating') : t('geo.llms.generate')}
           </button>
         </div>
+        )
       ) : (
         <Alert kind="info">{t('geo.needsProfile')}</Alert>
       )}

@@ -35,7 +35,17 @@ function toProfileInput(profile: ProfileInput): ProfileInput {
   };
 }
 
-export function ProfileSection({ siteId, t, onSaved }: { siteId: string; t: Translate; onSaved: () => void }) {
+export function ProfileSection({
+  siteId,
+  t,
+  onSaved,
+  canEdit = true,
+}: {
+  siteId: string;
+  t: Translate;
+  onSaved: () => void;
+  canEdit?: boolean;
+}) {
   const [origin, setOrigin] = useState('');
   const [profile, setProfile] = useState<ProfileInput | null>(null);
   const [isDraft, setIsDraft] = useState(false);
@@ -150,6 +160,7 @@ export function ProfileSection({ siteId, t, onSaved }: { siteId: string; t: Tran
       {needsRecrawl && <Alert kind="warning">{t('geo.recrawl')}</Alert>}
       <p className="text-sm text-base-content/70">{t('geo.profile.intro')}</p>
 
+      {canEdit && (
       <div className="flex flex-wrap gap-2">
         <button type="button" className="btn btn-primary btn-sm" onClick={suggest} disabled={busy !== null || needsRecrawl}>
           {busy === 'suggest' && <span className="loading loading-spinner loading-sm" />}
@@ -167,11 +178,13 @@ export function ProfileSection({ siteId, t, onSaved }: { siteId: string; t: Tran
           </>
         )}
       </div>
+      )}
 
       {isDraft && <Alert kind="info">{t('geo.profile.draft')}</Alert>}
 
       {profile && (
-        <>
+        // Sin permiso de edición el perfil se muestra, pero sus campos quedan deshabilitados
+        <fieldset disabled={!canEdit} className="space-y-4 min-w-0">
           <div className="grid gap-4 md:grid-cols-3">
             <label className="form-control">
               <span className="label-text mb-1">{t('geo.profile.businessKind')}</span>
@@ -229,7 +242,7 @@ export function ProfileSection({ siteId, t, onSaved }: { siteId: string; t: Tran
               + {t('geo.profile.addExternal')}
             </button>
           </div>
-        </>
+        </fieldset>
       )}
     </div>
   );
@@ -475,9 +488,23 @@ function EntityCard({
               <h4 className="text-sm font-semibold mr-2">{t('geo.profile.texts')}</h4>
               <div role="tablist" className="tabs tabs-boxed tabs-sm">
                 {languages.map((l) => (
-                  <button key={l} type="button" role="tab" className={`tab ${l === lang ? 'tab-active' : ''}`} onClick={() => setLang(l)}>
+                  // <a> y no <button>: un fieldset deshabilitado (solo lectura) no debe impedir cambiar de idioma
+                  <a
+                    key={l}
+                    role="tab"
+                    tabIndex={0}
+                    aria-selected={l === lang}
+                    className={`tab ${l === lang ? 'tab-active' : ''}`}
+                    onClick={() => setLang(l)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setLang(l);
+                      }
+                    }}
+                  >
                     {l}
-                  </button>
+                  </a>
                 ))}
               </div>
             </div>

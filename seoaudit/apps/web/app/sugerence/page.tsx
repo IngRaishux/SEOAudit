@@ -270,7 +270,7 @@ function SugerenciaContent() {
         description: pageDataToGenerate.description,
         wordCount: pageDataToGenerate.wordCount,
         accountName: organizationName,
-      });
+      }, siteId ?? '');
       // Los idiomas detectados en la página prevalecen sobre los propuestos por la IA
       const suggestions = applyDetectedAlternates(generated, mockPage.alternates);
 
@@ -499,6 +499,7 @@ function SugerenciaContent() {
               </Button>
             </DialogTrigger>
             <DialogSugestion
+              siteId={siteId ?? ''}
               organizationName={organizationName}
               setIsOpen={setIsOpen}
               setIsLoading={setLoading}

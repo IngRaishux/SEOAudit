@@ -25,9 +25,10 @@ type DialogSugestionProps = {
     wordCount: number;
   };
   organizationName: string;
+  siteId: string;
 };
 
-const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoading, organizationName }: DialogSugestionProps) => {
+const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoading, organizationName, siteId }: DialogSugestionProps) => {
   const { data: session } = useSession();
 
   const handleGenerateAndSave = async () => {
@@ -46,7 +47,7 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
         description: pageData.description,
         wordCount: pageData.wordCount,
         accountName: organizationName,
-      });
+      }, siteId);
 
       onSuggestionsGenerated(suggestions);
       setIsOpen(false);
