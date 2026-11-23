@@ -12,6 +12,8 @@ import { isOrgRole } from '@/lib/auth/permissions';
 import { SiteDetailsTabs } from '@/components/SiteDetailsTabs';
 import { Card } from '@/components/Card';
 import type { ISite, IPage } from '@/lib/interfaces';
+import { getRequestLanguage, serverT } from '@/lib/i18n/server';
+import { formatMessage } from '@/lib/i18n/format';
 
 export default async function SiteDetailsPage({
   params,
@@ -88,6 +90,17 @@ export default async function SiteDetailsPage({
             {new Date(site.createdAt).toLocaleTimeString()}
           </p>
         </div>
+
+        {site.crawlTruncated && (
+          <div role="status" className="alert alert-warning mb-6 text-sm">
+            <span>
+              {formatMessage(serverT(await getRequestLanguage(), 'sites.partialNotice'), {
+                crawled: site.pageCount,
+                total: site.sitemapUrlCount ?? site.pageCount,
+              })}
+            </span>
+          </div>
+        )}
 
         {/* Site Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">

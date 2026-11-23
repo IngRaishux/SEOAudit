@@ -13,21 +13,30 @@ export interface CrawlOptions {
   renderJs?: boolean;
   crawl4aiUrl?: string;
   onProgress?: (processed: number, total: number) => void;
+  /**
+   * Momento (epoch ms) a partir del cual no se empiezan URLs nuevas: las que ya están en curso
+   * terminan y el resultado sale parcial (`truncated: true`). Sirve para entrar en el límite
+   * de duración de una función serverless.
+   */
+  deadline?: number;
 }
 
 export interface CrawlResult {
   siteUrl: string;
   sitemapUrl: string;
+  /** URLs del sitemap (o el tope de maxUrls); puede ser mayor que pages.length si truncated. */
   total: number;
   pages: PageSeo[];
   llmsTxt: LlmsTxtCapture;
+  /** true si se alcanzó el deadline antes de rastrear todas las URLs. */
+  truncated: boolean;
 }
 
 export async function crawlSite(
   siteUrl: string,
   options: CrawlOptions = {}
 ): Promise<CrawlResult> {
-  const { concurrency = 5, maxUrls, renderJs = false, crawl4aiUrl, onProgress } = options;
+  const { concurrency = 5, maxUrls, renderJs = false, crawl4aiUrl, onProgress, deadline } = options;
 
   // Se pide en paralelo al crawl; fetchLlmsTxt nunca lanza
   const llmsTxtPromise = fetchLlmsTxt(siteUrl);
@@ -52,6 +61,8 @@ export async function crawlSite(
     const pages = await Promise.all(
       urls.map((url) =>
         limit(async () => {
+          // Pasado el deadline las URLs que aún esperan turno se descartan
+          if (deadline !== undefined && Date.now() >= deadline) return null;
           const result = browser
             ? await extractPageSeoRendered(browser, url)
             : await extractPageSeo(url, 10_000, crawl4aiUrl);
@@ -62,7 +73,15 @@ export async function crawlSite(
       )
     );
 
-    return { siteUrl, sitemapUrl, total, pages, llmsTxt: await llmsTxtPromise };
+    const crawled = pages.filter((page): page is NonNullable<typeof page> => page !== null);
+    return {
+      siteUrl,
+      sitemapUrl,
+      total,
+      pages: crawled,
+      llmsTxt: await llmsTxtPromise,
+      truncated: crawled.length < total,
+    };
   } finally {
     await browser?.close();
   }

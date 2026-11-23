@@ -16,6 +16,7 @@ interface ISite {
   title?: string;
   pageCount: number;
   crawlStatus: string;
+  crawlTruncated?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -175,17 +176,21 @@ export function DashboardContent({
                         <td>
                           <span
                             className={`badge ${
-                              site.crawlStatus === 'completed'
+                              site.crawlStatus === 'completed' && site.crawlTruncated
+                                ? 'badge-warning'
+                                : site.crawlStatus === 'completed'
                                 ? 'badge-success'
                                 : site.crawlStatus === 'failed'
                                   ? 'badge-error'
                                   : 'badge-warning'
                             }`}
                           >
-                            {t(
-                              `sites.crawlStatus.${site.crawlStatus || 'pending'}`,
-                              site.crawlStatus || 'pending'
-                            )}
+                            {site.crawlTruncated
+                              ? t('sites.crawlStatus.partial')
+                              : t(
+                                  `sites.crawlStatus.${site.crawlStatus || 'pending'}`,
+                                  site.crawlStatus || 'pending'
+                                )}
                           </span>
                         </td>
                         <td className="text-base-content/70 whitespace-nowrap text-xs lg:text-base">

@@ -3,11 +3,14 @@
 import { Button, Input } from "@seo-optimizer/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-import { toastError, toastSuccess } from "@/lib/toast";
+import { toastError, toastSuccess, toastWarning } from "@/lib/toast";
+import { useCurrentLanguage, useI18n } from "@/lib/i18n/useI18n";
+import { formatMessage } from "@/lib/i18n/format";
 
 function CrawlerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n(useCurrentLanguage());
 
   const [url, setUrl] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
@@ -53,13 +56,23 @@ function CrawlerContent() {
 
     const interval = setInterval(async () => {
       const res = await fetch(`/api/crawl/${jobId}`);
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        clearInterval(interval);
+        setStatus("failed");
+        toastError(data.error || "No se pudo consultar el progreso del crawl");
+        return;
+      }
       setStatus(data.status);
       setProgress({ processed: data.processed, total: data.total });
 
       if (data.status === "completed") {
         clearInterval(interval);
-        toastSuccess("El sitio se analizó correctamente");
+        if (data.truncated) {
+          toastWarning(formatMessage(t("crawler.partialDone"), { crawled: data.processed, total: data.total }));
+        } else {
+          toastSuccess("El sitio se analizó correctamente");
+        }
         router.push(`/sites/${data.siteId}`);
       } else if (data.status === "failed") {
         clearInterval(interval);
@@ -68,7 +81,7 @@ function CrawlerContent() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [jobId, status, router]);
+  }, [jobId, status, router, t]);
 
   const isRunning = status === "running" || status === "queued";
 

@@ -211,6 +211,7 @@ export const translations = {
       invalidUrl: 'URL inválida',
       pages: 'Páginas encontradas',
       progress: 'Progreso',
+      partialDone: 'Crawl parcial: se analizaron {crawled} de {total} páginas por el límite de tiempo.',
     },
 
     // Sites
@@ -227,9 +228,13 @@ export const translations = {
       crawlStatus: {
         pending: 'Pendiente',
         inProgress: 'En progreso',
+        in_progress: 'En progreso',
         completed: 'Completado',
         failed: 'Fallido',
+        partial: 'Parcial',
       },
+      partialNotice:
+        'Crawl parcial: se analizaron {crawled} de {total} páginas del sitemap porque se alcanzó el límite de tiempo del servidor.',
     },
 
     // Delete Site Dialog
@@ -905,6 +910,7 @@ export const translations = {
       invalidUrl: 'Invalid URL',
       pages: 'Pages found',
       progress: 'Progress',
+      partialDone: 'Partial crawl: {crawled} of {total} pages were analyzed because of the time limit.',
     },
 
     // Sites
@@ -921,9 +927,13 @@ export const translations = {
       crawlStatus: {
         pending: 'Pending',
         inProgress: 'In Progress',
+        in_progress: 'In Progress',
         completed: 'Completed',
         failed: 'Failed',
+        partial: 'Partial',
       },
+      partialNotice:
+        'Partial crawl: {crawled} of {total} sitemap pages were analyzed because the server time limit was reached.',
     },
 
     // Delete Site Dialog
