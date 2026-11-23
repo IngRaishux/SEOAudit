@@ -10,7 +10,7 @@ type Section = 'profile' | 'structuredData' | 'llmsTxt';
 
 const SECTIONS: Section[] = ['profile', 'structuredData', 'llmsTxt'];
 
-export function GeoTab({ siteId, t }: { siteId: string; t: Translate }) {
+export function GeoTab({ siteId, t, canEdit = true }: { siteId: string; t: Translate; canEdit?: boolean }) {
   const [section, setSection] = useState<Section>('profile');
   // Guardar el perfil cambia los reportes de las otras secciones
   const [reloadKey, setReloadKey] = useState(0);
@@ -24,9 +24,9 @@ export function GeoTab({ siteId, t }: { siteId: string; t: Translate }) {
           </button>
         ))}
       </div>
-      {section === 'profile' && <ProfileSection siteId={siteId} t={t} onSaved={() => setReloadKey((k) => k + 1)} />}
-      {section === 'structuredData' && <StructuredDataSection siteId={siteId} t={t} reloadKey={reloadKey} />}
-      {section === 'llmsTxt' && <LlmsTxtSection siteId={siteId} t={t} reloadKey={reloadKey} />}
+      {section === 'profile' && <ProfileSection siteId={siteId} t={t} canEdit={canEdit} onSaved={() => setReloadKey((k) => k + 1)} />}
+      {section === 'structuredData' && <StructuredDataSection siteId={siteId} t={t} canEdit={canEdit} reloadKey={reloadKey} />}
+      {section === 'llmsTxt' && <LlmsTxtSection siteId={siteId} t={t} canEdit={canEdit} reloadKey={reloadKey} />}
     </div>
   );
 }

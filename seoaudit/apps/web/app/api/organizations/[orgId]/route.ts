@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import type { Session } from 'next-auth';
-import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
+import { requireOrgAccess } from '@/lib/auth/orgAccess';
+import { canDelete, RULE_STATUS } from '@/lib/org/memberRules';
 import Membership from '@/lib/models/Membership';
+import Invitation from '@/lib/models/Invitation';
 import Organization from '@/lib/models/Organization';
 import Site from '@/lib/models/Site';
 import Page from '@/lib/models/Page';
@@ -17,52 +15,11 @@ export async function PUT(
   { params }: { params: Promise<{ orgId: string }> }
 ) {
   const { orgId } = await params;
-  const session = (await getServerSession(handler)) as Session | null;
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // Resolve accountId if missing
-  if (!session.user.accountId) {
-    try {
-      const { db } = await connectToDatabase();
-      const usersCollection = db.collection('users');
-      const user = await usersCollection.findOne({ email: session.user.email });
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-
-      await connectMongoose();
-      const membership = await Membership.findOne({ userId: user._id.toString() });
-      if (membership) {
-        session.user.id = user._id.toString();
-        session.user.accountId = membership.organizationId.toString();
-      } else {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-    } catch (error) {
-      console.error('Error resolving accountId:', error);
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-  }
-  
-
-  // Check if user is owner
-  await connectMongoose();
-  const membership = await Membership.findOne({
-    userId: session.user.id,
-    organizationId: orgId,
-  });
-
-  if (!membership || membership.role !== 'owner') {
-    return NextResponse.json(
-      { error: 'Only organization owners can update the organization' },
-      { status: 403 }
-    );
-  }
 
   try {
+    const access = await requireOrgAccess(orgId, 'org.manage');
+    if (!access.ok) return access.response;
+
     const body = await request.json();
     const { name } = body;
 
@@ -101,49 +58,30 @@ export async function DELETE(
   { params }: { params: Promise<{ orgId: string }> }
 ) {
   const { orgId } = await params;
-  const session = (await getServerSession(handler)) as Session | null;
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   try {
-    await connectMongoose();
+    const access = await requireOrgAccess(orgId, 'org.manage');
+    if (!access.ok) return access.response;
 
-    // Get user ID if missing
-    let userId = session.user.id;
-    if (!userId) {
-      const { db } = await connectToDatabase();
-      const usersCollection = db.collection('users');
-      const user = await usersCollection.findOne({ email: session.user.email });
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-      userId = user._id.toString();
-    }
-
-    // Check if user is owner of the organization
-    const membership = await Membership.findOne({
-      userId,
-      organizationId: orgId,
-    });
-
-    if (!membership || membership.role !== 'owner') {
+    // Solo se borra si el owner es el único miembro
+    const memberCount = await Membership.countDocuments({ organizationId: orgId });
+    const rule = canDelete({ userId: access.userId, role: access.role }, memberCount);
+    if (!rule.ok) {
       return NextResponse.json(
-        { error: 'Only organization owner can delete it' },
-        { status: 403 }
+        { error: 'Quita a los miembros antes de borrar la organización', code: rule.code },
+        { status: RULE_STATUS[rule.code] }
       );
     }
 
-    // Delete all suggestions, pages, and sites associated with this organization
+    // Los links de invitaciones pendientes dejan de servir
+    await Invitation.updateMany(
+      { organizationId: orgId, status: 'pending' },
+      { $set: { status: 'revoked', respondedAt: new Date() } }
+    );
     await Suggestion.deleteMany({ organizationId: orgId });
     await Page.deleteMany({ organizationId: orgId });
     await Site.deleteMany({ organizationId: orgId });
-
-    // Delete all memberships for this organization
     await Membership.deleteMany({ organizationId: orgId });
-
-    // Delete the organization itself
     await Organization.findByIdAndDelete(orgId);
 
     return NextResponse.json({ message: 'Organization deleted successfully' });

@@ -12,7 +12,7 @@ type Params = { params: Promise<{ siteId: string }> };
 export async function GET(_request: Request, { params }: Params) {
   const { siteId } = await params;
   try {
-    const access = await resolveGeoContext(siteId);
+    const access = await resolveGeoContext(siteId, 'site.read');
     if (!access.ok) return access.response;
     const { llmsTxt, pages, profile } = access.context;
     return NextResponse.json({
@@ -32,7 +32,7 @@ const bodySchema = z.object({ lang: z.string().min(2).optional() });
 export async function POST(request: Request, { params }: Params) {
   const { siteId } = await params;
   try {
-    const access = await resolveGeoContext(siteId);
+    const access = await resolveGeoContext(siteId, 'content.edit');
     if (!access.ok) return access.response;
     const { profile, pages } = access.context;
     if (!profile) {

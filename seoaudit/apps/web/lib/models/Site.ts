@@ -24,6 +24,12 @@ const siteSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Crawl cortado por el límite de tiempo: se guardaron pageCount de sitemapUrlCount URLs
+    crawlTruncated: {
+      type: Boolean,
+      default: false,
+    },
+    sitemapUrlCount: Number,
     metaTags: [
       {
         _id: false,

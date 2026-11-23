@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { OrganizationSettings } from '@/components/OrganizationSettings';
-import { DeleteOrganizationDialog } from '@/components/DeleteOrganizationDialog';
+import { MembersPanel } from '@/components/team/MembersPanel';
+import { useCurrentLanguage, useI18n } from '@/lib/i18n/useI18n';
+import { isOrgRole } from '@/lib/auth/permissions';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 import { toastError } from '@/lib/toast';
 
@@ -23,6 +25,12 @@ interface Membership {
 function OrganizationSettingsContent() {
   const params = useParams();
   const orgId = params.orgId as string;
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') === 'members' ? 'members' : 'general';
+  const { t } = useI18n(useCurrentLanguage());
+  const setTab = (next: 'general' | 'members') =>
+    router.replace(next === 'members' ? `?tab=members` : '?', { scroll: false });
 
   const [org, setOrg] = useState<Organization | null>(null);
   const [membership, setMembership] = useState<Membership | null>(null);
@@ -77,21 +85,45 @@ function OrganizationSettingsContent() {
     <div className="min-h-screen bg-base-100">
       <div className="max-w-4xl mx-auto p-4 md:p-8">
         {/* Header with back button */}
-        <div className="mb-8">
+        <div className="mb-6">
           <Link
-            href="/dashboard"
+            href={`/dashboard?org=${org.id}`}
             className="text-primary hover:text-primary/80 text-sm font-medium mb-4 inline-block"
           >
             ← Back to Dashboard
           </Link>
-          <h1 className="text-4xl font-bold">{org.name}</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold break-words">{org.name}</h1>
           {membership && (
             <p className="text-base-content/70 mt-1">
-              Role: <span className="capitalize font-semibold text-base-content">{membership.role}</span>
+              {t('organizationSettings.role')}: <span className="font-semibold text-base-content">{isOrgRole(membership.role) ? t(`team.roles.${membership.role}`) : membership.role}</span>
             </p>
           )}
         </div>
 
+        <div role="tablist" className="tabs tabs-bordered mb-6 w-fit">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'general'}
+            className={`tab ${tab === 'general' ? 'tab-active' : ''}`}
+            onClick={() => setTab('general')}
+          >
+            {t('team.tabs.general')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'members'}
+            className={`tab ${tab === 'members' ? 'tab-active' : ''}`}
+            onClick={() => setTab('members')}
+          >
+            {t('team.tabs.members')}
+          </button>
+        </div>
+
+        {tab === 'members' ? (
+          <MembersPanel org={{ id: org.id, name: org.name }} />
+        ) : (
         <div className="space-y-6">
           {/* Organization Settings Card */}
           <Card>
@@ -107,9 +139,9 @@ function OrganizationSettingsContent() {
               ) : (
                 <div className="text-base-content/70">
                   <p className="mb-2">
-                    Organization Name: <span className="font-semibold text-base-content">{org.name}</span>
+                    {t('organizationSettings.name')}: <span className="font-semibold text-base-content">{org.name}</span>
                   </p>
-                  <p className="text-sm">Only the organization owner can change the organization name.</p>
+                  <p className="text-sm">{t('team.members.readOnly')}</p>
                 </div>
               )}
             </CardContent>
@@ -128,43 +160,17 @@ function OrganizationSettingsContent() {
                 </div>
                 <div>
                   <p className="text-sm text-base-content/70 mb-1">Slug</p>
-                  <p className="text-base-content font-medium font-mono">{org.slug}</p>
+                  <p className="text-base-content font-medium font-mono break-all">{org.slug}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-base-content/70 mb-1">Your Role</p>
-                  <p className="text-base-content font-medium capitalize">{membership?.role}</p>
+                  <p className="text-sm text-base-content/70 mb-1">{t('organizationSettings.role')}</p>
+                  <p className="text-base-content font-medium">{membership && (isOrgRole(membership.role) ? t(`team.roles.${membership.role}`) : membership.role)}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          {/* Danger Zone Card */}
-          {isOwner && (
-            <Card className="border-error/50">
-              <CardHeader>
-                <CardTitle className="text-error">
-                  ⚠️ Danger Zone
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold text-error mb-2">
-                      Delete Organization
-                    </h3>
-                    <p className="text-sm text-error/80 mb-4">
-                      Once you delete an organization, there is no going back. Please be certain.
-                    </p>
-                    <DeleteOrganizationDialog
-                      organizationId={org.id}
-                      organizationName={org.name}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
+        )}
       </div>
     </div>
   );

@@ -18,6 +18,16 @@ services:
     networks:
       - seo-audit-network
 
+  # Mailpit: atrapa los correos en desarrollo (SMTP :1025, UI http://localhost:8025)
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: seo-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - seo-audit-network
+
   # Nota: Crawl4AI se levanta desde /Users/hescobar/Proyectos/crawl4ai
   # Ejecuta: cd ../crawl4ai && docker-compose up -d
 

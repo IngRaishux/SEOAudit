@@ -1,89 +1,45 @@
-import { crawlSite } from '@seo-optimizer/crawler';
-import { NextResponse } from "next/server";
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import { createJob, jobStore } from "@/lib/jobStore";
+import { crawlSite, type CrawlResult } from '@seo-optimizer/crawler';
+import { NextResponse, after } from 'next/server';
 import * as siteRepository from '@/lib/repositories/siteRepository';
 import * as pageRepository from '@/lib/repositories/pageRepository';
-import type { Session } from 'next-auth';
+import { requireOrgAccess } from '@/lib/auth/orgAccess';
 import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
-import Membership from '@/lib/models/Membership';
+import CrawlJob from '@/lib/models/CrawlJob';
+import Page from '@/lib/models/Page';
+import Site from '@/lib/models/Site';
+import { createProgressThrottle, crawlDeadline } from '@/lib/crawl/budget';
 
 export const runtime = 'nodejs';
+// El crawl corre en after() dentro de esta invocación. 300 s es el máximo del plan Hobby de
+// Vercel; debe coincidir con CRAWL_MAX_DURATION_S (lib/crawl/budget.ts).
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
+  const startedAt = Date.now();
   try {
-    const session = (await getServerSession(handler)) as Session | null;
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // If accountId is not in session, resolve it from database using email
-    if (!session.user.accountId) {
-      try {
-        const { db } = await connectToDatabase();
-        const usersCollection = db.collection('users');
-
-        // Find user by email
-        const user = await usersCollection.findOne({ email: session.user.email });
-
-        if (!user) {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        await connectMongoose();
-        const membership = await Membership.findOne({ userId: user._id.toString() });
-
-        if (membership) {
-          session.user.id = user._id.toString();
-          session.user.accountId = membership.organizationId.toString();
-        } else {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      } catch (error) {
-        console.error('Error resolving accountId:', error);
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-    }
-
-    if (!session.user.accountId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { url, organizationId } = await request.json();
+
+    // La organización debe venir explícita: nunca se toma una membresía cualquiera del usuario
+    const access = await requireOrgAccess(organizationId, 'crawl.run');
+    if (!access.ok) return access.response;
 
     if (!url) {
       return NextResponse.json({ error: "La URL es requerida" }, { status: 400 });
     }
 
-    // Usar organizationId del request, o fallback a session.user.accountId
-    const effectiveOrgId = organizationId || session.user.accountId;
-
-    if (!effectiveOrgId) {
-      return NextResponse.json({ error: "Organization ID requerido" }, { status: 400 });
-    }
-
-    // Validar que el usuario es miembro de esta organización
     await connectMongoose();
-    const isValidOrg = await Membership.findOne({
-      userId: session.user.id,
-      organizationId: effectiveOrgId,
+    const job = await CrawlJob.create({
+      url,
+      organizationId: access.organizationId,
+      startedAt: new Date(startedAt),
     });
+    const jobId = job._id.toString();
 
-    if (!isValidOrg) {
-      return NextResponse.json(
-        { error: "No tienes acceso a esta organización" },
-        { status: 403 }
-      );
-    }
+    // after() mantiene viva la función en Vercel hasta que el crawl termina; sin esto la
+    // plataforma puede congelarla en cuanto se envía la respuesta
+    after(() => runCrawl(jobId, url, access.organizationId, crawlDeadline(startedAt)));
 
-    const job = createJob(url, effectiveOrgId);
-
-    runCrawl(job.id);
-
-    return NextResponse.json({ jobId: job.id, siteId: job.siteId });
+    return NextResponse.json({ jobId }, { status: 202 });
   } catch (error) {
     console.error('Crawl API error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -94,89 +50,89 @@ export async function POST(request: Request) {
   }
 }
 
-async function runCrawl(jobId: string) {
-  const job = jobStore.get(jobId);
-  if (!job) return;
-
-  job.status = "running";
-
+async function runCrawl(jobId: string, url: string, organizationId: string, deadline: number) {
   try {
+    await connectMongoose();
+    await CrawlJob.updateOne({ _id: jobId }, { $set: { status: 'running' } });
+
+    const shouldWrite = createProgressThrottle();
     const crawl4aiUrl = process.env.CRAWL4AI_URL || 'http://localhost:11235';
-    const result = await crawlSite(job.url, {
+    const result = await crawlSite(url, {
       concurrency: 5,
       crawl4aiUrl,
+      deadline,
       onProgress: (processed, total) => {
-        const j = jobStore.get(jobId);
-        if (j) {
-          j.processed = processed;
-          j.total = total;
-        }
+        if (!shouldWrite(processed, total)) return;
+        // $max: las escrituras pueden llegar desordenadas y el progreso no debe retroceder
+        CrawlJob.updateOne({ _id: jobId }, { $max: { processed }, $set: { total } }).catch((error) =>
+          console.error('Crawl progress update failed:', error)
+        );
       },
     });
 
     // Filtrar archivos XML (sitemaps) que puedan haberse colado en las URLs descubiertas
     const pages = result.pages.filter((page) => !page.url.endsWith('.xml'));
+    if (pages.length === 0) {
+      throw new Error(
+        result.truncated
+          ? 'Se agotó el tiempo antes de rastrear alguna página. Intenta de nuevo.'
+          : 'El sitemap no tiene páginas para rastrear.'
+      );
+    }
 
-    console.log('Crawl completed, pages found:', pages.length);
-    const j = jobStore.get(jobId);
-    if (!j) return;
+    // Se persiste ANTES de marcar el job como completado: el cliente redirige al siteId
+    const siteId = await persistCrawlResult(url, organizationId, { ...result, pages });
 
-    j.result = {
-      siteUrl: result.siteUrl,
-      sitemapUrl: result.sitemapUrl,
-      total: pages.length,
-      pages,
-      llmsTxt: result.llmsTxt,
-    };
-    j.finishedAt = Date.now();
-
-    // Persistir en MongoDB ANTES de marcar como completado
-    await persistCrawlResult(j);
-
-    // Solo marcar como completado DESPUÉS de que la persistencia esté lista
-    j.status = "completed";
-    console.log('Crawl job completed:', jobId);
+    await CrawlJob.updateOne(
+      { _id: jobId },
+      {
+        $set: {
+          status: 'completed',
+          siteId,
+          truncated: result.truncated,
+          processed: pages.length,
+          total: result.total,
+          finishedAt: new Date(),
+        },
+      }
+    );
+    console.log(`Crawl job completed: ${jobId} (${pages.length}/${result.total}${result.truncated ? ', parcial' : ''})`);
   } catch (err) {
     console.error('Crawl error for job', jobId, ':', err);
-    const j = jobStore.get(jobId);
-    if (j) {
-      j.status = "failed";
-      j.error = err instanceof Error ? err.message : String(err);
-      j.finishedAt = Date.now();
-    }
+    await CrawlJob.updateOne(
+      { _id: jobId, status: { $in: ['queued', 'running'] } },
+      { $set: { status: 'failed', error: err instanceof Error ? err.message : String(err), finishedAt: new Date() } }
+    ).catch((error) => console.error('Crawl job fail update failed:', error));
   }
 }
 
-async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
-  if (!job || !job.result) return;
+/** Guarda Site + Pages. Si algo falla, borra lo creado para no dejar un sitio a medias. */
+async function persistCrawlResult(url: string, organizationId: string, result: CrawlResult): Promise<string> {
+  const firstPage = result.pages[0];
+  const siteMetaTags = [
+    ...(firstPage?.ogTitle ? [{ name: 'og:title', content: firstPage.ogTitle }] : []),
+    ...(firstPage?.ogDescription ? [{ name: 'og:description', content: firstPage.ogDescription }] : []),
+    ...(firstPage?.ogImage ? [{ name: 'og:image', content: firstPage.ogImage }] : []),
+    ...(firstPage?.robots ? [{ name: 'robots', content: firstPage.robots }] : []),
+  ];
+
+  // in_progress hasta que estén las páginas: no cuenta como "último crawl completado" del origen
+  const site = await siteRepository.createSite({
+    url,
+    organizationId,
+    title: firstPage?.title || undefined,
+    description: firstPage?.description || undefined,
+    metaTags: siteMetaTags,
+    llmsTxt: result.llmsTxt,
+    crawlStatus: 'in_progress',
+  });
+  const siteId = site._id.toString();
 
   try {
-    // Crear Site
-    const firstPage = job.result.pages[0];
-    const siteMetaTags = [
-      ...(firstPage?.ogTitle ? [{ name: 'og:title', content: firstPage.ogTitle }] : []),
-      ...(firstPage?.ogDescription ? [{ name: 'og:description', content: firstPage.ogDescription }] : []),
-      ...(firstPage?.ogImage ? [{ name: 'og:image', content: firstPage.ogImage }] : []),
-      ...(firstPage?.robots ? [{ name: 'robots', content: firstPage.robots }] : []),
-    ];
-
-    const site = await siteRepository.createSite({
-      url: job.url,
-      organizationId: job.organizationId,
-      title: firstPage?.title || undefined,
-      description: firstPage?.description || undefined,
-      metaTags: siteMetaTags,
-      llmsTxt: job.result.llmsTxt,
-    });
-
-    // Actualizar job con el siteId de MongoDB
-    job.siteId = site._id.toString();
-    
-    // Crear Pages
-    const pages = job.result.pages.map((page) => ({
-      siteId: site._id.toString(),
+    const pages = result.pages.map((page) => ({
+      siteId,
       url: page.url,
-      organizationId: job.organizationId,
+      organizationId,
       title: page.title || undefined,
       description: page.description || undefined,
       statusCode: page.statusCode,
@@ -198,16 +154,18 @@ async function persistCrawlResult(job: ReturnType<typeof jobStore.get>) {
       htmlLang: page.htmlLang || undefined,
     }));
 
-    if (pages.length > 0) {
-      await pageRepository.createPages(pages as Parameters<typeof pageRepository.createPages>[0]);
-    }
+    await pageRepository.createPages(pages as Parameters<typeof pageRepository.createPages>[0]);
 
-    // Actualizar Site con pageCount
-    await siteRepository.updateSite(site._id.toString(), {
+    await siteRepository.updateSite(siteId, {
       pageCount: pages.length,
       crawlStatus: 'completed',
+      crawlTruncated: result.truncated,
+      sitemapUrlCount: result.total,
     });
+    return siteId;
   } catch (error) {
-    console.error('Error persisting crawl result:', error);
+    await Page.deleteMany({ siteId }).catch(() => {});
+    await Site.deleteOne({ _id: siteId }).catch(() => {});
+    throw error;
   }
 }

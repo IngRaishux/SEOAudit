@@ -5,6 +5,8 @@ import connectMongoose from '@/lib/db/mongoose';
 import Organization from '@/lib/models/Organization';
 import Membership from '@/lib/models/Membership';
 import { comparePasswords } from '@/lib/password';
+import { createOrganizationWithOwner } from '@/lib/org/createOrganization';
+import { hasPendingInvitation } from '@/lib/invitations/service';
 import { connectToDatabase } from '@/lib/db/mongo';
 import type { JWT } from 'next-auth/jwt';
 import type { Session, User } from 'next-auth';
@@ -85,18 +87,13 @@ export const authConfig = {
 
             const result = await usersCollection.insertOne(newUser);
 
-            // Create default organization and membership
-            await connectMongoose();
-            const organization = await Organization.create({
-              name: `${user.name || user.email}'s Organization`,
-              ownerId: result.insertedId.toString(),
-            });
-
-            await Membership.create({
-              userId: result.insertedId.toString(),
-              organizationId: organization._id.toString(),
-              role: 'owner',
-            });
+            // Un invitado entra a la organización que lo invitó, sin organización personal
+            if (!(await hasPendingInvitation(user.email))) {
+              await createOrganizationWithOwner(
+                `${user.name || user.email}'s Organization`,
+                result.insertedId.toString()
+              );
+            }
           }
 
           return true;
@@ -117,32 +114,17 @@ export const authConfig = {
       account?: Account | null;
     }) {
       if (user) {
-        token.id = user.id;
         token.email = user.email;
-      }
-
-      // Resolve organizations on first sign-in
-      if (token.id && !token.accountId) {
-        try {
-          await connectMongoose();
-          const memberships = await Membership.find({ userId: token.id });
-
-          if (memberships.length > 0) {
-            const organizations = await Promise.all(
-              memberships.map(async (m) => {
-                const org = await Organization.findById(m.organizationId);
-                return {
-                  id: m.organizationId.toString(),
-                  name: org?.name || 'Organization',
-                };
-              })
-            );
-
-            token.accountId = memberships[0].organizationId.toString();
-            token.organizations = organizations;
+        token.id = user.id;
+        // Con Google, user.id es el id del proveedor: el id de la app es el _id en `users`
+        if (user.email) {
+          try {
+            const { db } = await connectToDatabase();
+            const dbUser = await db.collection('users').findOne({ email: user.email });
+            if (dbUser) token.id = dbUser._id.toString();
+          } catch (error) {
+            console.error('JWT callback - error resolving user id:', error);
           }
-        } catch (error) {
-          console.error('JWT callback - error resolving orgs:', error);
         }
       }
 
@@ -168,7 +150,6 @@ export const authConfig = {
               })
             );
 
-            session.user.accountId = memberships[0].organizationId.toString();
             session.user.organizations = organizations;
           }
         } catch (error) {

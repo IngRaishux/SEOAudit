@@ -34,7 +34,17 @@ const preview = (value: unknown) => {
   return text.length > 120 ? `${text.slice(0, 120)}…` : text;
 };
 
-export function StructuredDataSection({ siteId, t, reloadKey }: { siteId: string; t: Translate; reloadKey: number }) {
+export function StructuredDataSection({
+  siteId,
+  t,
+  reloadKey,
+  canEdit = true,
+}: {
+  siteId: string;
+  t: Translate;
+  reloadKey: number;
+  canEdit?: boolean;
+}) {
   const [report, setReport] = useState<Report | null>(null);
   const [loadedKey, setLoadedKey] = useState<number | null>(null);
   const [applying, setApplying] = useState(false);
@@ -152,7 +162,7 @@ export function StructuredDataSection({ siteId, t, reloadKey }: { siteId: string
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-semibold">{t('geo.structuredData.blocks')}</h3>
-            {hasConflicts && (
+            {hasConflicts && canEdit && (
               <button type="button" className="btn btn-primary btn-sm" onClick={apply} disabled={applying}>
                 {applying && <span className="loading loading-spinner loading-sm" />}
                 {t('geo.structuredData.apply')}

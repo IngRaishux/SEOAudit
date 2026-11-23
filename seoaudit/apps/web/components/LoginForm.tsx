@@ -9,15 +9,17 @@ import { RiErrorWarningLine, RiGoogleFill, RiLoginBoxLine } from '@remixicon/rea
 import { FormField } from '@/components/auth/FormField';
 import { validateLogin, type LoginValues } from '@/lib/auth/validation';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
+import { InviteBanner } from '@/components/invitations/InviteBanner';
+import { inviteCallbackUrl, withInvite, type InviteContext } from '@/components/invitations/inviteContext';
 
 const FIELD_ORDER: (keyof LoginValues)[] = ['email', 'password'];
 
-export function LoginForm() {
+export function LoginForm({ invite = null }: { invite?: InviteContext | null }) {
   const router = useRouter();
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
 
-  const [values, setValues] = useState<LoginValues>({ email: '', password: '' });
+  const [values, setValues] = useState<LoginValues>({ email: invite?.email ?? '', password: '' });
   // Los errores de campo solo se muestran tras el primer intento de envío; luego se recalculan en vivo
   const [submitted, setSubmitted] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export function LoginForm() {
       });
 
       if (result?.ok && !result.error) {
-        router.push('/organizations');
+        router.push(inviteCallbackUrl(invite));
         return;
       }
       setFormError(result?.error ? 'auth.invalidCredentials' : 'errors.serverError');
@@ -63,7 +65,7 @@ export function LoginForm() {
   async function handleGoogleSignIn() {
     setIsLoading(true);
     try {
-      await signIn('google', { callbackUrl: '/organizations', redirect: true });
+      await signIn('google', { callbackUrl: inviteCallbackUrl(invite), redirect: true });
     } catch (err) {
       console.error(err);
       setFormError('errors.serverError');
@@ -73,6 +75,8 @@ export function LoginForm() {
 
   return (
     <div className="space-y-5">
+      {invite && <InviteBanner invite={invite} />}
+
       {formError && (
         <div role="alert" className="alert alert-error text-sm py-3">
           <RiErrorWarningLine className="size-5" aria-hidden="true" />
@@ -91,6 +95,9 @@ export function LoginForm() {
           value={values.email}
           onChange={update('email')}
           error={errors.email && t(errors.email)}
+          hint={invite ? t('team.acceptPage.lockedEmail') : undefined}
+          readOnly={Boolean(invite)}
+          className={invite ? 'bg-base-200' : ''}
           disabled={isLoading}
         />
         <FormField
@@ -125,7 +132,7 @@ export function LoginForm() {
 
       <p className="text-center text-sm text-base-content/70">
         {t('auth.dontHaveAccount')}{' '}
-        <Link href="/register" className="link link-hover font-semibold text-base-content">
+        <Link href={withInvite('/register', invite)} className="link link-hover font-semibold text-base-content">
           {t('auth.registerHere')}
         </Link>
       </p>
