@@ -11,6 +11,8 @@ export interface CrawlOptions {
   maxUrls?: number;
   renderJs?: boolean;
   crawl4aiUrl?: string;
+  /** Tiempo máximo de espera por página en Crawl4AI (ms). */
+  pageTimeoutMs?: number;
   onProgress?: (processed: number, total: number) => void;
   /**
    * Momento (epoch ms) a partir del cual no se empiezan URLs nuevas: las que ya están en curso
@@ -35,7 +37,15 @@ export async function crawlSite(
   siteUrl: string,
   options: CrawlOptions = {}
 ): Promise<CrawlResult> {
-  const { concurrency = 5, maxUrls, renderJs = false, crawl4aiUrl, onProgress, deadline } = options;
+  const {
+    concurrency = 5,
+    maxUrls,
+    renderJs = false,
+    crawl4aiUrl,
+    pageTimeoutMs = 30_000,
+    onProgress,
+    deadline,
+  } = options;
 
   // Se pide en paralelo al crawl; fetchLlmsTxt nunca lanza
   const llmsTxtPromise = fetchLlmsTxt(siteUrl);
@@ -67,7 +77,7 @@ export async function crawlSite(
           if (deadline !== undefined && Date.now() >= deadline) return null;
           const result = render && browser
             ? await render.extractPageSeoRendered(browser, url)
-            : await extractPageSeo(url, 10_000, crawl4aiUrl);
+            : await extractPageSeo(url, pageTimeoutMs, crawl4aiUrl);
           processed++;
           onProgress?.(processed, total);
           return { ...result, alternates: mergeAlternates(result.alternates, sitemapAlternates.get(url) ?? []) };

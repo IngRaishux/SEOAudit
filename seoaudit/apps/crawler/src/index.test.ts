@@ -42,3 +42,16 @@ describe('crawlSite deadline', () => {
     expect(result.truncated).toBe(true);
   });
 });
+
+describe('crawlSite pageTimeoutMs', () => {
+  it('pasa la espera por página a Crawl4AI (30 s por defecto)', async () => {
+    const { extractPageSeo } = await import('./crawler/extract');
+    const mock = vi.mocked(extractPageSeo);
+    mock.mockClear();
+    await crawlSite('https://ex.com', { concurrency: 2 });
+    expect(mock.mock.calls[0][1]).toBe(30_000);
+    mock.mockClear();
+    await crawlSite('https://ex.com', { concurrency: 2, pageTimeoutMs: 12_000 });
+    expect(mock.mock.calls[0][1]).toBe(12_000);
+  });
+});

@@ -15,6 +15,21 @@ export function crawlDeadline(startedAt: number): number {
   return startedAt + CRAWL_MAX_DURATION_S * 1000 - CRAWL_SAFETY_MARGIN_MS;
 }
 
+/**
+ * Concurrencia y espera por página, configurables con CRAWLER_CONCURRENCY y CRAWLER_TIMEOUT_MS.
+ * La espera se acota para que una página en curso al llegar el deadline termine dentro del margen.
+ */
+export function crawlerSettings(env: Record<string, string | undefined> = process.env) {
+  const concurrency = Number(env.CRAWLER_CONCURRENCY);
+  const timeout = Number(env.CRAWLER_TIMEOUT_MS);
+  const maxPageTimeout = CRAWL_SAFETY_MARGIN_MS - 10_000;
+  return {
+    concurrency: Number.isFinite(concurrency) && concurrency >= 1 ? Math.min(Math.floor(concurrency), 10) : 3,
+    pageTimeoutMs:
+      Number.isFinite(timeout) && timeout > 0 ? Math.min(Math.max(timeout, 5_000), maxPageTimeout) : 30_000,
+  };
+}
+
 /** Un job activo más viejo que esto murió con la función (timeout, redeploy). */
 export const STALE_CRAWL_MS = CRAWL_MAX_DURATION_S * 1000 + 60_000;
 
