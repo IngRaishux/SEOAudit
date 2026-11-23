@@ -2,16 +2,21 @@
   "name": "seoaudit",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.0.0",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "build": "cd apps/web && npm run build",
-    "dev": "cd apps/web && npm run dev",
+    "build": "npm run build --workspace=@seo-optimizer/ui && cd apps/web && npm run build",
+    "dev": "npm run build --workspace=@seo-optimizer/ui && cd apps/web && npm run dev",
     "start": "cd apps/web && npm run start"
   },
   "devDependencies": {
     "next": "16.2.5"
+  },
+  "dependencies": {
+    "@radix-ui/react-toast": "^1.2.23",
+    "@remixicon/react": "^4.9.0"
   }
 }

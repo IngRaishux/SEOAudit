@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import type { IOrganization } from './Organization';
 
 export type MembershipRole = 'owner' | 'admin' | 'member';
 

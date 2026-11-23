@@ -1,10 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { SERPPreview } from './SERPPreview';
 import { Card, CardContent } from './Card';
+import { GenerateAllDialog } from './GenerateAllDialog';
+import { ISite } from '@/lib/interfaces';
+import { RiSearchLine, RiFileTextLine, RiPriceTag3Line, RiSparklingLine } from '@remixicon/react';
+import { GeoTab } from './geo/GeoTab';
+import { HreflangCell, HreflangSummary } from './hreflang/HreflangCell';
+import { normalizeUrl, reviewHreflang, type HreflangAlternate } from '@/lib/hreflang/review';
 
 interface MetaTag {
   name: string;
@@ -19,6 +25,9 @@ interface Page {
   headings: string[];
   metaTags: MetaTag[];
   description?: string
+  /** undefined: rastreada antes de capturar hreflang */
+  alternates?: HreflangAlternate[];
+  htmlLang?: string;
 }
 
 interface SiteDetailsTabsProps {
@@ -26,25 +35,32 @@ interface SiteDetailsTabsProps {
   siteUrl: string;
   siteId: string;
   organizationId: string;
+  site: ISite 
 }
 
-type TabType = 'serp' | 'pages' | 'meta';
+type TabType = 'serp' | 'pages' | 'meta' | 'geo';
 
 export function SiteDetailsTabs({
   pages,
   siteUrl,
   siteId,
-  organizationId,
+  site
 }: SiteDetailsTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('serp');
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
+  const hreflangReviews = useMemo(() => reviewHreflang(pages), [pages]);
+  const pagesByUrl = useMemo(() => new Map(pages.map((p) => [normalizeUrl(p.url), p])), [pages]);
 
   const tabs = [
-    { id: 'serp', label: t('siteDetails.tabs.serp'), icon: '🔍' },
-    { id: 'pages', label: `${t('siteDetails.tabs.pages')} (${pages.length})`, icon: '📄' },
-    { id: 'meta', label: t('siteDetails.tabs.meta'), icon: '🏷️' },
+    { id: 'serp', label: t('siteDetails.tabs.serp'), icon: <RiSearchLine className="size-4" /> },
+    { id: 'pages', label: `${t('siteDetails.tabs.pages')} (${pages.length})`, icon: <RiFileTextLine className="size-4" /> },
+    { id: 'meta', label: t('siteDetails.tabs.meta'), icon: <RiPriceTag3Line className="size-4" /> },
+    { id: 'geo', label: t('siteDetails.tabs.geo'), icon: <RiSparklingLine className="size-4" /> },
   ] as const;
+
+  console.log('pages => ', pages);
+  
 
   return (
     <div className="space-y-6">
@@ -72,12 +88,19 @@ export function SiteDetailsTabs({
           {/* SERP Preview Tab */}
           {activeTab === 'serp' && (
             <div className="space-y-4">
-              {pages.length > 0 && pages[0].title ? (
-                <SERPPreview
-                  title={pages[0].title || 'Sin título'}
-                  description={pages[0].description || 'Sin descripción'}
-                  url={siteUrl}
-                />
+              {site.title && site.description ? (
+                <>
+                  {(() => {
+                    
+                    return (
+                      <SERPPreview
+                        title={site.description}
+                        description={site.description}
+                        url={siteUrl}
+                      />
+                    );
+                  })()}
+                </>
               ) : (
                 <div className="alert alert-info">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6">
@@ -101,6 +124,10 @@ export function SiteDetailsTabs({
                 </div>
               ) : (
                 <div className="overflow-x-auto">
+                  <div className="flex justify-end mb-4">
+                    <GenerateAllDialog siteId={siteId} pageCount={pages.length} />
+                  </div>
+                  <HreflangSummary pages={pages} reviews={hreflangReviews} t={t} />
                   <table className="table w-full text-sm">
                     <thead className="bg-base-200">
                       <tr>
@@ -115,6 +142,9 @@ export function SiteDetailsTabs({
                         </th>
                         <th className="text-base-content">
                           {t('pages.headings')}
+                        </th>
+                        <th className="text-base-content">
+                          {t('siteDetails.hreflang.column')}
                         </th>
                         <th className="text-base-content">
                           {t('sites.actions')}
@@ -159,6 +189,16 @@ export function SiteDetailsTabs({
                               '—'
                             )}
                           </td>
+                          <td className="align-top">
+                            <HreflangCell
+                              pageUrl={page.url}
+                              pagesByUrl={pagesByUrl}
+                              alternates={page.alternates}
+                              htmlLang={page.htmlLang}
+                              review={hreflangReviews.get(normalizeUrl(page.url))}
+                              t={t}
+                            />
+                          </td>
                           <td>
                             <Link
                               href={`/sugerence?url=${encodeURIComponent(page.url)}&pageId=${page._id}&siteId=${siteId}`}
@@ -179,12 +219,12 @@ export function SiteDetailsTabs({
           {/* Meta Tags Tab */}
           {activeTab === 'meta' && (
             <div>
-              {pages.length > 0 && pages[0].metaTags && pages[0].metaTags.length > 0 ? (
+              {site.metaTags && site.metaTags.length > 0 ? (
                 <div className="space-y-4">
                   <p className="text-sm text-base-content/70 mb-4">
-                    {t('siteDetails.metaTagsFrom')} <span className="font-mono text-base-content font-medium">{pages[0].url}</span>
+                    {t('siteDetails.metaTagsFrom')} <span className="font-mono text-base-content font-medium">{site.url}</span>
                   </p>
-                  {pages[0].metaTags.map((tag, idx) => (
+                  {site.metaTags.map((tag, idx) => (
                     <Card key={idx} className="border-primary/50">
                       <CardContent className="pt-6">
                         <div className="text-sm space-y-2">
@@ -209,6 +249,8 @@ export function SiteDetailsTabs({
               )}
             </div>
           )}
+
+          {activeTab === 'geo' && <GeoTab siteId={siteId} t={t} />}
         </div>
       </Card>
     </div>

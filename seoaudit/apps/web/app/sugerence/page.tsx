@@ -2,12 +2,23 @@
 
 import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { BackButton } from '@/components/BackButton';
+import { BackButton, Dialog, DialogTrigger, Button } from '@seo-optimizer/ui';
 import DialogSugestion from '@/components/DialogSugestion';
-import { Dialog, DialogTrigger } from '@/components/Dialog';
-import { generateSEOSuggestions } from "@/lib/generateSEOSuggestions";
+import { SERPPreview } from '@/components/SERPPreview';
+import { generateSEOSuggestions, type SEOSuggestion } from "@/lib/generateSEOSuggestions";
+import { applyDetectedAlternates } from "@/lib/hreflang/form";
+import type { HreflangAlternate } from "@/lib/hreflang/review";
+import { toastError, toastSuccess } from '@/lib/toast';
 import { useSession } from 'next-auth/react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
+import { RiFileEditLine, RiSearchLine, RiPriceTag3Line, RiMagicLine, RiDownloadLine, RiPlayLine } from '@remixicon/react';
+
+type SugerenciaTabType = 'form' | 'serp' | 'meta';
+
+const sugerenciaTabs = [
+  { id: 'form', label: 'Sugerencia', icon: <RiFileEditLine className="size-4" /> },
+  { id: 'serp', label: 'Vista previa SERP', icon: <RiSearchLine className="size-4" /> },
+  { id: 'meta', label: 'Etiquetas meta', icon: <RiPriceTag3Line className="size-4" /> },
+] as const;
 
 
 const mockSuggested = {
@@ -36,14 +47,7 @@ interface Page {
   canonical?: string;
   headings: string[];
   metaTags?: Array<{ name: string; content: string }>;
-}
-
-interface Site {
-  _id: string;
-  url: string;
-  organizationId: string;
-  title?: string;
-  pageCount: number;
+  alternates?: HreflangAlternate[];
 }
 
 interface PageData {
@@ -63,14 +67,14 @@ function SugerenciaContent() {
 
   const [mockPage, setMockPage] = useState<Page | null>(null);
   const [organizationName, setOrganizationName] = useState('default');
-  const [loadingPage, setLoadingPage] = useState(true);
+  const [fetchingPage, setFetchingPage] = useState(true);
+  const [form, setForm] = useState(mockSuggested);
+  // Sin pageId/siteId no hay nada que cargar
+  const loadingPage = Boolean(pageId && siteId) && fetchingPage;
 
 
   useEffect(() => {
-    if (!pageId || !siteId) {
-      setLoadingPage(false);
-      return;
-    }
+    if (!pageId || !siteId) return;
 
     // Fetch page and site data from MongoDB
     const fetchData = async () => {
@@ -83,6 +87,8 @@ function SugerenciaContent() {
         if (pageRes.ok) {
           const pageData = await pageRes.json();
           setMockPage(pageData.page);
+          // Los idiomas alternos que declara la página precargan el formulario
+          setForm((prev) => applyDetectedAlternates(prev, pageData.page?.alternates));
         }
 
         if (siteRes.ok) {
@@ -96,23 +102,23 @@ function SugerenciaContent() {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        toastError('Error al cargar la información de la página');
       } finally {
-        setLoadingPage(false);
+        setFetchingPage(false);
       }
     };
 
     fetchData();
   }, [pageId, siteId]);
 
-  const [form, setForm] = useState(mockSuggested);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
 
-  const handleSuggestionsGenerated = async (suggestions: any) => {
+  const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<SugerenciaTabType>('form');
+
+  const handleSuggestionsGenerated = async (generated: SEOSuggestion) => {
+    const suggestions = applyDetectedAlternates(generated, mockPage?.alternates);
     setForm(suggestions);
-    setError(null);
 
     // Persistir sugerencias en MongoDB si tenemos pageId y siteId
     if (pageId && siteId) {
@@ -130,14 +136,15 @@ function SugerenciaContent() {
         });
 
         if (res.ok) {
-          setSaved(true);
-          setTimeout(() => setSaved(false), 3000); // Mostrar confirmación por 3s
+          toastSuccess('Sugerencia guardada correctamente');
         } else {
           const data = await res.json();
           console.error('Error saving suggestion:', data.error);
+          toastError(data.error || 'Error al guardar la sugerencia');
         }
       } catch (err) {
         console.error('Error persisting suggestion:', err);
+        toastError('Error al guardar la sugerencia');
       }
     }
   };
@@ -238,17 +245,16 @@ function SugerenciaContent() {
 
   const handleGenerateAndExport = async () => {
     if (!mockPage) {
-      setError("No se ha cargado la información de la página");
+      toastError("No se ha cargado la información de la página");
       return;
     }
 
     if (!session?.user?.organizations || session.user.organizations.length === 0) {
-      setError("No se pudo obtener la información de tu organización");
+      toastError("No se pudo obtener la información de tu organización");
       return;
     }
 
     setLoading(true);
-    setError(null);
 
     try {
       const pageDataToGenerate: PageData = {
@@ -258,13 +264,15 @@ function SugerenciaContent() {
         wordCount: 0,
       };
 
-      const suggestions = await generateSEOSuggestions({
+      const generated = await generateSEOSuggestions({
         url: pageDataToGenerate.url,
         title: pageDataToGenerate.title,
         description: pageDataToGenerate.description,
         wordCount: pageDataToGenerate.wordCount,
-        accountName: session.user.organizations[0].name,
+        accountName: organizationName,
       });
+      // Los idiomas detectados en la página prevalecen sobre los propuestos por la IA
+      const suggestions = applyDetectedAlternates(generated, mockPage.alternates);
 
       // Actualizar el form con las sugerencias
       setForm(suggestions);
@@ -301,11 +309,10 @@ function SugerenciaContent() {
       URL.revokeObjectURL(downloadUrl);
 
       // Mostrar confirmación
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      toastSuccess('Sugerencia guardada correctamente');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error generating suggestions';
-      setError(message);
+      toastError(message);
       console.error('Error:', err);
     } finally {
       setLoading(false);
@@ -313,98 +320,112 @@ function SugerenciaContent() {
   };
 
   return (
-    <div className="min-h-screen bg-base-100">
-      {/* Loading Modal */}
-      {loading && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
-          <div className="bg-base-100 rounded-lg p-8 flex flex-col items-center gap-4">
-            <span className="loading loading-spinner loading-xl text-primary"></span>
-            <span className="text-base-content">Generando sugerencias...</span>
-          </div>
+    <div className="flex flex-col flex-1 bg-zinc-50 font-sans p-8 gap-6 dark:bg-black">
+      {/* Overlay de loading */}
+    {loading && (
+      <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-8 flex flex-col items-center gap-4 dark:bg-zinc-900">
+          <span className="loading loading-spinner loading-xl text-neutral"></span>
+          <span className="skeleton skeleton-text p-2">Generando sugerencias...</span>
         </div>
-      )}
-      <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-6">
-        <BackButton />
+      </div>
+    )}
+      <BackButton />
+      {/* Content */}
+      <div className="border border-zinc-300 rounded-lg p-4 bg-white">
+        <div className="text-xs uppercase tracking-wide text-zinc-500">
+          Generando SEO para
+        </div>
+        <h1 className="text-xl font-bold mt-1 font-mono break-all">
+          {mockPage.url}
+        </h1>
+        <div className="flex gap-4 text-sm text-zinc-600 mt-2">
+          <span>Status: {mockPage.statusCode || '—'}</span>
+        </div>
+      </div>
 
-        {/* Header Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-xs uppercase tracking-wide text-base-content/70 mb-2">
-              Generando SEO para
-            </div>
-            <h1 className="text-xl font-bold font-mono break-all text-base-content mb-4">
-              {mockPage.url}
-            </h1>
-            <div className="flex gap-4 text-sm text-base-content/70">
-              <span>Status: <span className="badge badge-primary">{mockPage.statusCode || '—'}</span></span>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tabs Navigation */}
+      <div className="bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-wrap border-b border-zinc-200 dark:border-zinc-800">
+          {sugerenciaTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as SugerenciaTabType)}
+              className={`flex-1 md:flex-none px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.id
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="mr-2">{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Comparison Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Original Data Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Original (del crawl)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Field label="Title" value={mockPage.title || null} />
-              <Field label="Description" value={mockPage.description || null} multiline />
-              <Field label="Canonical" value={mockPage.canonical || null} />
-              <Field label="Slug" value={slug || "home"} />
-            </CardContent>
-          </Card>
+        {/* Tab Content */}
+        <div className="p-6">
+          {/* Sugerencia Tab */}
+          {activeTab === 'form' && (
+            <div className="grid grid-cols-2 gap-4">
+              {/* Columna izquierda: valor original */}
+              <div className="flex flex-col gap-3">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-zinc-500">
+                  Original (del crawl)
+                </h2>
 
-          {/* Editable Suggestions Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base text-primary">Sugerencia (editable)</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <EditableField
-                label="Slug"
-                value={form.slug.S}
-                onChange={(v) => updateSimpleField("slug", v)}
-              />
-              <EditableField
-                label="Title"
-                value={form.title.S}
-                onChange={(v) => updateSimpleField("title", v)}
-                hint={`${form.title.S.length} chars (ideal 50-60)`}
-              />
-              <EditableField
-                label="Description"
-                value={form.description.S}
-                onChange={(v) => updateSimpleField("description", v)}
-                hint={`${form.description.S.length} chars (ideal 150-160)`}
-                multiline
-              />
-              <EditableField
-                label="Canonical URL"
-                value={form.canonicalUrl.S}
-                onChange={(v) => updateSimpleField("canonicalUrl", v)}
-              />
-              <EditableField
-                label="Keywords (separados por coma)"
-                value={form.keywords.SS.join(", ")}
-                onChange={(v) =>
-                  updateKeywords(
-                    v
-                      .split(",")
-                      .map((k) => k.trim())
-                      .filter(Boolean),
-                  )
-                }
-                hint={`${form.keywords.SS.length} keywords`}
-              />
+                <Field label="Title" value={mockPage.title || null} />
+                <Field label="Description" value={mockPage.description || null} multiline />
+                <Field label="Canonical" value={mockPage.canonical || null} />
+                <Field label="Slug" value={slug || "home"} />
+              </div>
 
-              {/* Alternative Languages Card */}
-              <Card className="border-primary/50">
-                <CardHeader>
-                  <CardTitle className="text-sm">Lenguajes Alternos</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
+              {/* Columna derecha: sugerencia editable */}
+              <div className="flex flex-col gap-3">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-blue-600">
+                  Sugerencia (editable)
+                </h2>
+
+                <EditableField
+                  label="Slug"
+                  value={form.slug.S}
+                  onChange={(v) => updateSimpleField("slug", v)}
+                />
+                <EditableField
+                  label="Title"
+                  value={form.title.S}
+                  onChange={(v) => updateSimpleField("title", v)}
+                  hint={`${form.title.S.length} chars (ideal 50-60)`}
+                />
+                <EditableField
+                  label="Description"
+                  value={form.description.S}
+                  onChange={(v) => updateSimpleField("description", v)}
+                  hint={`${form.description.S.length} chars (ideal 150-160)`}
+                  multiline
+                />
+                <EditableField
+                  label="Canonical URL"
+                  value={form.canonicalUrl.S}
+                  onChange={(v) => updateSimpleField("canonicalUrl", v)}
+                />
+                <EditableField
+                  label="Keywords (separados por coma)"
+                  value={form.keywords.SS.join(", ")}
+                  onChange={(v) =>
+                    updateKeywords(
+                      v
+                        .split(",")
+                        .map((k) => k.trim())
+                        .filter(Boolean),
+                    )
+                  }
+                  hint={`${form.keywords.SS.length} keywords`}
+                />
+                <div className="border border-blue-300 rounded p-3">
+                  <h3 className="text-xs font-semibold text-blue-600 mb-2">
+                    Lenguajes Alternos
+                  </h3>
                   <EditableField
                     label="en-US"
                     value={form.alternateLanguages.M["en-US"].S}
@@ -420,42 +441,65 @@ function SugerenciaContent() {
                     value={form.alternateLanguages.M["x-default"].S}
                     onChange={(v) => updateAltLanguage("x-default", v)}
                   />
-                </CardContent>
-              </Card>
-            </CardContent>
-          </Card>
-        </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-        {/* Alerts */}
-        {error && (
-          <div className="alert alert-error text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m2-2l2 2m0 0l2-2m-2 2l-2 2" />
-            </svg>
-            <span>Error: {error}</span>
-          </div>
-        )}
-        {saved && (
-          <div className="alert alert-success text-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>✓ Sugerencia guardada correctamente</span>
-          </div>
-        )}
+          {/* SERP Preview Tab */}
+          {activeTab === 'serp' && (
+            <SERPPreview
+              title={form.title.S || mockPage.title || 'Sin título'}
+              description={form.description.S || mockPage.description || 'Sin descripción'}
+              url={mockPage.url}
+            />
+          )}
+
+          {/* Meta Tags Tab */}
+          {activeTab === 'meta' && (
+            <div>
+              {mockPage.metaTags && mockPage.metaTags.length > 0 ? (
+                <div className="space-y-3">
+                  {mockPage.metaTags.map((tag, idx) => (
+                    <div key={idx} className="p-4 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                      <div className="text-sm">
+                        <span className="font-mono font-medium text-zinc-900 dark:text-white">{tag.name}</span>
+                        <span className="text-zinc-600 dark:text-zinc-400 ml-2">
+                          {tag.content}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <p className="text-zinc-600 dark:text-zinc-400">
+                    Sin etiquetas meta disponibles para esta página.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-end">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <button
+              <Button
                 disabled={loading}
-                className="btn btn-warning btn-sm"
+                isLoading={loading}
+                loadingText="Generando..."
+                variant="secondary"
+                size="sm"
+                icon={<RiMagicLine className="size-4" />}
               >
-                {loading ? "Generando..." : "Generar Sugerencias"}
-              </button>
+                Generar Sugerencias
+              </Button>
             </DialogTrigger>
             <DialogSugestion
+              organizationName={organizationName}
               setIsOpen={setIsOpen}
               setIsLoading={setLoading}
               onSuggestionsGenerated={handleSuggestionsGenerated}
@@ -467,22 +511,25 @@ function SugerenciaContent() {
               }}
             />
           </Dialog>
-          <button
+          <Button
             onClick={handleExport}
-            className="btn btn-primary btn-sm"
             disabled={loading}
+            variant="primary"
+            size="sm"
+            icon={<RiDownloadLine className="size-4" />}
           >
             Exportar JSON
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleGenerateAndExport}
-            className="btn btn-success btn-sm"
             disabled={loading}
+            variant="primary"
+            size="sm"
+            icon={<RiPlayLine className="size-4" />}
           >
-            Generar y Exportar JSON
-          </button>
+            Generar y Exportar
+          </Button>
         </div>
-      </div>
     </div>
   );
 }
@@ -556,7 +603,7 @@ export default function SugerenciaPage() {
       fallback={
         <div className="min-h-screen bg-base-100 p-8 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <span className="loading loading-spinner loading-lg text-primary mb-2"></span>
             <p className="text-base-content/70">Cargando...</p>
           </div>
         </div>

@@ -1,3 +1,58 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /*
+   * Botones de llamada a la acción de la landing: al pasar el cursor el fondo se oscurece
+   * de forma visible y el texto pasa a un tono claro para no perder contraste.
+   * Usan las variables del tema de daisyUI 4, así que funcionan también en modo oscuro.
+   * `.btn.` sube la especificidad por encima del :hover propio de daisyUI.
+   */
+  .btn.landing-cta-primary:hover,
+  .btn.landing-cta-primary:focus-visible {
+    background-color: color-mix(in oklch, oklch(var(--p)) 60%, black);
+    border-color: color-mix(in oklch, oklch(var(--p)) 60%, black);
+    color: oklch(var(--b1));
+  }
+
+  .btn.landing-cta-outline:hover,
+  .btn.landing-cta-outline:focus-visible {
+    background-color: oklch(var(--bc));
+    border-color: oklch(var(--bc));
+    color: oklch(var(--b1));
+  }
+
+  /* Sobre el fondo primario de la llamada final */
+  .btn.landing-cta-neutral:hover,
+  .btn.landing-cta-neutral:focus-visible {
+    background-color: color-mix(in oklch, oklch(var(--n)) 70%, black);
+    border-color: color-mix(in oklch, oklch(var(--n)) 70%, black);
+    color: oklch(var(--b1));
+  }
+
+  .btn.landing-cta-ghost:hover,
+  .btn.landing-cta-ghost:focus-visible {
+    background-color: oklch(var(--pc));
+    border-color: oklch(var(--pc));
+    color: oklch(var(--p));
+  }
+}
+
+/*
+ * Landing: el hero espera a la timeline de GSAP (LandingMotion) para no parpadear al hidratar.
+ * Sin JavaScript lo muestra el <noscript> de Landing.tsx; si GSAP no llega a ejecutarse,
+ * la animación lo vuelve visible a los 2,5 s. Con movimiento reducido no se oculta nada.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  [data-motion='hero'] {
+    visibility: hidden;
+    animation: landing-motion-fallback 0s linear 2.5s forwards;
+  }
+}
+
+@keyframes landing-motion-fallback {
+  to {
+    visibility: visible;
+  }
+}

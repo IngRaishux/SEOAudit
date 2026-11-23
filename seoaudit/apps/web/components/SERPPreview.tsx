@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
+import { RiSmartphoneLine, RiComputerLine } from '@remixicon/react';
 
 interface SERPPreviewProps {
   title: string;
@@ -63,7 +64,7 @@ export function SERPPreview({ title, description, url }: SERPPreviewProps) {
         <CardContent className="space-y-8">
           {/* Desktop Preview */}
           <div>
-            <h4 className="text-sm font-semibold text-base-content mb-4">🖥️ {t('serpPreview.desktop')}</h4>
+            <h4 className="text-sm font-semibold text-base-content mb-4 flex items-center gap-2">< RiComputerLine className='size-4' />{t('serpPreview.desktop')}</h4>
             <div className={`p-4 rounded-lg border border-base-300 ${getStatusBgClass(getTitleStatus(titleLen, false))} max-w-2xl`}>
               {/* Blue underline */}
               <div className="mb-2 h-1 w-8 bg-primary rounded"></div>
@@ -114,7 +115,7 @@ export function SERPPreview({ title, description, url }: SERPPreviewProps) {
 
           {/* Mobile Preview */}
           <div>
-            <h4 className="text-sm font-semibold text-base-content mb-4">📱 {t('serpPreview.mobile')}</h4>
+            <h4 className="text-sm font-semibold text-base-content mb-4 flex items-center gap-2"><RiSmartphoneLine className="size-4" /> {t('serpPreview.mobile')}</h4>
             <div className={`p-3 rounded-lg border border-base-300 ${getStatusBgClass(getTitleStatus(titleLen, true))} max-w-sm`}>
               {/* Blue underline */}
               <div className="mb-2 h-0.5 w-6 bg-primary rounded"></div>

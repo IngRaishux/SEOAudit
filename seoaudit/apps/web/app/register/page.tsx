@@ -1,20 +1,20 @@
-import { RegisterForm } from '@/components/RegisterForm';
 import type { Metadata } from 'next';
+import { AuthLayout } from '@/components/auth/AuthLayout';
+import { RegisterForm } from '@/components/RegisterForm';
+import { getRequestLanguage, getServerTranslations } from '@/lib/i18n/server';
 
-export const metadata: Metadata = {
-  title: 'Sign Up',
-  description: 'Create a new SEO Audit account',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { auth } = getServerTranslations(await getRequestLanguage());
+  return { title: `${auth.registerTitle} · SEO Audit`, description: auth.registerSubtitle };
+}
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  const lang = await getRequestLanguage();
+  const { auth } = getServerTranslations(lang);
+
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-      <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-8 text-zinc-900 dark:text-white">
-          Sign Up
-        </h1>
-        <RegisterForm />
-      </div>
-    </div>
+    <AuthLayout lang={lang} title={auth.registerTitle} subtitle={auth.registerSubtitle}>
+      <RegisterForm />
+    </AuthLayout>
   );
 }

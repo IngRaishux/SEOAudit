@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { OrganizationSettings } from '@/components/OrganizationSettings';
 import { DeleteOrganizationDialog } from '@/components/DeleteOrganizationDialog';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
+import { toastError } from '@/lib/toast';
 
 interface Organization {
   id: string;
@@ -34,6 +35,7 @@ function OrganizationSettingsContent() {
         const res = await fetch(`/api/organizations/${orgId}/info`);
         if (!res.ok) {
           setError('Failed to load organization');
+          toastError('Failed to load organization');
           return;
         }
         const data = await res.json();
@@ -42,6 +44,7 @@ function OrganizationSettingsContent() {
       } catch (err) {
         console.error('Error fetching organization data:', err);
         setError('Error loading organization');
+        toastError('Error loading organization');
       } finally {
         setLoading(false);
       }

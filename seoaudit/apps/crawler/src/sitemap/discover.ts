@@ -1,4 +1,4 @@
-const SITEMAP_PATHS = ['/sitemap-0.xml', '/sitemap-index.xml'];
+const SITEMAP_PATHS = ['/sitemap-0.xml', '/sitemap-index.xml','/sitemap.xml', '/en/sitemap.xml', '/es/sitemap.xml'];
 
 export async function discoverSitemap(siteUrl: string): Promise<string | null> {
   const base = new URL(siteUrl).origin;

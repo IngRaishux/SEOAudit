@@ -5,13 +5,12 @@ import type { Session } from 'next-auth';
 import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
-import Organization from '@/lib/models/Organization';
 import Link from 'next/link';
 import { CreateOrganizationForm } from '@/components/CreateOrganizationForm';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/Card';
 
 export default async function OrganizationsPage() {
-  let session = (await getServerSession(handler)) as Session | null;
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     redirect('/login');
@@ -33,10 +32,12 @@ export default async function OrganizationsPage() {
   await connectMongoose();
   const memberships = await Membership.find({ userId: session.user.id })
     .populate('organizationId')
-    .lean();
+    .lean<
+      Array<{ role: string; organizationId: { _id: unknown; name: string; createdAt: Date } }>
+    >();
 
-  const organizations = memberships.map((m: any) => ({
-    id: m.organizationId._id.toString(),
+  const organizations = memberships.map((m) => ({
+    id: String(m.organizationId._id),
     name: m.organizationId.name,
     role: m.role,
     createdAt: m.organizationId.createdAt,
@@ -55,7 +56,7 @@ export default async function OrganizationsPage() {
               <p className="text-base-content/70 mb-8">
                 Get started by naming your first organization.
               </p>
-              <CreateOrganizationForm userId={session.user.id} />
+              <CreateOrganizationForm />
             </CardContent>
           </Card>
         </div>
@@ -79,7 +80,7 @@ export default async function OrganizationsPage() {
             </CardHeader>
             <CardContent className="space-y-0">
               <div className="divide-y divide-base-300">
-                {organizations.map((org: any) => (
+                {organizations.map((org) => (
                   <div
                     key={org.id}
                     className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 hover:bg-base-200/50 transition-colors"
@@ -110,7 +111,7 @@ export default async function OrganizationsPage() {
               <CardTitle>Create New Organization</CardTitle>
             </CardHeader>
             <CardContent>
-              <CreateOrganizationForm userId={session.user.id} />
+              <CreateOrganizationForm />
             </CardContent>
           </Card>
         </div>

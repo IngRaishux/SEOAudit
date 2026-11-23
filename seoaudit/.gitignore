@@ -25,6 +25,13 @@ out/
 build/
 dist/
 
+# turbo
+.turbo/
+.turbo-build-cache/
+
+# monorepo caches
+.venv/
+
 # misc
 .DS_Store
 *.pem

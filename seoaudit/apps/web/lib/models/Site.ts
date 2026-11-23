@@ -24,6 +24,27 @@ const siteSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    metaTags: [
+      {
+        _id: false,
+        name: String,
+        content: String,
+      },
+    ],
+    llmsTxt: {
+      type: new mongoose.Schema(
+        {
+          url: String,
+          status: Number,
+          contentType: String,
+          content: String,
+          error: String,
+          fetchedAt: Date,
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
   },
   { timestamps: true }
 );
@@ -31,4 +52,7 @@ const siteSchema = new mongoose.Schema(
 // Compound index for listing sites by organization
 siteSchema.index({ organizationId: 1, createdAt: -1 });
 
-export default mongoose.models.Site || mongoose.model('Site', siteSchema);
+// Delete cached model to ensure schema updates are recognized
+delete mongoose.models.Site;
+
+export default mongoose.model('Site', siteSchema);

@@ -17,7 +17,7 @@ export const runtime = 'nodejs';
  * - Membership relationships are valid
  * - Organization data is properly structured
  */
-export async function GET(request: Request) {
+export async function GET() {
   const session = (await getServerSession(handler)) as Session | null;
 
   // Only allow admins or during development
@@ -37,19 +37,19 @@ export async function GET(request: Request) {
     // Verify data integrity
     let validMemberships = 0;
     let invalidMemberships = 0;
-    let userOrgMap = new Map<string, Array<{ id: string; name: string }>>();
-    let invalidMembershipsList = [];
+    const userOrgMap = new Map<string, Array<{ id: string; name: string }>>();
+    const invalidMembershipsList = [];
 
     for (const membership of memberships) {
       const org = organizations.find(
-        (o) => (o._id as any).toString() === (membership.organizationId as any).toString()
+        (o) => String(o._id) === String(membership.organizationId)
       );
 
       if (!org) {
         invalidMemberships++;
         invalidMembershipsList.push({
           userId: membership.userId,
-          organizationId: (membership.organizationId as any).toString(),
+          organizationId: String(membership.organizationId),
           reason: 'Organization does not exist',
         });
         continue;
@@ -64,19 +64,19 @@ export async function GET(request: Request) {
 
       const userOrgs = userOrgMap.get(membership.userId)!;
       userOrgs.push({
-        id: (org._id as any).toString(),
+        id: String(org._id),
         name: org.name,
       });
     }
 
     // Verify organization data structure
     let validOrgs = 0;
-    let missingFieldsOrgs = [];
+    const missingFieldsOrgs = [];
 
     for (const org of organizations) {
       if (!org.name || !org.slug || !org.createdByUserId) {
         missingFieldsOrgs.push({
-          id: (org._id as any).toString(),
+          id: String(org._id),
           name: org.name,
           slug: org.slug,
           createdByUserId: org.createdByUserId,
@@ -87,7 +87,7 @@ export async function GET(request: Request) {
     }
 
     // Build example organizations for response
-    let exampleUsers = [];
+    const exampleUsers = [];
     let exampleCount = 0;
     for (const [userId, orgs] of userOrgMap) {
       if (exampleCount >= 3) break;
@@ -170,16 +170,16 @@ export async function POST(request: Request) {
 
       for (const membership of memberships) {
         const orgExists = organizations.some(
-          (o) => (o._id as any).toString() === (membership.organizationId as any).toString()
+          (o) => String(o._id) === String(membership.organizationId)
         );
 
         if (!orgExists) {
           await Membership.deleteOne({ _id: membership._id });
           deletedCount++;
           validationResults.push({
-            memberId: (membership._id as any).toString(),
+            memberId: String(membership._id),
             userId: membership.userId,
-            organizationId: (membership.organizationId as any).toString(),
+            organizationId: String(membership.organizationId),
             action: 'deleted',
           });
         }

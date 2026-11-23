@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@/components/Button";
-import { Input } from "@/components/Input";
+import { Button, Input } from "@seo-optimizer/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect, useState, Suspense } from "react";
+import { toastError, toastSuccess } from "@/lib/toast";
 
 function CrawlerContent() {
   const router = useRouter();
@@ -13,24 +13,20 @@ function CrawlerContent() {
 
   const [url, setUrl] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
-  const [siteId, setSiteId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState({ processed: 0, total: 0 });
-  const [error, setError] = useState<string | null>(null);
 
   // Obtener organizationId actual del query param o de session
   const organizationId = searchParams.get('org') || session?.user?.accountId;
 
   async function sendInfo(url: string) {
-    setError(null);
-
     if (!url) {
-      setError("Ingresa una URL");
+      toastError("Ingresa una URL");
       return;
     }
 
     if (!organizationId) {
-      setError("No hay organización seleccionada");
+      toastError("No hay organización seleccionada");
       return;
     }
 
@@ -43,15 +39,14 @@ function CrawlerContent() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Error iniciando el crawl");
+        toastError(data.error || "Error iniciando el crawl");
         return;
       }
 
       setJobId(data.jobId);
-      setSiteId(data.siteId);
       setStatus("running");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error de red");
+      toastError(err instanceof Error ? err.message : "Error de red");
     }
   }
 
@@ -61,17 +56,16 @@ function CrawlerContent() {
     const interval = setInterval(async () => {
       const res = await fetch(`/api/crawl/${jobId}`);
       const data = await res.json();
-
       setStatus(data.status);
       setProgress({ processed: data.processed, total: data.total });
 
       if (data.status === "completed") {
         clearInterval(interval);
-        setSiteId(data.siteId);
+        toastSuccess("El sitio se analizó correctamente");
         router.push(`/sites/${data.siteId}`);
       } else if (data.status === "failed") {
         clearInterval(interval);
-        setError(data.error || "El crawl falló");
+        toastError(data.error || "El crawl falló");
       }
     }, 1000);
 
@@ -86,7 +80,7 @@ function CrawlerContent() {
         <h1 className="text-2xl font-bold">Ingresa una url</h1>
       </div>
 
-      <main className="w-full max-w-xl h-auto p-1.5 flex flex-row justify-center gap-8 items-center rounded-lg border border-b-blue-600">
+      <main className="w-full max-w-xl h-auto p-1.5 flex flex-row justify-center gap-8 items-center rounded-lg border shadow-md p-3">
         <Input
           className="flex bg-mist-200 grow-2 justify-center"
           placeholder="Ingresa una url"
@@ -111,8 +105,6 @@ function CrawlerContent() {
             : "Buscando sitemap..."}
         </div>
       )}
-
-      {error && <div className="mt-6 text-sm text-red-600">{error}</div>}
     </div>
   );
 }

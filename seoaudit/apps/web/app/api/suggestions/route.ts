@@ -5,13 +5,12 @@ import type { Session } from 'next-auth';
 import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
-import Organization from '@/lib/models/Organization';
 import * as suggestionRepository from '@/lib/repositories/suggestionRepository';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  let session = (await getServerSession(handler)) as Session | null;
+  const session = (await getServerSession(handler)) as Session | null;
 
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

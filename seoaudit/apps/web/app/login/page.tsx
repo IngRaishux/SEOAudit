@@ -1,20 +1,20 @@
-import { LoginForm } from '@/components/LoginForm';
 import type { Metadata } from 'next';
+import { AuthLayout } from '@/components/auth/AuthLayout';
+import { LoginForm } from '@/components/LoginForm';
+import { getRequestLanguage, getServerTranslations } from '@/lib/i18n/server';
 
-export const metadata: Metadata = {
-  title: 'Sign In',
-  description: 'Sign in to your SEO Audit account',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { auth } = getServerTranslations(await getRequestLanguage());
+  return { title: `${auth.loginTitle} · SEO Audit`, description: auth.loginSubtitle };
+}
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const lang = await getRequestLanguage();
+  const { auth } = getServerTranslations(lang);
+
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-      <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-8 text-zinc-900 dark:text-white">
-          Sign In
-        </h1>
-        <LoginForm />
-      </div>
-    </div>
+    <AuthLayout lang={lang} title={auth.loginTitle} subtitle={auth.loginSubtitle}>
+      <LoginForm />
+    </AuthLayout>
   );
 }

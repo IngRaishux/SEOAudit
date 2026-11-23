@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@seo-optimizer/crawler"],
+  transpilePackages: ["@seo-optimizer/crawler", "@seo-optimizer/ui"],
   serverExternalPackages: [
     "playwright",
     "cheerio",

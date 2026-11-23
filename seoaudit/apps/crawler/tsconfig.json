@@ -4,5 +4,12 @@
     "outDir": "dist",
     "rootDir": "src"
   },
-  "include": ["src", "jobs"]
+  "include": [
+    "src",
+    "jobs"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/__fixtures__"
+  ]
 }
