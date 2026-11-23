@@ -7,7 +7,7 @@ import connectMongoose from '@/lib/db/mongoose';
 import CrawlJob from '@/lib/models/CrawlJob';
 import Page from '@/lib/models/Page';
 import Site from '@/lib/models/Site';
-import { createProgressThrottle, crawlDeadline } from '@/lib/crawl/budget';
+import { createProgressThrottle, crawlDeadline, crawlerSettings } from '@/lib/crawl/budget';
 
 export const runtime = 'nodejs';
 // El crawl corre en after() dentro de esta invocación. 300 s es el máximo del plan Hobby de
@@ -57,8 +57,10 @@ async function runCrawl(jobId: string, url: string, organizationId: string, dead
 
     const shouldWrite = createProgressThrottle();
     const crawl4aiUrl = process.env.CRAWL4AI_URL || 'http://localhost:11235';
+    const { concurrency, pageTimeoutMs } = crawlerSettings();
     const result = await crawlSite(url, {
-      concurrency: 5,
+      concurrency,
+      pageTimeoutMs,
       crawl4aiUrl,
       deadline,
       onProgress: (processed, total) => {
@@ -77,6 +79,13 @@ async function runCrawl(jobId: string, url: string, organizationId: string, dead
         result.truncated
           ? 'Se agotó el tiempo antes de rastrear alguna página. Intenta de nuevo.'
           : 'El sitemap no tiene páginas para rastrear.'
+      );
+    }
+
+    // Si Crawl4AI no devolvió nada útil no se guarda un sitio vacío como si estuviera completo
+    if (!pages.some((page) => !page.error)) {
+      throw new Error(
+        `Crawl4AI no devolvió datos de ninguna página (${pages[0].error}). Revisa que el servidor de Crawl4AI esté disponible.`
       );
     }
 

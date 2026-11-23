@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createProgressThrottle, crawlDeadline, isCrawlJobStale, STALE_CRAWL_MS } from './budget';
+import { createProgressThrottle, crawlDeadline, crawlerSettings, isCrawlJobStale, STALE_CRAWL_MS } from './budget';
 
 describe('crawlDeadline', () => {
   it('deja el margen de seguridad antes del maxDuration', () => {
@@ -30,5 +30,29 @@ describe('createProgressThrottle', () => {
     expect(shouldWrite(3, 10)).toBe(true);
     t = 1100;
     expect(shouldWrite(10, 10)).toBe(true);
+  });
+});
+
+describe('crawlerSettings', () => {
+  it('usa 3 en paralelo y 30 s por página por defecto', () => {
+    expect(crawlerSettings({})).toEqual({ concurrency: 3, pageTimeoutMs: 30_000 });
+  });
+  it('respeta las variables de entorno', () => {
+    expect(crawlerSettings({ CRAWLER_CONCURRENCY: '5', CRAWLER_TIMEOUT_MS: '20000' })).toEqual({
+      concurrency: 5,
+      pageTimeoutMs: 20_000,
+    });
+  });
+  it('acota la espera para no comerse el margen del deadline y la concurrencia a 10', () => {
+    expect(crawlerSettings({ CRAWLER_CONCURRENCY: '50', CRAWLER_TIMEOUT_MS: '120000' })).toEqual({
+      concurrency: 10,
+      pageTimeoutMs: 35_000,
+    });
+  });
+  it('ignora valores inválidos', () => {
+    expect(crawlerSettings({ CRAWLER_CONCURRENCY: 'abc', CRAWLER_TIMEOUT_MS: '-1' })).toEqual({
+      concurrency: 3,
+      pageTimeoutMs: 30_000,
+    });
   });
 });
