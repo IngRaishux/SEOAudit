@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import type { Session } from 'next-auth';
-import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
-import Membership from '@/lib/models/Membership';
+import { requireSuggestionAccess } from '@/lib/auth/orgAccess';
 import * as suggestionRepository from '@/lib/repositories/suggestionRepository';
 import { toDynamoSuggestion } from '@/lib/dynamoSuggestion';
 import type { SEOSuggestion } from '@/lib/generateSEOSuggestions';
@@ -29,23 +24,11 @@ export async function PATCH(
   { params }: { params: Promise<{ suggestionId: string }> }
 ) {
   const { suggestionId } = await params;
-  const session = (await getServerSession(handler)) as Session | null;
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  if (!session.user.id) {
-    const { db } = await connectToDatabase();
-    const usersCollection = db.collection('users');
-    const user = await usersCollection.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    session.user.id = user._id.toString();
-  }
 
   try {
+    const access = await requireSuggestionAccess(suggestionId, 'content.edit');
+    if (!access.ok) return access.response;
+
     const body = await request.json();
     const parsed = suggestionContentSchema.safeParse(body?.content);
 
@@ -54,24 +37,6 @@ export async function PATCH(
         { error: 'Invalid suggestion content', details: parsed.error.flatten() },
         { status: 400 }
       );
-    }
-
-    await connectMongoose();
-    const suggestion = (await suggestionRepository.getSuggestionById(
-      suggestionId
-    )) as { organizationId: string } | null;
-
-    if (!suggestion) {
-      return NextResponse.json({ error: 'Suggestion not found' }, { status: 404 });
-    }
-
-    const membership = await Membership.findOne({
-      userId: session.user.id,
-      organizationId: suggestion.organizationId,
-    });
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     const updated = await suggestionRepository.updateSuggestion(suggestionId, {

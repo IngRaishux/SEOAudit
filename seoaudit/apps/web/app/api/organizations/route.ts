@@ -1,31 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import type { Session } from 'next-auth';
-import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
-import Organization from '@/lib/models/Organization';
-import Membership from '@/lib/models/Membership';
+import { requireUser } from '@/lib/auth/orgAccess';
+import { createOrganizationWithOwner } from '@/lib/org/createOrganization';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  const session = (await getServerSession(handler)) as Session | null;
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // Get user ID
-  if (!session.user.id) {
-    const { db } = await connectToDatabase();
-    const usersCollection = db.collection('users');
-    const user = await usersCollection.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    session.user.id = user._id.toString();
-  }
+  const user = await requireUser();
+  if (!user.ok) return user.response;
 
   try {
     const body = await request.json();
@@ -38,26 +19,10 @@ export async function POST(request: Request) {
       );
     }
 
-    await connectMongoose();
-
-    // Create organization
-    const org = new Organization({
-      name: name.trim(),
-      slug: `${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-      createdByUserId: session.user.id,
-    });
-    const savedOrg = await org.save();
-
-    // Create membership with owner role
-    const membership = new Membership({
-      userId: session.user.id,
-      organizationId: savedOrg._id,
-      role: 'owner',
-    });
-    await membership.save();
+    const { organization, membership } = await createOrganizationWithOwner(name, user.userId);
 
     return NextResponse.json(
-      { organization: savedOrg, membership },
+      { organization, membership },
       { status: 201 }
     );
   } catch (error) {

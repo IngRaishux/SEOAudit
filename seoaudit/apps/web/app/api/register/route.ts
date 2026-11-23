@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import clientPromise from '@/lib/db/mongo';
 import { hashPassword } from '@/lib/password';
-import connectMongoose from '@/lib/db/mongoose';
-import Organization from '@/lib/models/Organization';
-import Membership from '@/lib/models/Membership';
+import { createOrganizationWithOwner } from '@/lib/org/createOrganization';
+import { hasPendingInvitation } from '@/lib/invitations/service';
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -50,25 +49,12 @@ export async function POST(request: NextRequest) {
 
     const userId = result.insertedId.toString();
 
-    // Create organization only if organizationName is provided
+    // Solo se crea organización si se pidió y el email no llega por una invitación:
+    // quien fue invitado entra directo a la organización que lo invitó
     let organizationId = null;
-    if (organizationName) {
-      await connectMongoose();
-      const org = new Organization({
-        name: organizationName,
-        slug: `${organizationName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-        createdByUserId: userId,
-      });
-      const savedOrg = await org.save();
-      organizationId = savedOrg._id;
-
-      // Create membership
-      const membership = new Membership({
-        userId,
-        organizationId: savedOrg._id,
-        role: 'owner',
-      });
-      await membership.save();
+    if (organizationName && !(await hasPendingInvitation(email))) {
+      const { organization } = await createOrganizationWithOwner(organizationName, userId);
+      organizationId = organization._id;
     }
 
     return NextResponse.json(

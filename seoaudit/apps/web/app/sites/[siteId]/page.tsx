@@ -8,6 +8,7 @@ import * as pageRepository from '@/lib/repositories/pageRepository';
 import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
+import { isOrgRole } from '@/lib/auth/permissions';
 import { SiteDetailsTabs } from '@/components/SiteDetailsTabs';
 import { Card } from '@/components/Card';
 import type { ISite, IPage } from '@/lib/interfaces';
@@ -125,6 +126,7 @@ export default async function SiteDetailsPage({
           siteUrl={site.url}
           siteId={siteId}
           organizationId={site.organizationId}
+          role={isOrgRole(membership.role) ? membership.role : 'viewer'}
         />
       </div>
     </div>

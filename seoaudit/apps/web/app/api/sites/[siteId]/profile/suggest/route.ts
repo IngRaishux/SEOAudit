@@ -11,7 +11,7 @@ export const maxDuration = 300;
 export async function POST(_request: Request, { params }: { params: Promise<{ siteId: string }> }) {
   const { siteId } = await params;
   try {
-    const access = await resolveGeoContext(siteId);
+    const access = await resolveGeoContext(siteId, 'content.edit');
     if (!access.ok) return access.response;
     const { origin, pages } = access.context;
 

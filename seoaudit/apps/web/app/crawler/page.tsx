@@ -2,22 +2,20 @@
 
 import { Button, Input } from "@seo-optimizer/ui";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useEffect, useState, Suspense } from "react";
 import { toastError, toastSuccess } from "@/lib/toast";
 
 function CrawlerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
 
   const [url, setUrl] = useState("");
   const [jobId, setJobId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState({ processed: 0, total: 0 });
 
-  // Obtener organizationId actual del query param o de session
-  const organizationId = searchParams.get('org') || session?.user?.accountId;
+  // La organización activa llega siempre por ?org= desde el dashboard
+  const organizationId = searchParams.get('org');
 
   async function sendInfo(url: string) {
     if (!url) {

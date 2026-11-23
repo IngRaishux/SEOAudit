@@ -77,8 +77,11 @@ export async function middleware(request: NextRequest) {
       secret: process.env.AUTH_SECRET,
     });
 
-    // Si no hay token (no autenticado), redirigir a login
+    // Si no hay token: las APIs responden 401; las páginas redirigen a login
     if (!token) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
       const loginUrl = new URL('/login', request.url);
       return NextResponse.redirect(loginUrl);
     }

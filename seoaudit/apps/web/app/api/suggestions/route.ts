@@ -1,52 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { handler } from '@/lib/auth/auth';
-import type { Session } from 'next-auth';
-import connectMongoose from '@/lib/db/mongoose';
-import { connectToDatabase } from '@/lib/db/mongo';
-import Membership from '@/lib/models/Membership';
+import { requireSiteAccess } from '@/lib/auth/orgAccess';
 import * as suggestionRepository from '@/lib/repositories/suggestionRepository';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
-  const session = (await getServerSession(handler)) as Session | null;
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  // If accountId is not in session, resolve it from database using email
-  if (!session.user.accountId) {
-    try {
-      const { db } = await connectToDatabase();
-      const usersCollection = db.collection('users');
-
-      const user = await usersCollection.findOne({ email: session.user.email });
-
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-
-      await connectMongoose();
-      const membership = await Membership.findOne({ userId: user._id.toString() });
-
-      if (membership) {
-        session.user.id = user._id.toString();
-        session.user.accountId = membership.organizationId.toString();
-      } else {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-    } catch (error) {
-      console.error('Error resolving accountId:', error);
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-  }
-
-  if (!session.user.accountId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
     const body = await request.json();
     const {
@@ -82,11 +40,14 @@ export async function POST(request: Request) {
       );
     }
 
-    await connectMongoose();
+    // La organización sale del sitio, no de la sesión
+    const access = await requireSiteAccess(String(siteId), 'content.edit');
+    if (!access.ok) return access.response;
+
     const suggestion = await suggestionRepository.createSuggestion({
       pageId,
       siteId,
-      organizationId: session.user.accountId,
+      organizationId: access.organizationId,
       type: type as 'seo' | 'performance' | 'accessibility' | 'best_practice',
       severity: severity as 'critical' | 'high' | 'medium' | 'low',
       title: `Auto-generated ${type} suggestion`,

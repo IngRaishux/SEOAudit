@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jobStore } from '@/lib/jobStore';
+import { requireJobAccess } from '@/lib/auth/orgAccess';
 
 export const runtime = 'nodejs';
 
@@ -10,10 +11,9 @@ export async function GET(
   const { jobId } = await params;
 
   const job = jobStore.get(jobId);
-
-  if (!job) {
-    return NextResponse.json({ error: 'Job not found' }, { status: 404 });
-  }
+  const access = await requireJobAccess(job, 'site.read');
+  if (!access.ok) return access.response;
+  if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 });
 
   return NextResponse.json({
     jobId: job.id,

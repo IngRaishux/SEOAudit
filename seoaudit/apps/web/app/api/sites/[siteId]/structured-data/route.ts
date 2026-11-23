@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export async function GET(_request: Request, { params }: { params: Promise<{ siteId: string }> }) {
   const { siteId } = await params;
   try {
-    const access = await resolveGeoContext(siteId);
+    const access = await resolveGeoContext(siteId, 'site.read');
     if (!access.ok) return access.response;
     return NextResponse.json(buildStructuredDataReport(access.context));
   } catch (error) {

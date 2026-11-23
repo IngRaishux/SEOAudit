@@ -48,8 +48,9 @@ export function DeleteOrganizationDialog({
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || t('deleteOrgDialog.deletedError'));
+        const data = await response.json().catch(() => ({}));
+        const byCode = data.code ? t(`team.errors.${data.code}`) : '';
+        throw new Error(byCode || data.error || t('deleteOrgDialog.deletedError'));
       }
 
       toastSuccess(t('deleteOrgDialog.deletedSuccess'), t('common.success'));
