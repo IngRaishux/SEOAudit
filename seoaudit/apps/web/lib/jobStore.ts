@@ -14,6 +14,14 @@ export interface Job {
   error: string | null;
   startedAt: number;
   finishedAt: number | null;
+  /** Solo en análisis gratuitos de la landing: no se persisten y el cupo se ajusta al terminar. */
+  free?: {
+    visitor: string;
+    /** Día UTC del cupo reservado, para devolver lo no usado aunque se cruce la medianoche. */
+    day: string;
+    reserved: number;
+    errorCode: 'NO_SITEMAP' | 'CRAWL_FAILED' | null;
+  };
 }
 
 const globalForStore = globalThis as unknown as {
