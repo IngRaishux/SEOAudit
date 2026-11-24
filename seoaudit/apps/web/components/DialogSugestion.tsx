@@ -12,7 +12,7 @@ import {
 import { Dispatch, SetStateAction } from "react";
 import { useSession } from "next-auth/react";
 import { generateSEOSuggestions, type SEOSuggestion } from "@/lib/generateSEOSuggestions";
-import { toastError } from "@/lib/toast";
+import { toastError, toastErrorWithRetry } from "@/lib/toast";
 
 type DialogSugestionProps = {
   setIsOpen: Dispatch<SetStateAction<boolean>>;
@@ -41,7 +41,7 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
     setIsLoading(true);
 
     try {
-      const suggestions = await generateSEOSuggestions({
+      const result = await generateSEOSuggestions({
         url: pageData.url,
         title: pageData.title,
         description: pageData.description,
@@ -49,13 +49,16 @@ const DialogSugestion = ({ setIsOpen, onSuggestionsGenerated, pageData, setIsLoa
         accountName: organizationName,
       }, siteId);
 
-      onSuggestionsGenerated(suggestions);
-      setIsOpen(false);
+      if (result.ok) {
+        onSuggestionsGenerated(result.suggestion);
+        return;
+      }
+      if (result.retryable) toastErrorWithRetry(result.error, handleGenerateAndSave);
+      else toastError(result.error);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error generating suggestions';
-      toastError(message);
+      // Fallo de red o de la propia acción: también se puede reintentar
       console.error('Error generating SEO suggestions:', err);
-      setIsOpen(true);
+      toastErrorWithRetry('No se pudo generar la sugerencia. Intenta de nuevo.', handleGenerateAndSave);
     } finally {
       setIsLoading(false);
     }
