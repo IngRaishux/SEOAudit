@@ -5,8 +5,8 @@ import type { BusinessKind, Facts, ProfileEntity, ProfileInput, Source, Texts } 
 import { BUSINESS_KINDS } from '@/lib/geo/profile';
 import { SUPPORTED_TYPES, familyOf } from '@/lib/geo/rules';
 import { entityId } from '@/lib/geo/url';
-import { toastError, toastSuccess } from '@/lib/toast';
-import { Alert, requestJson, type Translate } from './shared';
+import { toastError, toastErrorWithRetry, toastSuccess } from '@/lib/toast';
+import { Alert, ApiError, requestJson, type Translate } from './shared';
 
 interface ProfileResponse {
   origin: string;
@@ -71,7 +71,12 @@ export function ProfileSection({
       setProfile(data.profile);
       setIsDraft(true);
     } catch (error) {
-      toastError(error instanceof Error ? error.message : String(error));
+      // 503: ningún modelo de IA respondió; se ofrece repetir la misma acción
+      if (error instanceof ApiError && error.status === 503) {
+        toastErrorWithRetry(error.message, suggest, { title: t('common.error'), label: t('common.retry') });
+      } else {
+        toastError(error instanceof Error ? error.message : String(error));
+      }
     } finally {
       setBusy(null);
     }

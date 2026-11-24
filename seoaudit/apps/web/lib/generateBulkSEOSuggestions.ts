@@ -1,6 +1,7 @@
 import { FinishReason, GoogleGenAI } from '@google/genai';
 import type { PageData, SEOSuggestion } from './generateSEOSuggestions';
 import { toDynamoSuggestion, slugFromUrl } from './dynamoSuggestion';
+import { withModelFallback } from './ai/models';
 
 // Una respuesta grande (cientos de páginas) puede tardar varios minutos en generarse
 export const GENERATION_TIMEOUT_MS = Number(process.env.GENERATION_TIMEOUT_MS) || 10 * 60 * 1000;
@@ -82,14 +83,17 @@ Requisitos (aplican a cada elemento):
 
   let result;
   try {
-    result = await genAI.models.generateContent({
-      model: 'gemini-3.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
-      },
-    });
+    // Un timeout no pasa al modelo de respaldo: repetir una espera tan larga excede la función
+    result = await withModelFallback((model) =>
+      genAI.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
+        },
+      })
+    );
   } catch (error) {
     if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
       throw new Error(

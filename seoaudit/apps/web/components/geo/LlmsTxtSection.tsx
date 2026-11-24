@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { LlmsTxtReport, LlmsTxtStatus } from '@/lib/geo/llmsTxt';
-import { toastError } from '@/lib/toast';
-import { Alert, CodeBlock, requestJson, type Translate } from './shared';
+import { toastError, toastErrorWithRetry } from '@/lib/toast';
+import { Alert, ApiError, CodeBlock, requestJson, type Translate } from './shared';
 
 interface LlmsResponse {
   report: LlmsTxtReport;
@@ -56,7 +56,12 @@ export function LlmsTxtSection({
       });
       setGenerated(res.content);
     } catch (error) {
-      toastError(error instanceof Error ? error.message : String(error));
+      // 503: ningún modelo de IA respondió; se ofrece repetir la misma acción
+      if (error instanceof ApiError && error.status === 503) {
+        toastErrorWithRetry(error.message, generate, { title: t('common.error'), label: t('common.retry') });
+      } else {
+        toastError(error instanceof Error ? error.message : String(error));
+      }
     } finally {
       setGenerating(false);
     }

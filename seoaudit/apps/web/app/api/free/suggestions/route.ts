@@ -8,6 +8,8 @@ import type { FreeSuggestion } from '@/lib/free/types';
 import { getUsage, releaseSuggestion, reserveSuggestion } from '@/lib/repositories/freeUsageRepository';
 
 export const runtime = 'nodejs';
+// requestSuggestion puede pasar al modelo de respaldo (hasta ~180 s); 300 s es el máximo de Hobby
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   const disabled = disabledResponse();

@@ -3,7 +3,12 @@
 // o que aplica su propio control (la ruta gratuita /api/free/suggestions, con cupo y sesión).
 import { GoogleGenAI } from '@google/genai';
 import { toDynamoSuggestion, slugFromUrl } from './dynamoSuggestion';
+import { withModelFallback } from './ai/models';
 import type { PageData, SEOSuggestion } from './generateSEOSuggestions';
+
+// Por modelo. Con dos modelos el peor caso (~180 s) cabe en los 300 s de Vercel; un modelo
+// saturado puede tardar más de un minuto incluso con un prompt corto
+const SUGGESTION_TIMEOUT_MS = 90_000;
 
 export async function requestSuggestion(pageData: PageData): Promise<SEOSuggestion> {
   if (!process.env.GOOGLE_API_KEY) {
@@ -73,10 +78,16 @@ Requisitos:
 - Incluye trailing slash en todas las url y en el slug
 - Los valores de "S" deben ser strings, los de "SS" deben ser arrays de strings`;
 
-  const result = await genAI.models.generateContent({
-    model: 'gemini-3.6-flash',
-    contents: prompt,
-  });
+  // Si el modelo principal está saturado, sin cuota o lento, se usa el de respaldo
+  const result = await withModelFallback(
+    (model) =>
+      genAI.models.generateContent({
+        model,
+        contents: prompt,
+        config: { abortSignal: AbortSignal.timeout(SUGGESTION_TIMEOUT_MS) },
+      }),
+    { fallbackOnTimeout: true }
+  );
   const responseText = result.text;
 
   if (!responseText) {
