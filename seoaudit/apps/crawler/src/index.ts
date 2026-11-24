@@ -5,6 +5,7 @@ import { mergeAlternates } from './crawler/alternates';
 import { extractPageSeo } from './crawler/extract';
 import type { PageSeo } from './crawler/parse';
 import { fetchLlmsTxt, type LlmsTxtCapture } from './site/llmsTxt';
+import { isSameHost, sameHostFetch } from './net/sameHost';
 
 export interface CrawlOptions {
   concurrency?: number;
@@ -14,6 +15,14 @@ export interface CrawlOptions {
   /** Tiempo máximo de espera por página en Crawl4AI (ms). */
   pageTimeoutMs?: number;
   onProgress?: (processed: number, total: number) => void;
+  /**
+   * Solo el host de la URL inicial (con o sin www) en puertos estándar: filtra las páginas del
+   * sitemap antes de maxUrls y no deja que robots.txt, los sitemaps ni llms.txt salgan del host,
+   * ni siquiera por redirección. Desactivado por defecto.
+   */
+  sameHostOnly?: boolean;
+  /** fetch para las descargas directas (robots.txt, sitemaps, llms.txt); por defecto el global. */
+  fetchImpl?: typeof fetch;
   /**
    * Momento (epoch ms) a partir del cual no se empiezan URLs nuevas: las que ya están en curso
    * terminan y el resultado sale parcial (`truncated: true`). Sirve para entrar en el límite
@@ -33,6 +42,14 @@ export interface CrawlResult {
   truncated: boolean;
 }
 
+/** El sitio no tiene un sitemap localizable: no se rastrea nada. */
+export class NoSitemapError extends Error {
+  constructor(siteUrl: string) {
+    super(`No sitemap found for ${siteUrl}`);
+    this.name = 'NoSitemapError';
+  }
+}
+
 export async function crawlSite(
   siteUrl: string,
   options: CrawlOptions = {}
@@ -45,15 +62,20 @@ export async function crawlSite(
     pageTimeoutMs = 30_000,
     onProgress,
     deadline,
+    sameHostOnly = false,
   } = options;
+  const baseFetch = options.fetchImpl ?? fetch;
+  const fetchImpl = sameHostOnly ? sameHostFetch(siteUrl, baseFetch) : baseFetch;
+  const accept = sameHostOnly ? (url: string) => isSameHost(url, siteUrl) : undefined;
 
   // Se pide en paralelo al crawl; fetchLlmsTxt nunca lanza
-  const llmsTxtPromise = fetchLlmsTxt(siteUrl);
+  const llmsTxtPromise = fetchLlmsTxt(siteUrl, 10_000, fetchImpl);
 
-  const sitemapUrl = await discoverSitemap(siteUrl);
-  if (!sitemapUrl) throw new Error(`No sitemap found for ${siteUrl}`);
+  const sitemapUrl = await discoverSitemap(siteUrl, { fetchImpl, accept });
+  if (!sitemapUrl) throw new NoSitemapError(siteUrl);
 
-  let entries = await parseSitemapEntries(sitemapUrl);
+  let entries = await parseSitemapEntries(sitemapUrl, { fetchImpl, accept });
+  if (accept) entries = entries.filter((entry) => accept(entry.loc));
   if (maxUrls) entries = entries.slice(0, maxUrls);
   const urls = entries.map((entry) => entry.loc);
   // Solo se conservan los alternos del sitemap de las URLs que se rastrean
