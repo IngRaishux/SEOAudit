@@ -204,6 +204,12 @@ CRAWL4AI_API_TOKEN=Airi2026
 # Crawler config
 CRAWLER_CONCURRENCY=5
 CRAWLER_TIMEOUT_MS=30000
+
+# Herramientas gratuitas de la landing (cambio free-tools)
+# Claves de prueba de Cloudflare Turnstile: siempre aprueban, solo para desarrollo
+FREE_TOOLS_ENABLED=true
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 ```
 
 ### Production (`Vercel Environment Variables`)
@@ -229,6 +235,12 @@ CRAWL4AI_API_TOKEN=<token-aleatorio>
 # Crawler
 CRAWLER_CONCURRENCY=10
 CRAWLER_TIMEOUT_MS=30000
+
+# Herramientas gratuitas: claves reales de Cloudflare Turnstile (dashboard > Turnstile)
+# FREE_TOOLS_ENABLED=false las apaga sin desplegar
+FREE_TOOLS_ENABLED=true
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=<site-key>
+TURNSTILE_SECRET_KEY=<secret-key>
 ```
 
 ---

@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { RiSmartphoneLine, RiComputerLine } from '@remixicon/react';
+import { SERP_LIMITS } from '@/lib/seo/serpLimits';
 
 interface SERPPreviewProps {
   title: string;
@@ -15,10 +15,7 @@ export function SERPPreview({ title, description, url }: SERPPreviewProps) {
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
 
-  const limits = useMemo(() => ({
-    desktop: { titleMin: 30, titleIdeal: 60, titleMax: 70, descMin: 120, descIdeal: 155, descMax: 170 },
-    mobile: { titleMin: 30, titleIdeal: 55, titleMax: 60, descMin: 100, descIdeal: 120, descMax: 130 },
-  }), []);
+  const limits = SERP_LIMITS;
 
   const getTitleStatus = (len: number, isMobile: boolean) => {
     const limit = isMobile ? limits.mobile : limits.desktop;
