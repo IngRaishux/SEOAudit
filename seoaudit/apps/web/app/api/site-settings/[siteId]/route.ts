@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSessionUserId } from '@/lib/auth/sessionUser';
-import connectMongoose from '@/lib/db/mongoose';
-import Membership from '@/lib/models/Membership';
-import Site from '@/lib/models/Site';
+import { requireSiteAccess } from '@/lib/auth/orgAccess';
 import SiteSettings from '@/lib/models/SiteSettings';
 
 export const runtime = 'nodejs';
@@ -12,35 +9,15 @@ export async function GET(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  const userId = await getSessionUserId();
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   try {
-    await connectMongoose();
-
-    // Get site to find organization
-    const site = await Site.findById(siteId).lean();
-    if (!site) {
-      return NextResponse.json({ error: 'Site not found' }, { status: 404 });
-    }
-
-    // Verify user is member of the organization
-    const membership = await Membership.findOne({
-      userId,
-      organizationId: site.organizationId,
-    });
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
+    const access = await requireSiteAccess(siteId, 'site.read');
+    if (!access.ok) return access.response;
 
     // Get or create site settings
     const settings = (await SiteSettings.findOne({ siteId }).lean()) ?? {
       siteId,
-      organizationId: site.organizationId,
+      organizationId: access.organizationId,
       crawlFrequency: 'manual',
       maxPages: 1000,
       followRobots: true,
@@ -64,13 +41,11 @@ export async function POST(
   { params }: { params: Promise<{ siteId: string }> }
 ) {
   const { siteId } = await params;
-  const userId = await getSessionUserId();
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   try {
+    const access = await requireSiteAccess(siteId, 'content.edit');
+    if (!access.ok) return access.response;
+
     const body = await request.json();
     const {
       crawlFrequency,
@@ -81,30 +56,12 @@ export async function POST(
       excludePatterns,
     } = body;
 
-    await connectMongoose();
-
-    // Get site to find organization
-    const site = await Site.findById(siteId);
-    if (!site) {
-      return NextResponse.json({ error: 'Site not found' }, { status: 404 });
-    }
-
-    // Verify user is member of the organization
-    const membership = await Membership.findOne({
-      userId,
-      organizationId: site.organizationId,
-    });
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
-
     // Update or create site settings
     const settings = await SiteSettings.findOneAndUpdate(
       { siteId },
       {
         siteId,
-        organizationId: site.organizationId,
+        organizationId: access.organizationId,
         crawlFrequency: crawlFrequency || 'manual',
         maxPages: maxPages || 1000,
         followRobots:

@@ -6,6 +6,8 @@ export interface ISite {
   title?: string;
   pageCount: number;
   crawlStatus: string;
+  crawlTruncated?: boolean;
+  sitemapUrlCount?: number;
   metaTags?: Array<{ name: string; content: string }>;
   createdAt: Date;
   updatedAt: Date;

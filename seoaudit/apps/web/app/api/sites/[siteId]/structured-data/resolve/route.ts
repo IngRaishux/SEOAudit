@@ -14,7 +14,7 @@ const bodySchema = z.object({
 export async function POST(request: Request, { params }: { params: Promise<{ siteId: string }> }) {
   const { siteId } = await params;
   try {
-    const access = await resolveGeoContext(siteId);
+    const access = await resolveGeoContext(siteId, 'content.edit');
     if (!access.ok) return access.response;
     const { context } = access;
     if (!context.profile) {

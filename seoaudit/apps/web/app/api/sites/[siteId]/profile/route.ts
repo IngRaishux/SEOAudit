@@ -11,7 +11,7 @@ type Params = { params: Promise<{ siteId: string }> };
 export async function GET(_request: Request, { params }: Params) {
   const { siteId } = await params;
   try {
-    const access = await resolveGeoContext(siteId);
+    const access = await resolveGeoContext(siteId, 'site.read');
     if (!access.ok) return access.response;
     const { profile, pages, origin } = access.context;
     return NextResponse.json({
@@ -27,7 +27,7 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PUT(request: Request, { params }: Params) {
   const { siteId } = await params;
   try {
-    const access = await resolveGeoContext(siteId);
+    const access = await resolveGeoContext(siteId, 'content.edit');
     if (!access.ok) return access.response;
     const { organizationId, origin, profile: previous } = access.context;
 

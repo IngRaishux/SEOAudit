@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
+import { ORG_ROLES, type OrgRole } from '@/lib/auth/permissions';
 
-export type MembershipRole = 'owner' | 'admin' | 'member';
+export type MembershipRole = OrgRole;
 
 export interface IMembership {
   _id: mongoose.Types.ObjectId;
@@ -25,8 +26,7 @@ const membershipSchema = new mongoose.Schema<IMembership>(
     },
     role: {
       type: String,
-      enum: ['owner', 'admin', 'member'],
-      default: 'member',
+      enum: ORG_ROLES,
       required: true,
     },
   },
@@ -40,6 +40,12 @@ membershipSchema.index({ userId: 1, organizationId: 1 }, { unique: true });
 
 // Index for listing organization members
 membershipSchema.index({ organizationId: 1, role: 1 });
+
+// Exactamente un owner por organización: la base impide un segundo owner
+membershipSchema.index(
+  { organizationId: 1 },
+  { unique: true, partialFilterExpression: { role: 'owner' }, name: 'one_owner_per_org' }
+);
 
 const Membership =
   mongoose.models.Membership || mongoose.model<IMembership>('Membership', membershipSchema);

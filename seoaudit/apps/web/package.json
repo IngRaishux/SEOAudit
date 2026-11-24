@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "verify:org-roles": "tsx scripts/verify-org-roles.ts",
     "migrate:accountid-to-organizationid": "ts-node scripts/migrate-accountid-to-organizationid.ts",
     "test": "vitest run"
   },
@@ -30,6 +31,7 @@
     "mongoose": "^8",
     "next": "16.2.5",
     "next-auth": "^4.24.0",
+    "nodemailer": "^10.5.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.6.0",
@@ -39,6 +41,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.16",

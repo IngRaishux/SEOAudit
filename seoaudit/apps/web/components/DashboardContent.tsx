@@ -6,6 +6,7 @@ import { DeleteSiteDialog } from './DeleteSiteDialog';
 import { SwitchOrgButton } from './SwitchOrgButton';
 import { Card, CardHeader, CardTitle, CardContent } from './Card';
 import { Button } from '@seo-optimizer/ui';
+import { can, type OrgRole } from '@/lib/auth/permissions';
 import { RiSettings4Line, RiSearch2Line, RiEyeLine } from '@remixicon/react';
 
 interface ISite {
@@ -15,6 +16,7 @@ interface ISite {
   title?: string;
   pageCount: number;
   crawlStatus: string;
+  crawlTruncated?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,7 +27,7 @@ interface DashboardContentProps {
     _id: string;
   };
   membership: {
-    role: 'owner' | 'admin' | 'member';
+    role: OrgRole;
   };
   sites: ISite[];
   total: number;
@@ -45,7 +47,7 @@ export function DashboardContent({
 }: DashboardContentProps) {
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
-  const isOwner = membership?.role === 'owner';
+  const canDeleteSites = can(membership?.role, 'site.delete');
 
   return (
     <div className="min-h-screen bg-base-100">
@@ -99,7 +101,7 @@ export function DashboardContent({
                 {t('dashboard.role')}
               </p>
               <p className="text-lg font-semibold capitalize text-base-content">
-                {t(`dashboard.${membership?.role || 'member'}`)}
+                {t(`dashboard.${membership?.role || 'viewer'}`)}
               </p>
             </CardContent>
           </Card>
@@ -155,7 +157,7 @@ export function DashboardContent({
                       <th className="text-base-content">
                         {t('sites.actions')}
                       </th>
-                      {isOwner && (
+                      {canDeleteSites && (
                        <th className="text-base-content">
                             {t('sites.delete')}
                           </th>
@@ -174,17 +176,21 @@ export function DashboardContent({
                         <td>
                           <span
                             className={`badge ${
-                              site.crawlStatus === 'completed'
+                              site.crawlStatus === 'completed' && site.crawlTruncated
+                                ? 'badge-warning'
+                                : site.crawlStatus === 'completed'
                                 ? 'badge-success'
                                 : site.crawlStatus === 'failed'
                                   ? 'badge-error'
                                   : 'badge-warning'
                             }`}
                           >
-                            {t(
-                              `sites.crawlStatus.${site.crawlStatus || 'pending'}`,
-                              site.crawlStatus || 'pending'
-                            )}
+                            {site.crawlTruncated
+                              ? t('sites.crawlStatus.partial')
+                              : t(
+                                  `sites.crawlStatus.${site.crawlStatus || 'pending'}`,
+                                  site.crawlStatus || 'pending'
+                                )}
                           </span>
                         </td>
                         <td className="text-base-content/70 whitespace-nowrap text-xs lg:text-base">
@@ -203,7 +209,7 @@ export function DashboardContent({
                             </Link>
                           </Button>
                         </td>
-                        {isOwner && (
+                        {canDeleteSites && (
                           <td> 
                             <DeleteSiteDialog
                               siteId={site._id.toString()}

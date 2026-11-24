@@ -8,9 +8,12 @@ import * as pageRepository from '@/lib/repositories/pageRepository';
 import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Membership from '@/lib/models/Membership';
+import { isOrgRole } from '@/lib/auth/permissions';
 import { SiteDetailsTabs } from '@/components/SiteDetailsTabs';
 import { Card } from '@/components/Card';
 import type { ISite, IPage } from '@/lib/interfaces';
+import { getRequestLanguage, serverT } from '@/lib/i18n/server';
+import { formatMessage } from '@/lib/i18n/format';
 
 export default async function SiteDetailsPage({
   params,
@@ -88,6 +91,17 @@ export default async function SiteDetailsPage({
           </p>
         </div>
 
+        {site.crawlTruncated && (
+          <div role="status" className="alert alert-warning mb-6 text-sm">
+            <span>
+              {formatMessage(serverT(await getRequestLanguage(), 'sites.partialNotice'), {
+                crawled: site.pageCount,
+                total: site.sitemapUrlCount ?? site.pageCount,
+              })}
+            </span>
+          </div>
+        )}
+
         {/* Site Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">
           <Card className="p-3 lg:p-4">
@@ -125,6 +139,7 @@ export default async function SiteDetailsPage({
           siteUrl={site.url}
           siteId={siteId}
           organizationId={site.organizationId}
+          role={isOrgRole(membership.role) ? membership.role : 'viewer'}
         />
       </div>
     </div>

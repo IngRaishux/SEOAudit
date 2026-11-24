@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { generateSEOSuggestions } from '@/lib/generateSEOSuggestions';
+import { requestSuggestion } from '@/lib/seoSuggestionCore';
 import { normalizeUrl } from '@/lib/hreflang/review';
 import { disabledResponse, freeError, toQuota } from '@/lib/free/http';
 import { freeJobAccess } from '@/lib/free/guard';
@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const generated = await generateSEOSuggestions({
+    // Sin la comprobación de sitio de la Server Action: aquí el control es la sesión firmada y el cupo
+    const generated = await requestSuggestion({
       url: page.url,
       title: page.title,
       description: page.description,
