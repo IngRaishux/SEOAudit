@@ -21,19 +21,25 @@ interface SitemapUrlNode {
   'xhtml:link'?: XhtmlLink | XhtmlLink[];
 }
 
+export interface SitemapOptions {
+  fetchImpl?: typeof fetch;
+  /** Si se indica, los sitemaps hijos de un índice que no lo cumplan se omiten. */
+  accept?: (url: string) => boolean;
+}
+
 export async function parseSitemap(sitemapUrl: string): Promise<string[]> {
   return (await parseSitemapEntries(sitemapUrl)).map((entry) => entry.loc);
 }
 
-export async function parseSitemapEntries(sitemapUrl: string): Promise<SitemapEntry[]> {
-  const xml = await fetchSitemapXml(sitemapUrl);
+export async function parseSitemapEntries(sitemapUrl: string, options: SitemapOptions = {}): Promise<SitemapEntry[]> {
+  const xml = await fetchSitemapXml(sitemapUrl, options.fetchImpl ?? fetch);
   const doc = parser.parse(xml);
 
   if (doc.sitemapindex) {
-    const children = toArray(doc.sitemapindex.sitemap);
-    const nested = await Promise.all(
-      children.map((s: { loc: string }) => parseSitemapEntries(resolveLoc(s.loc, sitemapUrl)))
-    );
+    const children = toArray<{ loc: string }>(doc.sitemapindex.sitemap)
+      .map((s) => resolveLoc(s.loc, sitemapUrl))
+      .filter((loc) => !options.accept || options.accept(loc));
+    const nested = await Promise.all(children.map((loc) => parseSitemapEntries(loc, options)));
     return nested.flat();
   }
 
@@ -74,8 +80,8 @@ function resolveLoc(loc: string, base: string): string {
   }
 }
 
-async function fetchSitemapXml(url: string): Promise<string> {
-  const res = await fetch(url);
+async function fetchSitemapXml(url: string, fetchImpl: typeof fetch): Promise<string> {
+  const res = await fetchImpl(url);
 
   if (!res.ok) throw new Error(`Failed to fetch sitemap: ${url} (${res.status})`);
 

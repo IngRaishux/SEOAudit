@@ -8,7 +8,7 @@ import { SERPPreview } from '@/components/SERPPreview';
 import { generateSEOSuggestions, type SEOSuggestion } from "@/lib/generateSEOSuggestions";
 import { applyDetectedAlternates } from "@/lib/hreflang/form";
 import type { HreflangAlternate } from "@/lib/hreflang/review";
-import { toastError, toastSuccess } from '@/lib/toast';
+import { toastError, toastErrorWithRetry, toastSuccess } from '@/lib/toast';
 import { useSession } from 'next-auth/react';
 import { RiFileEditLine, RiSearchLine, RiPriceTag3Line, RiMagicLine, RiDownloadLine, RiPlayLine } from '@remixicon/react';
 
@@ -264,13 +264,19 @@ function SugerenciaContent() {
         wordCount: 0,
       };
 
-      const generated = await generateSEOSuggestions({
+      const result = await generateSEOSuggestions({
         url: pageDataToGenerate.url,
         title: pageDataToGenerate.title,
         description: pageDataToGenerate.description,
         wordCount: pageDataToGenerate.wordCount,
         accountName: organizationName,
       }, siteId ?? '');
+      if (!result.ok) {
+        if (result.retryable) toastErrorWithRetry(result.error, handleGenerateAndExport);
+        else toastError(result.error);
+        return;
+      }
+      const generated = result.suggestion;
       // Los idiomas detectados en la página prevalecen sobre los propuestos por la IA
       const suggestions = applyDetectedAlternates(generated, mockPage.alternates);
 

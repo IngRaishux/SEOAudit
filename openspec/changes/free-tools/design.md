@@ -59,8 +59,8 @@ Alternativa descartada: guardar el cupo en memoria, que se pierde al reiniciar y
 
 - El widget se carga desde `https://challenges.cloudflare.com/turnstile/v0/api.js` con `next/script` solo cuando el visitante enfoca el campo URL. Modo `managed`: la mayoría no ve ningún reto.
 - `POST /api/free/crawl` verifica el token en `https://challenges.cloudflare.com/turnstile/v0/siteverify` con `TURNSTILE_SECRET_KEY` y la IP. Los tokens son de un solo uso.
-- Las sugerencias no piden otro token: tras un rastreo correcto se emite la cookie `free_session` (`httpOnly`, `sameSite=lax`, 1 hora) con `{ jobId, visitor, exp }` firmados con HMAC-SHA256 y `AUTH_SECRET`. Las rutas de estado y de sugerencias exigen que el `jobId` coincida con la cookie y el `visitor` con la IP actual.
-- En desarrollo se usan las claves de prueba de Cloudflare que siempre aprueban (`1x00000000000000000000AA` / `1x0000000000000000000000000000000AA`), documentadas en `.env.example`.
+- Las sugerencias no piden otro token: al lanzar el rastreo se emite la cookie `free_session` (`path=/api/free`), que necesita también el sondeo de estado, (`httpOnly`, `sameSite=lax`, 1 hora) con `{ jobId, visitor, exp }` firmados con HMAC-SHA256 y `AUTH_SECRET`. Las rutas de estado y de sugerencias exigen que el `jobId` coincida con la cookie y el `visitor` con la IP actual.
+- En desarrollo se usan las claves de prueba de Cloudflare que siempre aprueban (`1x00000000000000000000AA` / `1x0000000000000000000000000000000AA`), documentadas en `seoaudit/CLAUDE.md` (`.env.example` está ignorado por git).
 
 Alternativa descartada: pedir un Turnstile por cada sugerencia, porque obliga a resolver un reto por página.
 
@@ -80,6 +80,7 @@ En el crawler se añade `CrawlOptions.sameHostOnly?: boolean`. Si está activa, 
 
 - Se reutiliza `jobStore` con un campo `kind: 'free'` y `visitor`. Para trabajos gratuitos no se llama a `persistCrawlResult`. El resultado se borra del `Map` 1 hora después de terminar (igual que la cookie), para no acumular memoria.
 - `crawlSite(url, { maxUrls: n, concurrency: 3, renderJs: false, sameHostOnly: true })`.
+- El rastreo se lanza con `after()` y la ruta declara `maxDuration = 300`, como `generate-all`: en Vercel la función sigue viva hasta terminar, y 20 páginas caben de sobra en el máximo del plan Hobby.
 - La ruta de estado devuelve un resumen por página (`url`, `statusCode`, `title`, `description`, `h1`, `wordCount`), no el HTML ni el texto completo.
 - Los problemas por página se calculan en el cliente con una función pura `pageIssues(page)` en `lib/free/issues.ts` (sin title, sin description, longitudes fuera del rango de `SERPPreview`, sin H1, varios H1, estado distinto de 200), con tests. Los rangos se extraen de `SERPPreview` a una constante compartida para no duplicarlos.
 
@@ -102,7 +103,7 @@ En el crawler se añade `CrawlOptions.sameHostOnly?: boolean`. Si está activa, 
 - [La IP en `x-forwarded-for` es falsificable si la app no está detrás de un proxy de confianza] → Turnstile por análisis limita el abuso; en Vercel la cabecera la pone la plataforma.
 - [Varias personas tras la misma IP (oficina, CGNAT móvil) comparten cupo] → Aceptado para la versión gratuita; el mensaje de cupo agotado invita a crear cuenta.
 - [DNS rebinding: el dominio resuelve a una IP pública al validar y a una privada cuando Crawl4AI o Node lo descargan] → Se valida también cada URL del sitemap contra el host ya validado y no se siguen redirecciones a otros hosts en el descubrimiento del sitemap. Protegerlo del todo requeriría fijar la IP en las descargas de Crawl4AI, fuera de alcance.
-- [El `jobStore` en memoria no funciona con varias instancias] → Igual que el crawler actual. Si se despliega en serverless con varias instancias, el sondeo puede caer en otra instancia; queda anotado para cuando se migre el almacén de trabajos.
+- [El `jobStore` en memoria no funciona con varias instancias, y en Vercel el sondeo puede llegar a otra instancia que no tiene el trabajo (`NOT_FOUND`)] → Igual que el crawler actual; con Fluid Compute las instancias suelen reutilizarse, pero no está garantizado. Si se despliega en serverless con varias instancias, el sondeo puede caer en otra instancia; queda anotado para cuando se migre el almacén de trabajos.
 - [Coste de Gemini y Crawl4AI] → Tope de 20 + 20 por IP, Turnstile y el interruptor `FREE_TOOLS_ENABLED` para cortarlo sin desplegar.
 
 ## Migration Plan

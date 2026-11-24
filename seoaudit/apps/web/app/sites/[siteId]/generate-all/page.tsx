@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { BackButton, Button } from '@seo-optimizer/ui';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { toastError, toastSuccess } from '@/lib/toast';
-import { RiDownloadLine, RiSaveLine } from '@remixicon/react';
+import { RiDownloadLine, RiRefreshLine, RiSaveLine } from '@remixicon/react';
 import type { SEOSuggestion } from '@/lib/generateSEOSuggestions';
 import { toDynamoSuggestion } from '@/lib/dynamoSuggestion';
 
@@ -61,6 +61,7 @@ function syncAlternateLanguages(
 
 function GenerateAllContent() {
   const params = useParams() as { siteId: string };
+  const router = useRouter();
   const searchParams = useSearchParams();
   const lang = useCurrentLanguage();
   const { t } = useI18n(lang);
@@ -73,6 +74,7 @@ function GenerateAllContent() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<ResultRow[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -121,6 +123,23 @@ function GenerateAllContent() {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [jobId, siteId, t]);
+
+  // Lanza un job nuevo y cambia el jobId de la URL: el efecto de polling arranca con él
+  async function retryGeneration() {
+    setIsRetrying(true);
+    try {
+      const res = await fetch(`/api/sites/${siteId}/generate-all`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || t('generateAll.error'));
+      setError(null);
+      setStatus('queued');
+      router.replace(`/sites/${siteId}/generate-all?jobId=${data.jobId}`);
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : t('generateAll.error'), t('common.error'));
+    } finally {
+      setIsRetrying(false);
+    }
+  }
 
   function updateField(index: number, key: EditableKey, value: string) {
     setRows((prev) =>
@@ -235,8 +254,17 @@ function GenerateAllContent() {
         )}
 
         {status === 'failed' && (
-          <div className="alert alert-error">
+          <div role="alert" className="alert alert-error">
             <span>{error}</span>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RiRefreshLine className="size-4" />}
+              onClick={retryGeneration}
+              isLoading={isRetrying}
+            >
+              {t('common.retry')}
+            </Button>
           </div>
         )}
 
