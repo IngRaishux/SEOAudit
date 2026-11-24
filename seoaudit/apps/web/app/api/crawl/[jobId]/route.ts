@@ -11,7 +11,8 @@ export async function GET(
 
   const job = jobStore.get(jobId);
 
-  if (!job) {
+  // Los análisis gratuitos tienen su propia ruta, ligada a la sesión del visitante
+  if (!job || job.free) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
