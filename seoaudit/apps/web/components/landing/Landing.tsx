@@ -6,6 +6,7 @@ import { getServerTranslations } from '@/lib/i18n/server';
 import type { Language } from '@/lib/i18n/ui';
 import { Faq } from './Faq';
 import { FinalCta } from './FinalCta';
+import { FreeTools } from './FreeTools';
 import { Footer } from './Footer';
 import { Hero } from './Hero';
 import { HowItWorks } from './HowItWorks';
@@ -38,6 +39,7 @@ export async function Landing({ lang }: { lang: Language }) {
         <Stats {...section} />
         <HowItWorks {...section} />
         <Tools {...section} />
+        <FreeTools {...section} />
         <UseCases {...section} />
         <Faq {...section} />
         <FinalCta {...section} isAuthenticated={isAuthenticated} />
