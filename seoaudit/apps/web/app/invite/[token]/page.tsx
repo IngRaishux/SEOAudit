@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getRequestLanguage();
   // El token va en la URL: que no se filtre como referrer ni se indexe
-  return { title: `${serverT(lang, 'team.acceptPage.title')} · SEO Audit`, robots: { index: false }, referrer: 'no-referrer' };
+  return { title: serverT(lang, 'team.acceptPage.title'), robots: { index: false }, referrer: 'no-referrer' };
 }
 
 async function sessionEmail(): Promise<string | null> {

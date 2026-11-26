@@ -7,7 +7,9 @@ import { SignOutButton } from '@/components/SignOutButton';
 import { useI18n, useCurrentLanguage } from '@/lib/i18n/useI18n';
 import { landingLanguageForPath, landingPath } from '@/lib/i18n/language';
 import type { Language } from '@/lib/i18n/ui';
-import { RiLoginBoxLine, RiSearchLine } from '@remixicon/react';
+import { RiLoginBoxLine } from '@remixicon/react';
+import { BrandLogo } from '@/components/BrandLogo';
+import { BRAND_NAME } from '@/lib/brand';
 
 const LANDING_LANGUAGES: Language[] = ['es', 'en'];
 
@@ -47,15 +49,13 @@ export function Header({ currentOrganization, currentOrgId }: HeaderProps) {
       {/* Por debajo de sm solo el icono: el texto chocaba con el selector de idioma y los botones */}
       <div className="flex-1 min-w-0">
         {session ? (
-          <Link href="/organizations" aria-label="SEO Audit" className="btn btn-ghost px-2 sm:px-4 text-lg lg:text-xl font-bold text-base-content flex items-center gap-2">
-            <RiSearchLine className="text-xl" aria-hidden="true" />
-            <span className="hidden sm:inline">SEO Audit</span>
+          <Link href="/organizations" aria-label={BRAND_NAME} className="btn btn-ghost px-2 sm:px-4 text-lg lg:text-xl font-bold text-base-content">
+            <BrandLogo compact />
           </Link>
         ) : (
           // <a> nativo: vuelve a la landing del idioma actual recargando el layout
-          <a href={landingPath(lang)} aria-label="SEO Audit" className="btn btn-ghost px-2 sm:px-4 text-lg lg:text-xl font-bold text-base-content flex items-center gap-2">
-            <RiSearchLine className="text-xl" aria-hidden="true" />
-            <span className="hidden sm:inline">SEO Audit</span>
+          <a href={landingPath(lang)} aria-label={BRAND_NAME} className="btn btn-ghost px-2 sm:px-4 text-lg lg:text-xl font-bold text-base-content">
+            <BrandLogo compact />
           </a>
         )}
       </div>

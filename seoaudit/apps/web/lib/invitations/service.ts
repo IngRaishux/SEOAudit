@@ -3,6 +3,7 @@ import connectMongoose from '@/lib/db/mongoose';
 import { connectToDatabase } from '@/lib/db/mongo';
 import Invitation, { type IInvitation } from '@/lib/models/Invitation';
 import Organization from '@/lib/models/Organization';
+import { BRAND_NAME } from '@/lib/brand';
 import { sendMail } from '@/lib/mail/mailer';
 import { invitationEmail } from '@/lib/mail/templates/invitation';
 import type { Language } from '@/lib/i18n/ui';
@@ -54,7 +55,7 @@ export async function deliverInvitation(
   const inviter = users.get(invitation.invitedByUserId);
   const mail = invitationEmail(
     {
-      inviterName: inviter?.name || inviter?.email || 'SEOAudit',
+      inviterName: inviter?.name || inviter?.email || BRAND_NAME,
       organizationName: org?.name || '',
       role: invitation.role,
       link,
