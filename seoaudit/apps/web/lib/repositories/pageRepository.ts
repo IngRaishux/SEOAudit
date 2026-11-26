@@ -43,7 +43,9 @@ export async function listPagesBySite(
   const { limit = 100, skip = 0 } = options;
   const query = Page.find({ siteId })
     .select('_id siteId url organizationId title description statusCode canonical headings metaTags alternates htmlLang createdAt')
-    .sort({ createdAt: -1 })
+    // _id crece en el orden de inserción (el del sitemap): orden estable para que la vista y
+    // "Generar todas" tomen las mismas páginas bajo el tope
+    .sort({ _id: 1 })
     .skip(skip);
 
   // limit <= 0 significa "sin límite" (traer todas las páginas del sitio)

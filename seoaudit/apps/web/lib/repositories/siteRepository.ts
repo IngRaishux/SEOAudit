@@ -12,6 +12,7 @@ export async function createSite(data: {
   crawlStatus?: string;
   crawlTruncated?: boolean;
   sitemapUrlCount?: number;
+  sitemapTotal?: number;
 }) {
   await connectMongoose();
   const site = new Site(data);
@@ -22,7 +23,7 @@ export async function createSite(data: {
 export async function getSiteById(siteId: string) {
   await connectMongoose();
   return Site.findById(siteId)
-    .select('_id url organizationId title description crawlStatus metaTags pageCount crawlTruncated sitemapUrlCount crawlErrorMessage createdAt updatedAt')
+    .select('_id url organizationId title description crawlStatus metaTags pageCount crawlTruncated sitemapUrlCount sitemapTotal crawlErrorMessage createdAt updatedAt')
     .lean();
 }
 
@@ -33,7 +34,7 @@ export async function listSitesByAccount(
   await connectMongoose();
   const { limit = 10, skip = 0 } = options;
   return Site.find({ organizationId })
-    .select('_id url organizationId title description crawlStatus metaTags pageCount crawlTruncated sitemapUrlCount crawlErrorMessage createdAt updatedAt')
+    .select('_id url organizationId title description crawlStatus metaTags pageCount crawlTruncated sitemapUrlCount sitemapTotal crawlErrorMessage createdAt updatedAt')
     .sort({ createdAt: -1 })
     .limit(limit)
     .skip(skip)
@@ -55,6 +56,7 @@ export async function updateSite(
     pageCount: number;
     crawlTruncated: boolean;
     sitemapUrlCount: number;
+    sitemapTotal: number;
     metaTags: Array<{ name: string; content: string }>;
   }>
 ) {

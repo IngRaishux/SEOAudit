@@ -8,6 +8,8 @@ import { toastError, toastSuccess } from '@/lib/toast';
 import { RiDownloadLine, RiRefreshLine, RiSaveLine } from '@remixicon/react';
 import type { SEOSuggestion } from '@/lib/generateSEOSuggestions';
 import { toDynamoSuggestion } from '@/lib/dynamoSuggestion';
+import { Pagination } from '@/components/Pagination';
+import { DEFAULT_PAGE_SIZE, paginate } from '@/lib/pagination';
 
 type JobStatus = 'queued' | 'running' | 'completed' | 'failed';
 
@@ -76,6 +78,9 @@ function GenerateAllContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [resultsPage, setResultsPage] = useState(1);
+  const [resultsPageSize, setResultsPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const resultsTopRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!jobId || !siteId) return;
@@ -141,10 +146,11 @@ function GenerateAllContent() {
     }
   }
 
-  function updateField(index: number, key: EditableKey, value: string) {
+  // Por suggestionId y no por índice: con el paginador, el índice de la tarjeta es relativo al bloque
+  function updateField(suggestionId: string, key: EditableKey, value: string) {
     setRows((prev) =>
-      prev.map((row, i) => {
-        if (i !== index) return row;
+      prev.map((row) => {
+        if (row.suggestionId !== suggestionId) return row;
         const form = { ...row.form, [key]: { S: value } };
         if (key === 'canonicalUrl') {
           form.alternateLanguages = syncAlternateLanguages(row.form.alternateLanguages, value);
@@ -155,6 +161,30 @@ function GenerateAllContent() {
   }
 
   const dirtyCount = rows.filter((row) => row.isDirty).length;
+
+  const pager = paginate(resultsPage, resultsPageSize, rows.length);
+  const visibleRows = rows.slice(pager.start, pager.end);
+
+  function goToResultsPage(page: number) {
+    setResultsPage(page);
+    resultsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function changeResultsPageSize(size: number) {
+    setResultsPageSize(size);
+    goToResultsPage(1);
+  }
+
+  const resultsPagination = (
+    <Pagination
+      page={pager.page}
+      pageSize={resultsPageSize}
+      total={rows.length}
+      onPageChange={goToResultsPage}
+      onPageSizeChange={changeResultsPageSize}
+      t={t}
+    />
+  );
 
   async function handleSaveAll() {
     const dirtyRows = rows.filter((row) => row.isDirty);
@@ -235,7 +265,7 @@ function GenerateAllContent() {
       <div className="max-w-5xl mx-auto p-4 lg:p-8 flex flex-col gap-6">
         <BackButton />
 
-        <div>
+        <div ref={resultsTopRef} className="scroll-mt-4">
           <h1 className="text-xl lg:text-2xl font-bold">
             {t('generateAll.resultsTitle')}
           </h1>
@@ -270,8 +300,9 @@ function GenerateAllContent() {
 
         {status === 'completed' && (
           <>
+            {resultsPagination}
             <div className="flex flex-col gap-4">
-              {rows.map((row, index) => (
+              {visibleRows.map((row) => (
                 <div
                   key={row.suggestionId}
                   className="border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 bg-white dark:bg-zinc-900 flex flex-col gap-3"
@@ -291,23 +322,23 @@ function GenerateAllContent() {
                     <EditableField
                       label={t('generateAll.fields.title')}
                       value={row.form.title.S}
-                      onChange={(v) => updateField(index, 'title', v)}
+                      onChange={(v) => updateField(row.suggestionId, 'title', v)}
                     />
                     <EditableField
                       label={t('generateAll.fields.slug')}
                       value={row.form.slug.S}
-                      onChange={(v) => updateField(index, 'slug', v)}
+                      onChange={(v) => updateField(row.suggestionId, 'slug', v)}
                     />
                     <EditableField
                       label={t('generateAll.fields.description')}
                       value={row.form.description.S}
-                      onChange={(v) => updateField(index, 'description', v)}
+                      onChange={(v) => updateField(row.suggestionId, 'description', v)}
                       multiline
                     />
                     <EditableField
                       label={t('generateAll.fields.canonicalUrl')}
                       value={row.form.canonicalUrl.S}
-                      onChange={(v) => updateField(index, 'canonicalUrl', v)}
+                      onChange={(v) => updateField(row.suggestionId, 'canonicalUrl', v)}
                     />
                   </div>
 
@@ -338,6 +369,8 @@ function GenerateAllContent() {
                 </div>
               ))}
             </div>
+
+            {resultsPagination}
 
             <div className="flex justify-end gap-2">
               <Button

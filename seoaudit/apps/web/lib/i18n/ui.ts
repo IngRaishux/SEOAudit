@@ -1,6 +1,16 @@
 export const translations = {
   es: {
     // Equipos: miembros, roles e invitaciones
+    pagination: {
+      label: 'Paginación',
+      range: '{from}–{to} de {total}',
+      perPage: 'Por página',
+      first: 'Primera página',
+      previous: 'Página anterior',
+      next: 'Página siguiente',
+      last: 'Última página',
+      goTo: 'Ir a la página {page}',
+    },
     team: {
       tabs: { general: 'General', members: 'Miembros' },
       roles: { owner: 'Propietario', admin: 'Administrador', editor: 'Editor', viewer: 'Colaborador' },
@@ -236,6 +246,8 @@ export const translations = {
       },
       partialNotice:
         'Crawl parcial: se analizaron {crawled} de {total} páginas del sitemap porque se alcanzó el límite de tiempo del servidor.',
+      pageLimitNotice:
+        'Se analizaron {shown} de {total} URLs del sitio por el límite actual de {limit} páginas por sitio.',
     },
 
     // Delete Site Dialog
@@ -452,6 +464,18 @@ export const translations = {
       totalPages: 'Total de páginas',
       status: 'Estado',
       pageTitle: 'Título de página',
+      description: 'Descripción',
+      export: {
+        button: 'Exportar',
+        pdf: 'PDF',
+        xlsx: 'Excel (XLSX)',
+        exporting: 'Exportando...',
+        error: 'No se pudo generar el archivo. Intenta de nuevo.',
+        pdfTitle: 'Páginas del sitio',
+        pagesCount: 'páginas',
+        sheetName: 'Páginas',
+        headingsList: 'Lista de encabezados',
+      },
       tabs: {
         serp: 'Vista previa SERP',
         pages: 'Páginas',
@@ -790,6 +814,16 @@ export const translations = {
 
   en: {
     // Teams: members, roles and invitations
+    pagination: {
+      label: 'Pagination',
+      range: '{from}–{to} of {total}',
+      perPage: 'Per page',
+      first: 'First page',
+      previous: 'Previous page',
+      next: 'Next page',
+      last: 'Last page',
+      goTo: 'Go to page {page}',
+    },
     team: {
       tabs: { general: 'General', members: 'Members' },
       roles: { owner: 'Owner', admin: 'Admin', editor: 'Editor', viewer: 'Viewer' },
@@ -1025,6 +1059,8 @@ export const translations = {
       },
       partialNotice:
         'Partial crawl: {crawled} of {total} sitemap pages were analyzed because the server time limit was reached.',
+      pageLimitNotice:
+        '{shown} of {total} site URLs were analyzed because of the current limit of {limit} pages per site.',
     },
 
     // Delete Site Dialog
@@ -1241,6 +1277,18 @@ export const translations = {
       totalPages: 'Total Pages',
       status: 'Status',
       pageTitle: 'Page Title',
+      description: 'Description',
+      export: {
+        button: 'Export',
+        pdf: 'PDF',
+        xlsx: 'Excel (XLSX)',
+        exporting: 'Exporting...',
+        error: 'The file could not be generated. Please try again.',
+        pdfTitle: 'Site pages',
+        pagesCount: 'pages',
+        sheetName: 'Pages',
+        headingsList: 'Headings list',
+      },
       tabs: {
         serp: 'SERP Preview',
         pages: 'Pages',
