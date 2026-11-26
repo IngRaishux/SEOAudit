@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from 'nodemailer';
+import { BRAND_NAME } from '@/lib/brand';
 
 export interface MailMessage {
   to: string;
@@ -39,7 +40,7 @@ export async function sendMail(message: MailMessage): Promise<SendResult> {
 
   try {
     await transport.sendMail({
-      from: process.env.MAIL_FROM || 'SEOAudit <no-reply@localhost>',
+      from: process.env.MAIL_FROM || `${BRAND_NAME} <no-reply@localhost>`,
       ...message,
     });
     return { sent: true };

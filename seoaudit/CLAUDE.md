@@ -210,6 +210,10 @@ CRAWLER_TIMEOUT_MS=30000
 FREE_TOOLS_ENABLED=true
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+
+# URL base del sitio para canónicas, hreflang y Open Graph (cambio rebrand-seobab-web)
+# Opcional: sin ella se usa https://seobab.com. Es NEXT_PUBLIC_: se resuelve en build
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
 ### Production (`Vercel Environment Variables`)
@@ -241,6 +245,9 @@ CRAWLER_TIMEOUT_MS=30000
 FREE_TOOLS_ENABLED=true
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=<site-key>
 TURNSTILE_SECRET_KEY=<secret-key>
+
+# URL base del sitio (opcional; por defecto https://seobab.com). Cambiarla requiere un nuevo build
+NEXT_PUBLIC_SITE_URL=https://seobab.com
 ```
 
 ---
