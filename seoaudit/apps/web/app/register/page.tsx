@@ -6,7 +6,7 @@ import { resolveInviteParam } from '@/lib/invitations/inviteParam';
 
 export async function generateMetadata(): Promise<Metadata> {
   const { auth } = getServerTranslations(await getRequestLanguage());
-  return { title: `${auth.registerTitle} · SEO Audit`, description: auth.registerSubtitle };
+  return { title: auth.registerTitle, description: auth.registerSubtitle };
 }
 
 export default async function RegisterPage({

@@ -43,6 +43,22 @@ describe('crawlSite deadline', () => {
   });
 });
 
+describe('crawlSite maxUrls', () => {
+  it('recorta al tope, informa el total del sitemap y no marca el resultado como truncado', async () => {
+    const result = await crawlSite('https://ex.com', { concurrency: 2, maxUrls: 4 });
+    expect(result.pages).toHaveLength(4);
+    expect(result.total).toBe(4);
+    expect(result.sitemapTotal).toBe(6);
+    expect(result.truncated).toBe(false);
+  });
+
+  it('sin tope sitemapTotal coincide con total', async () => {
+    const result = await crawlSite('https://ex.com', { concurrency: 2 });
+    expect(result.sitemapTotal).toBe(6);
+    expect(result.total).toBe(6);
+  });
+});
+
 describe('crawlSite pageTimeoutMs', () => {
   it('pasa la espera por página a Crawl4AI (30 s por defecto)', async () => {
     const { extractPageSeo } = await import('./crawler/extract');

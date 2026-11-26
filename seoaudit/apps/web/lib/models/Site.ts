@@ -30,6 +30,8 @@ const siteSchema = new mongoose.Schema(
       default: false,
     },
     sitemapUrlCount: Number,
+    // URLs del sitemap antes del tope de páginas por sitio; sin el campo = sitio anterior al tope
+    sitemapTotal: Number,
     metaTags: [
       {
         _id: false,

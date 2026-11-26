@@ -1,6 +1,16 @@
 export const translations = {
   es: {
     // Equipos: miembros, roles e invitaciones
+    pagination: {
+      label: 'Paginación',
+      range: '{from}–{to} de {total}',
+      perPage: 'Por página',
+      first: 'Primera página',
+      previous: 'Página anterior',
+      next: 'Página siguiente',
+      last: 'Última página',
+      goTo: 'Ir a la página {page}',
+    },
     team: {
       tabs: { general: 'General', members: 'Miembros' },
       roles: { owner: 'Propietario', admin: 'Administrador', editor: 'Editor', viewer: 'Colaborador' },
@@ -106,9 +116,9 @@ export const translations = {
         lockedEmail: 'Te invitaron con este correo.',
       },
       email: {
-        subject: '{inviter} te ha invitado a {org} en SEOAudit',
+        subject: '{inviter} te ha invitado a {org} en SEObab',
         heading: 'Te invitaron a {org}',
-        body: '{inviter} te ha invitado a unirte a {org} en SEOAudit con el rol de {role}.',
+        body: '{inviter} te ha invitado a unirte a {org} en SEObab con el rol de {role}.',
         cta: 'Ver invitación',
         expires: 'La invitación vence el {date}.',
         ignore: 'Si no esperabas esta invitación, puedes ignorar este correo.',
@@ -236,6 +246,8 @@ export const translations = {
       },
       partialNotice:
         'Crawl parcial: se analizaron {crawled} de {total} páginas del sitemap porque se alcanzó el límite de tiempo del servidor.',
+      pageLimitNotice:
+        'Se analizaron {shown} de {total} URLs del sitio por el límite actual de {limit} páginas por sitio.',
     },
 
     // Delete Site Dialog
@@ -452,6 +464,18 @@ export const translations = {
       totalPages: 'Total de páginas',
       status: 'Estado',
       pageTitle: 'Título de página',
+      description: 'Descripción',
+      export: {
+        button: 'Exportar',
+        pdf: 'PDF',
+        xlsx: 'Excel (XLSX)',
+        exporting: 'Exportando...',
+        error: 'No se pudo generar el archivo. Intenta de nuevo.',
+        pdfTitle: 'Páginas del sitio',
+        pagesCount: 'páginas',
+        sheetName: 'Páginas',
+        headingsList: 'Lista de encabezados',
+      },
       tabs: {
         serp: 'Vista previa SERP',
         pages: 'Páginas',
@@ -542,6 +566,11 @@ export const translations = {
 
     // Landing
     home: {
+      meta: {
+        title: 'SEObab · Auditoría SEO y GEO con IA',
+        description:
+          'Rastrea tu sitio, detecta problemas de SEO, genera sugerencias con IA y prepara tus datos estructurados y tu llms.txt para los buscadores con IA.',
+      },
       hero: {
         badge: 'Auditoría SEO y GEO con IA',
         title: 'Haz que Google y la IA entiendan tu sitio',
@@ -607,7 +636,7 @@ export const translations = {
       },
       freeTools: {
         title: 'Herramientas gratuitas',
-        subtitle: 'Prueba SEOAudit con tu propio sitio, sin crear una cuenta.',
+        subtitle: 'Prueba SEObab con tu propio sitio, sin crear una cuenta.',
         limitsNote:
           'Cada día puedes analizar hasta {{crawl}} páginas y generar sugerencias con IA para {{suggestions}}. El cupo se renueva a medianoche (UTC).',
         unavailable: 'Las herramientas gratuitas no están disponibles en este momento. Crea una cuenta para analizar tu sitio.',
@@ -691,7 +720,7 @@ export const translations = {
       },
       useCases: {
         title: 'Ejemplos de uso',
-        subtitle: 'Así se ve SEOAudit resolviendo casos reales.',
+        subtitle: 'Así se ve SEObab resolviendo casos reales.',
         tabs: {
           seo: 'SEO clásico',
           geo: 'IA y GEO',
@@ -710,7 +739,7 @@ export const translations = {
         },
         geo: {
           title: 'Prepárate para los buscadores con IA',
-          desc: 'Los asistentes como ChatGPT o Perplexity citan a los negocios que describen bien quiénes son. SEOAudit completa tu JSON-LD a partir de tu perfil y genera un llms.txt con tus páginas clave.',
+          desc: 'Los asistentes como ChatGPT o Perplexity citan a los negocios que describen bien quiénes son. SEObab completa tu JSON-LD a partir de tu perfil y genera un llms.txt con tus páginas clave.',
           points: [
             'Revisa si tu JSON-LD existe, es válido y está completo',
             'Nunca inventa datos: dirección y teléfono salen de tu sitio',
@@ -751,7 +780,7 @@ export const translations = {
             a: 'No. Los datos factuales como la dirección o el teléfono se toman de tu sitio o los confirmas tú. La IA solo redacta textos, y se marcan como generados.',
           },
           {
-            q: '¿SEOAudit modifica mi sitio automáticamente?',
+            q: '¿SEObab modifica mi sitio automáticamente?',
             a: 'No. Te entrega sugerencias y bloques listos para copiar; tú decides qué publicar y dónde.',
           },
           {
@@ -785,6 +814,16 @@ export const translations = {
 
   en: {
     // Teams: members, roles and invitations
+    pagination: {
+      label: 'Pagination',
+      range: '{from}–{to} of {total}',
+      perPage: 'Per page',
+      first: 'First page',
+      previous: 'Previous page',
+      next: 'Next page',
+      last: 'Last page',
+      goTo: 'Go to page {page}',
+    },
     team: {
       tabs: { general: 'General', members: 'Members' },
       roles: { owner: 'Owner', admin: 'Admin', editor: 'Editor', viewer: 'Viewer' },
@@ -890,9 +929,9 @@ export const translations = {
         lockedEmail: 'You were invited with this email.',
       },
       email: {
-        subject: '{inviter} has invited you to {org} on SEOAudit',
+        subject: '{inviter} has invited you to {org} on SEObab',
         heading: 'You have been invited to {org}',
-        body: '{inviter} has invited you to join {org} on SEOAudit as {role}.',
+        body: '{inviter} has invited you to join {org} on SEObab as {role}.',
         cta: 'View invitation',
         expires: 'The invitation expires on {date}.',
         ignore: 'If you were not expecting this invitation, you can ignore this email.',
@@ -1020,6 +1059,8 @@ export const translations = {
       },
       partialNotice:
         'Partial crawl: {crawled} of {total} sitemap pages were analyzed because the server time limit was reached.',
+      pageLimitNotice:
+        '{shown} of {total} site URLs were analyzed because of the current limit of {limit} pages per site.',
     },
 
     // Delete Site Dialog
@@ -1236,6 +1277,18 @@ export const translations = {
       totalPages: 'Total Pages',
       status: 'Status',
       pageTitle: 'Page Title',
+      description: 'Description',
+      export: {
+        button: 'Export',
+        pdf: 'PDF',
+        xlsx: 'Excel (XLSX)',
+        exporting: 'Exporting...',
+        error: 'The file could not be generated. Please try again.',
+        pdfTitle: 'Site pages',
+        pagesCount: 'pages',
+        sheetName: 'Pages',
+        headingsList: 'Headings list',
+      },
       tabs: {
         serp: 'SERP Preview',
         pages: 'Pages',
@@ -1326,6 +1379,11 @@ export const translations = {
 
     // Landing
     home: {
+      meta: {
+        title: 'SEObab · AI-powered SEO and GEO audits',
+        description:
+          'Crawl your site, find SEO issues, get AI suggestions and prepare your structured data and llms.txt for AI search engines.',
+      },
       hero: {
         badge: 'AI-powered SEO and GEO audits',
         title: 'Make Google and AI understand your site',
@@ -1391,7 +1449,7 @@ export const translations = {
       },
       freeTools: {
         title: 'Free tools',
-        subtitle: 'Try SEOAudit on your own site, no account needed.',
+        subtitle: 'Try SEObab on your own site, no account needed.',
         limitsNote:
           'Each day you can analyze up to {{crawl}} pages and generate AI suggestions for {{suggestions}}. Your allowance resets at midnight (UTC).',
         unavailable: 'Free tools are not available right now. Create an account to analyze your site.',
@@ -1475,7 +1533,7 @@ export const translations = {
       },
       useCases: {
         title: 'Use cases',
-        subtitle: 'See SEOAudit solving real-world scenarios.',
+        subtitle: 'See SEObab solving real-world scenarios.',
         tabs: {
           seo: 'Classic SEO',
           geo: 'AI and GEO',
@@ -1494,7 +1552,7 @@ export const translations = {
         },
         geo: {
           title: 'Get ready for AI search engines',
-          desc: 'Assistants like ChatGPT and Perplexity cite businesses that clearly describe who they are. SEOAudit completes your JSON-LD from your profile and generates an llms.txt with your key pages.',
+          desc: 'Assistants like ChatGPT and Perplexity cite businesses that clearly describe who they are. SEObab completes your JSON-LD from your profile and generates an llms.txt with your key pages.',
           points: [
             'Checks whether your JSON-LD exists, is valid, and is complete',
             'Never makes up data: address and phone come from your site',
@@ -1535,7 +1593,7 @@ export const translations = {
             a: 'No. Factual data such as your address or phone number comes from your site or is confirmed by you. AI only drafts copy, and it is marked as generated.',
           },
           {
-            q: 'Does SEOAudit change my site automatically?',
+            q: 'Does SEObab change my site automatically?',
             a: 'No. It gives you suggestions and ready-to-copy blocks; you decide what to publish and where.',
           },
           {

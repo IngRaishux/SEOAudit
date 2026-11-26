@@ -36,6 +36,8 @@ export interface CrawlResult {
   sitemapUrl: string;
   /** URLs del sitemap (o el tope de maxUrls); puede ser mayor que pages.length si truncated. */
   total: number;
+  /** URLs del sitemap antes de aplicar maxUrls (después del filtro de host); >= total. */
+  sitemapTotal: number;
   pages: PageSeo[];
   llmsTxt: LlmsTxtCapture;
   /** true si se alcanzó el deadline antes de rastrear todas las URLs. */
@@ -76,6 +78,7 @@ export async function crawlSite(
 
   let entries = await parseSitemapEntries(sitemapUrl, { fetchImpl, accept });
   if (accept) entries = entries.filter((entry) => accept(entry.loc));
+  const sitemapTotal = entries.length;
   if (maxUrls) entries = entries.slice(0, maxUrls);
   const urls = entries.map((entry) => entry.loc);
   // Solo se conservan los alternos del sitemap de las URLs que se rastrean
@@ -112,6 +115,7 @@ export async function crawlSite(
       siteUrl,
       sitemapUrl,
       total,
+      sitemapTotal,
       pages: crawled,
       llmsTxt: await llmsTxtPromise,
       truncated: crawled.length < total,

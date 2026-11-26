@@ -12,6 +12,10 @@ import { RiSearchLine, RiFileTextLine, RiPriceTag3Line, RiSparklingLine } from '
 import { GeoTab } from './geo/GeoTab';
 import { HreflangCell, HreflangSummary } from './hreflang/HreflangCell';
 import { normalizeUrl, reviewHreflang, type HreflangAlternate } from '@/lib/hreflang/review';
+import { Pagination } from './Pagination';
+import { ExportPagesMenu } from './ExportPagesMenu';
+import { DEFAULT_PAGE_SIZE, paginate } from '@/lib/pagination';
+import { toPageRow } from '@/lib/sitePages/rows';
 
 interface MetaTag {
   name: string;
@@ -55,6 +59,16 @@ export function SiteDetailsTabs({
   const { t } = useI18n(lang);
   const hreflangReviews = useMemo(() => reviewHreflang(pages), [pages]);
   const pagesByUrl = useMemo(() => new Map(pages.map((p) => [normalizeUrl(p.url), p])), [pages]);
+  // Filas de todas las páginas: la tabla solo pinta el bloque visible, pero el export y la revisión
+  // de hreflang necesitan el sitio completo
+  const pageRows = useMemo(
+    () => pages.map((p) => toPageRow(p, hreflangReviews.get(normalizeUrl(p.url)), t)),
+    [pages, hreflangReviews, t]
+  );
+  const [pagesPage, setPagesPage] = useState(1);
+  const [pagesPageSize, setPagesPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
+  const pager = paginate(pagesPage, pagesPageSize, pages.length);
+  const visiblePages = pages.slice(pager.start, pager.end);
 
   const tabs = [
     { id: 'serp', label: t('siteDetails.tabs.serp'), icon: <RiSearchLine className="size-4" /> },
@@ -127,14 +141,16 @@ export function SiteDetailsTabs({
                   <span>{t('siteDetails.noPagesMessage')}</span>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  {canEdit && (
-                    <div className="flex justify-end mb-4">
-                      <GenerateAllDialog siteId={siteId} pageCount={pages.length} />
-                    </div>
-                  )}
+                <div>
+                  {/* Fuera del contenedor con scroll para que el menú de exportar no quede recortado */}
+                  <div className="flex flex-wrap justify-end gap-2 mb-4">
+                    <ExportPagesMenu rows={pageRows} siteUrl={site.url || siteUrl} lang={lang} t={t} />
+                    {canEdit && <GenerateAllDialog siteId={siteId} pageCount={pages.length} />}
+                  </div>
                   <HreflangSummary pages={pages} reviews={hreflangReviews} t={t} />
-                  <table className="table w-full text-sm">
+                  <div className="overflow-x-auto">
+                  {/* Padding horizontal reducido para que las 7 columnas quepan sin scroll en escritorio */}
+                  <table className="table w-full text-sm [&_th]:px-3 [&_td]:px-3">
                     <thead className="bg-base-200">
                       <tr>
                         <th className="text-base-content">
@@ -144,52 +160,53 @@ export function SiteDetailsTabs({
                           {t('siteDetails.pageTitle')}
                         </th>
                         <th className="text-base-content">
-                          {t('common.status')}
-                        </th>
-                        <th className="text-base-content">
-                          {t('pages.headings')}
+                          {t('siteDetails.description')}
                         </th>
                         <th className="text-base-content">
                           {t('siteDetails.hreflang.column')}
                         </th>
-                        <th className="text-base-content">
-                          {t('sites.actions')}
+                        <th className="text-base-content text-center">
+                          {t('pages.headings')}
                         </th>
+                        <th className="text-base-content">
+                          {t('common.status')}
+                        </th>
+                        {canEdit && (
+                          <th className="text-base-content">
+                            {t('sites.actions')}
+                          </th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
-                      {pages.map((page) => (
+                      {visiblePages.map((page, index) => {
+                        const row = pageRows[pager.start + index];
+                        return (
                         <tr key={page._id} className="hover">
-                          <td className="text-primary truncate max-w-xs">
+                          <td className="text-primary min-w-40 max-w-52">
                             <a
                               href={page.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="hover:underline"
+                              className="hover:underline break-all line-clamp-2"
+                              title={page.url}
                             >
                               {page.url}
                             </a>
                           </td>
-                          <td className="text-base-content truncate max-w-xs">
-                            {page.title || '—'}
+                          <td className="text-base-content min-w-36 max-w-48">
+                            {page.title ? (
+                              <span className="line-clamp-2" title={page.title}>
+                                {page.title}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
                           </td>
-                          <td>
-                            <span
-                              className={`badge ${
-                                page.statusCode === 200
-                                  ? 'badge-success'
-                                  : page.statusCode && page.statusCode >= 400
-                                    ? 'badge-error'
-                                    : 'badge-info'
-                              }`}
-                            >
-                              {page.statusCode || '—'}
-                            </span>
-                          </td>
-                          <td className="text-base-content/70">
-                            {page.headings.length > 0 ? (
-                              <span title={page.headings.join(', ')}>
-                                {page.headings.length} heading{page.headings.length !== 1 ? 's' : ''}
+                          <td className="text-base-content/80 min-w-48 max-w-64">
+                            {row.description ? (
+                              <span className="line-clamp-2" title={row.description}>
+                                {row.description}
                               </span>
                             ) : (
                               '—'
@@ -205,20 +222,54 @@ export function SiteDetailsTabs({
                               t={t}
                             />
                           </td>
+                          <td className="text-base-content/70 text-center">
+                            {page.headings.length > 0 ? (
+                              <span title={page.headings.join('\n')}>{page.headings.length}</span>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
                           <td>
-                            {canEdit && (
+                            <span
+                              className={`badge ${
+                                row.statusTone === 'success'
+                                  ? 'badge-success'
+                                  : row.statusTone === 'error'
+                                    ? 'badge-error'
+                                    : 'badge-info'
+                              }`}
+                            >
+                              {page.statusCode || '—'}
+                            </span>
+                          </td>
+                          {canEdit && (
+                            <td className="whitespace-nowrap">
                               <Link
                                 href={`/sugerence?url=${encodeURIComponent(page.url)}&pageId=${page._id}&siteId=${siteId}`}
                                 className="link link-primary font-medium"
                               >
                                 {t('sites.actions')} →
                               </Link>
-                            )}
-                          </td>
+                            </td>
+                          )}
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
+                  </div>
+                  <Pagination
+                    className="mt-4"
+                    page={pager.page}
+                    pageSize={pagesPageSize}
+                    total={pages.length}
+                    onPageChange={setPagesPage}
+                    onPageSizeChange={(size) => {
+                      setPagesPageSize(size);
+                      setPagesPage(1);
+                    }}
+                    t={t}
+                  />
                 </div>
               )}
             </div>
