@@ -14,6 +14,7 @@ import { Card } from '@/components/Card';
 import type { ISite, IPage } from '@/lib/interfaces';
 import { getRequestLanguage, serverT } from '@/lib/i18n/server';
 import { formatMessage } from '@/lib/i18n/format';
+import { SITE_PAGE_LIMIT } from '@/lib/limits';
 
 export default async function SiteDetailsPage({
   params,
@@ -67,34 +68,59 @@ export default async function SiteDetailsPage({
   let pages: IPage[] = [];
   try {
     pages = (await pageRepository.listPagesBySite(siteId, {
-      limit: 100,
+      limit: SITE_PAGE_LIMIT,
     })) as unknown as IPage[];
   } catch (error) {
     console.error('Error fetching pages:', error);
   }
 
-  
+
+  // Total de URLs del sitio para el aviso de tope: el del sitemap si el crawl lo registró; en
+  // sitios anteriores al tope, las páginas guardadas (pueden pasar del tope)
+  let siteTotal = site.sitemapTotal;
+  if (siteTotal === undefined) {
+    try {
+      siteTotal = await pageRepository.countPagesBySite(siteId);
+    } catch (error) {
+      console.error('Error counting pages:', error);
+    }
+  }
+  const showPageLimitNotice = siteTotal !== undefined && siteTotal > SITE_PAGE_LIMIT;
+  const language = await getRequestLanguage();
+
   // Serialize pages data for client component
   const serializedPages = JSON.parse(JSON.stringify(pages));  
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
+    <div className="min-h-screen bg-base-200 text-base-content">
       <div className="max-w-6xl mx-auto p-4 lg:p-8">
         {/* Header */}
         <div className="mb-8">
-          <Link href={`/dashboard?org=${site.organizationId}`} className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block">
+          <Link href={`/dashboard?org=${site.organizationId}`} className="link link-hover text-sm text-base-content/70 hover:text-base-content mb-4 inline-block">
             ← Back to Dashboard
           </Link>
           <h1 className="text-2xl lg:text-4xl font-bold mb-2 break-all">{site.url}</h1>
-          <p className="text-xs lg:text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-xs lg:text-sm text-base-content/70">
             Crawled on {new Date(site.createdAt).toLocaleDateString()}{' '}
             {new Date(site.createdAt).toLocaleTimeString()}
           </p>
         </div>
 
+        {showPageLimitNotice && (
+          <div role="status" className="alert alert-info mb-6 text-sm">
+            <span>
+              {formatMessage(serverT(language, 'sites.pageLimitNotice'), {
+                shown: pages.length,
+                total: siteTotal ?? pages.length,
+                limit: SITE_PAGE_LIMIT,
+              })}
+            </span>
+          </div>
+        )}
+
         {site.crawlTruncated && (
           <div role="status" className="alert alert-warning mb-6 text-sm">
             <span>
-              {formatMessage(serverT(await getRequestLanguage(), 'sites.partialNotice'), {
+              {formatMessage(serverT(language, 'sites.partialNotice'), {
                 crawled: site.pageCount,
                 total: site.sitemapUrlCount ?? site.pageCount,
               })}

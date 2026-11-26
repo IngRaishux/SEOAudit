@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { RiCheckLine, RiExternalLinkLine, RiFileCopyLine, RiErrorWarningLine, RiInformationLine } from '@remixicon/react';
-import type { HreflangAlternate, HreflangIssue, HreflangReview } from '@/lib/hreflang/review';
+import { sortAlternates, type HreflangAlternate, type HreflangIssue, type HreflangReview } from '@/lib/hreflang/review';
 import { buildFixExample, type FixExample, type FixPage } from '@/lib/hreflang/fix';
 
 type Translate = (path: string) => string;
@@ -51,16 +51,6 @@ export function formatHreflangIssue(issue: HreflangIssue, t: Translate, pageUrl:
     case 'unverifiable':
       return message('unverifiable', { href: displayUrl(issue.href, pageUrl) });
   }
-}
-
-// Orden alfabético con x-default al final
-function sortAlternates(alternates: HreflangAlternate[]): HreflangAlternate[] {
-  return [...alternates].sort((a, b) => {
-    const ax = a.hreflang.toLowerCase() === 'x-default';
-    const bx = b.hreflang.toLowerCase() === 'x-default';
-    if (ax !== bx) return ax ? 1 : -1;
-    return a.hreflang.localeCompare(b.hreflang);
-  });
 }
 
 interface HreflangCellProps {

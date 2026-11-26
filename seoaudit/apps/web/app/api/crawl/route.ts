@@ -8,6 +8,7 @@ import CrawlJob from '@/lib/models/CrawlJob';
 import Page from '@/lib/models/Page';
 import Site from '@/lib/models/Site';
 import { createProgressThrottle, crawlDeadline, crawlerSettings } from '@/lib/crawl/budget';
+import { SITE_PAGE_LIMIT } from '@/lib/limits';
 
 export const runtime = 'nodejs';
 // El crawl corre en after() dentro de esta invocación. 300 s es el máximo del plan Hobby de
@@ -59,6 +60,8 @@ async function runCrawl(jobId: string, url: string, organizationId: string, dead
     const crawl4aiUrl = process.env.CRAWL4AI_URL || 'http://localhost:11235';
     const { concurrency, pageTimeoutMs } = crawlerSettings();
     const result = await crawlSite(url, {
+      // Solo las primeras URLs del sitemap hasta el tope; llegar al tope no cuenta como crawl parcial
+      maxUrls: SITE_PAGE_LIMIT,
       concurrency,
       pageTimeoutMs,
       crawl4aiUrl,
@@ -170,6 +173,7 @@ async function persistCrawlResult(url: string, organizationId: string, result: C
       crawlStatus: 'completed',
       crawlTruncated: result.truncated,
       sitemapUrlCount: result.total,
+      sitemapTotal: result.sitemapTotal,
     });
     return siteId;
   } catch (error) {

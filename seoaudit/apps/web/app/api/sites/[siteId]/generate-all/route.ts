@@ -9,6 +9,7 @@ import {
   type BulkPageData,
 } from '@/lib/generateBulkSEOSuggestions';
 import * as generationJobRepository from '@/lib/repositories/generationJobRepository';
+import { SITE_PAGE_LIMIT } from '@/lib/limits';
 
 export const runtime = 'nodejs';
 // La generación corre en after() dentro de esta misma invocación, así que necesita cubrir
@@ -35,8 +36,9 @@ export async function POST(
       return NextResponse.json({ error: 'Site not found' }, { status: 404 });
     }
 
+    // Mismo tope y orden que la vista de páginas: se generan sugerencias para las páginas que se ven
     const pages = (await pageRepository.listPagesBySite(siteId, {
-      limit: 0,
+      limit: SITE_PAGE_LIMIT,
     })) as unknown as Array<{
       _id: string;
       url: string;

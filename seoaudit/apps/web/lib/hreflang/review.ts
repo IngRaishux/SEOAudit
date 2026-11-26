@@ -134,3 +134,13 @@ export function reviewHreflang(pages: HreflangPage[]): Map<string, HreflangRevie
 
   return result;
 }
+
+/** Alternos ordenados por código, con x-default al final. */
+export function sortAlternates(alternates: HreflangAlternate[]): HreflangAlternate[] {
+  return [...alternates].sort((a, b) => {
+    const ax = a.hreflang.toLowerCase() === 'x-default';
+    const bx = b.hreflang.toLowerCase() === 'x-default';
+    if (ax !== bx) return ax ? 1 : -1;
+    return a.hreflang.localeCompare(b.hreflang);
+  });
+}
